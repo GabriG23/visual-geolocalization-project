@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader, Dataset
 
 
 # Compute R@1, R@5, R@10, R@20
-RECALL_VALUES = [1, 1.5, 5, 10, 20] # ho aggiunto 1,5
+RECALL_VALUES = [1, 5, 10, 20]
 
 
 def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.ndarray, str]:
