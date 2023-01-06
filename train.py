@@ -12,7 +12,7 @@ import test
 import util
 import parser
 import commons
-import cosface_loss
+import cosface_loss # inside the file there are ArcFace and SphereFace losses too
 import augmentations
 from model import network
 from datasets.test_dataset import TestDataset
@@ -48,8 +48,28 @@ model_optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 #### Datasets
 groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,
                        current_group=n, min_images_per_class=args.min_images_per_class) for n in range(args.groups_num)]
+
 # Each group has its own classifier, which depends on the number of classes in the group
-classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
+    # """Implement of large margin cosine distance:
+    # Args:
+    #     in_features: size of each input sample
+    #     out_features: size of each output sample
+    #     s: norm of input feature
+    #     m: margin
+    # """
+loss = cosface_loss.get_loss(args.loss)
+if loss == "cosface":
+        classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups] # Original
+elif loss == "arcface":
+        classifiers = [cosface_loss.ArcFace(args.fc_output_dim, len(group)) for group in groups] # Original
+elif loss == "sphereface":
+        classifiers = [cosface_loss.SphereFace(args.fc_output_dim, len(group)) for group in groups] # Original
+else:
+    raise ValueError()
+
+# classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups] # Originale
+
+
 classifiers_optimizers = [torch.optim.Adam(classifier.parameters(), lr=args.classifiers_lr) for classifier in classifiers]
 
 logging.info(f"Using {len(groups)} groups")
