@@ -147,3 +147,84 @@ class SphereFace(nn.Module):
                + ', out_features=' + str(self.out_features) \
                + ', s=' + str(self.s) \
                + ', m=' + str(self.m) + ')'
+
+
+#################### ArcFace (ArcFace) ###############################################
+# Ho trovato queste implementazioni di cosFace e ArcFace 
+# Based on https://github.com/deepinsight/insightface/blob/master/recognition/vpl/losses.py
+ 
+# def get_loss(name):
+#     if name == "cosface":
+#         return CosFace()
+#     elif name == "arcface":
+#         return ArcFace()
+#     else:
+#         raise ValueError()
+
+# class CosFace(nn.Module):
+#     def __init__(self, s=64.0, m=0.40):
+#         super(CosFace, self).__init__()
+#         self.s = s
+#         self.m = m
+
+#     def forward(self, cosine, label):
+#         index = torch.where(label != -1)[0]
+#         m_hot = torch.zeros(index.size()[0], cosine.size()[1], device=cosine.device)
+#         m_hot.scatter_(1, label[index, None], self.m)
+#         cosine[index] -= m_hot
+#         ret = cosine * self.s
+#         return ret
+
+
+# class ArcFace(nn.Module):
+#     def __init__(self, s=64.0, m=0.5):
+#         super(ArcFace, self).__init__()
+#         self.s = s
+#         self.m = m
+
+#     def forward(self, cosine: torch.Tensor, label):
+#         index = torch.where(label != -1)[0]
+#         m_hot = torch.zeros(index.size()[0], cosine.size()[1], device=cosine.device)
+#         m_hot.scatter_(1, label[index, None], self.m)
+#         cosine.acos_()
+#         cosine[index] += m_hot
+#         cosine.cos_().mul_(self.s)
+#         return cosine
+ 
+#################### SphereFace (A-softmax) ###############################################
+# Ho trovato queste implementazioni di SphereFace
+# Based on https://github.com/clcarwin/sphereface_pytorch/blob/master/net_sphere.py
+ 
+# class AngleLoss(nn.Module):
+#     def __init__(self, gamma=0):
+#         super(AngleLoss, self).__init__()
+#         self.gamma   = gamma
+#         self.it = 0
+#         self.LambdaMin = 5.0
+#         self.LambdaMax = 1500.0
+#         self.lamb = 1500.0
+ 
+#     def forward(self, input, target):
+#         self.it += 1
+#         cos_theta,phi_theta = input
+#         target = target.view(-1,1) #size=(B,1)
+ 
+#         index = cos_theta.data * 0.0 #size=(B,Classnum)
+#         index.scatter_(1,target.data.view(-1,1),1)
+#         index = index.byte()
+#         index = Variable(index)
+ 
+#         self.lamb = max(self.LambdaMin,self.LambdaMax/(1+0.1*self.it ))
+#         output = cos_theta * 1.0 #size=(B,Classnum)
+#         output[index] -= cos_theta[index]*(1.0+0)/(1+self.lamb)
+#         output[index] += phi_theta[index]*(1.0+0)/(1+self.lamb)
+ 
+#         logpt = F.log_softmax(output)
+#         logpt = logpt.gather(1,target)
+#         logpt = logpt.view(-1)
+#         pt = Variable(logpt.data.exp())
+ 
+#         loss = -1 * (1-pt)**self.gamma * logpt
+#         loss = loss.mean()
+ 
+#         return loss
