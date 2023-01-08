@@ -57,12 +57,15 @@ groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, 
     #     s: norm of input feature
     #     m: margin
     # """
-# dentro args.loss ho la mia loss: per settarla scrivere negli args --loss name quando fate partire il train 
+# dentro args.loss ho la mia loss: per settarla scrivere negli args --loss name quando fate partire il train
 if args.loss == "cosface":
+        logging.info(f"1) Using {args.loss} function")
         classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
 elif args.loss == "arcface":
+        logging.info(f"2) Using {args.loss} function")
         classifiers = [cosface_loss.ArcFace(args.fc_output_dim, len(group)) for group in groups]
 elif args.loss == "sphereface":
+        logging.info(f"3) Using {args.loss} function")
         classifiers = [cosface_loss.SphereFace(args.fc_output_dim, len(group)) for group in groups]
 else:
     raise ValueError()
