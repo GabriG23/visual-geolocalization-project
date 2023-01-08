@@ -197,4 +197,6 @@ class TrainDataset(torch.utils.data.Dataset):
 # 
 # toccherebbe capire in termini di immagini cosa rappresentano le classi e cosa i gruppi.
 # quale dei due termini rappresenta immagini della stessa scena? Essendo il gruppo solo 1, a darci questa informazione credo
-# che sia la classe
+# che sia la classe.
+# Guardando il paper, ogni gruppo pare essere formato da celle M*N, questo è il motivo per il quale si calcola il resto dei metri
+# dviso M*N 
