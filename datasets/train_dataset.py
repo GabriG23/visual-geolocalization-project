@@ -51,6 +51,10 @@ class TrainDataset(torch.utils.data.Dataset):
         elif current_group == 0:
             logging.info(f"Using cached dataset {filename}")
         
+
+        # pare che i settaggi siano stati fatti per ogni combinazione di filename, pertanto
+        # basta caricarlo e avere il numero di classi per gruppo e il numero di immagini
+
         classes_per_group, self.images_per_class = torch.load(filename)
         if current_group >= len(classes_per_group):
             raise ValueError(f"With this configuration there are only {len(classes_per_group)} " +
@@ -104,18 +108,20 @@ class TrainDataset(torch.utils.data.Dataset):
     def initialize(dataset_folder, M, N, alpha, L, min_images_per_class, filename):
         logging.debug(f"Searching training images in {dataset_folder}")
         
-        images_paths = sorted(glob(f"{dataset_folder}/**/*.jpg", recursive=True))
+        images_paths = sorted(glob(f"{dataset_folder}/**/*.jpg", recursive=True))       # trova tutte le immagini per il training (che matchano quel path)
         logging.debug(f"Found {len(images_paths)} images")
         
         logging.debug("For each image, get its UTM east, UTM north and heading from its path")
-        images_metadatas = [p.split("@") for p in images_paths]
-        # field 1 is UTM east, field 2 is UTM north, field 9 is heading
-        utmeast_utmnorth_heading = [(m[1], m[2], m[9]) for m in images_metadatas]
-        utmeast_utmnorth_heading = np.array(utmeast_utmnorth_heading).astype(np.float)
+        images_metadatas = [p.split("@") for p in images_paths]                         # i metadati delle immagini sono già nel loro nome
+
+        # field 1 is UTM east, field 2 is UTM north, field 9 is heading  (negli altri ci sono altre informazioni tipo la data)
+
+        utmeast_utmnorth_heading = [(m[1], m[2], m[9]) for m in images_metadatas]       # posizione dei metadati importanti per ogni immagine
+        utmeast_utmnorth_heading = np.array(utmeast_utmnorth_heading).astype(np.float)  # fa un array dalla lista
         
         logging.debug("For each image, get class and group to which it belongs")
-        class_id__group_id = [TrainDataset.get__class_id__group_id(*m, M, alpha, N, L)
-                              for m in utmeast_utmnorth_heading]
+        class_id__group_id = [TrainDataset.get__class_id__group_id(*m, M, alpha, N, L)  # inserisce metadata e attributi della classe per ottenere
+                              for m in utmeast_utmnorth_heading]                        # group e class id dei relatavi metadati (immagine)
         
         logging.debug("Group together images belonging to the same class")
         images_per_class = defaultdict(list)
@@ -149,13 +155,46 @@ class TrainDataset(torch.utils.data.Dataset):
             The group_id represents the group to which the class belongs
             (e.g. (0, 1, 0)), and it is between (0, 0, 0) and (N, N, L).
         """
+
+        # i primi due valori sono in metri, il terzo in gradi
         rounded_utm_east = int(utm_east // M * M)  # Rounded to nearest lower multiple of M
-        rounded_utm_north = int(utm_north // M * M)
+        rounded_utm_north = int(utm_north // M * M) 
         rounded_heading = int(heading // alpha * alpha)
         
-        class_id = (rounded_utm_east, rounded_utm_north, rounded_heading)
+        class_id = (rounded_utm_east, rounded_utm_north, rounded_heading) # la classe id è definita da questa tripletta
         # group_id goes from (0, 0, 0) to (N, N, L)
-        group_id = (rounded_utm_east % (M * N) // M,
-                    rounded_utm_north % (M * N) // M,
+
+        group_id = (rounded_utm_east % (M * N) // M,        # qui entrano in gioco anche N e L che indicano la 
+                    rounded_utm_north % (M * N) // M,       # distanza tra due classi dello stesso gruppo
                     rounded_heading % (alpha * L) // alpha)
         return class_id, group_id
+
+# consideriamo l'immagine @0554201.88@4178302.36@10@S@037.75042@-122.38473@JNhJBdxf5TcEvXULeJ0gQA@@0@@@@201709@@.jpg
+# dopo lo split abbiamo:
+# m[1] = 554201.88
+# m[2] = 4178302.36
+# m[9] = 0
+#
+# Pertanto abbiamo, considerando i valori standard:
+#
+# int(554201.88//10 * 10) -> int(55420.0 * 10) = int(554200.0) -> 554200; multiplo di M e più basso di m[1]
+# int(4178302.36//10 * 10) -> 4178300
+# int(0 // 10 * 10) -> 0
+#
+# Pertanto la classe_id è (554200, 4178300, 0)
+# Il gruppo è:
+# 554200 % (10 * 5) // M -> 0 perché è divisibile per 50
+# 4178300 % (10 * 5) // M -> 0 perché è divisibile per 50
+# 0 % (30 * 2) // 30 -> 0
+#
+# Il gruppo sarà allora (0, 0, 0)
+
+# Questo è un esempio, ma non è troppo chiaro il ragionamento matematico dietro.
+# Aldilà dell'arrotondamento, il resto serve a far cadere le classi in un gruppo specifico identificato dalla tripletta
+# Comunque guardando i metadata di sf-sx, i valori sembrano finire tutti nello stesso gruppo. 
+# Questo fa intuire che sf-sx abbia un unico gruppo, ed è infatti groups_num=1 l'argomento con il quale chiamiamo lo script
+# di training
+# 
+# toccherebbe capire in termini di immagini cosa rappresentano le classi e cosa i gruppi.
+# quale dei due termini rappresenta immagini della stessa scena? Essendo il gruppo solo 1, a darci questa informazione credo
+# che sia la classe
