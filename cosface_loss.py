@@ -136,8 +136,8 @@ class SphereFace(nn.Module):
         # one_hot = torch.zeros_like(cosine) #
         # one_hot.scatter_(1, label.view(-1, 1), 1.0)
         cosine.acos_() # ora ho un tensor arccos di cosine
-        cosine.mul(self.m) # forse è troppo lento fare in questo modo
-        cosine.cos()
+        cosine.mul(self.m) # dovrebbe essere giusto, non ho ancora ben capito al 100% la questione del one_hot
+        cosine.cos() # lo riporto normale
         cosine.mul(self.s)
         return cosine
     
