@@ -54,7 +54,8 @@ def parse_arguments(is_training: bool = True):
                         help="path of the folder with train/val/test sets")
     parser.add_argument("--save_dir", type=str, default="default",
                         help="name of directory on which to save the logs, under logs/save_dir")
-    
+    parser.add_argument("--loss", type=str, default="cosface",
+                        help="type of loss function: cosface, arcface or sphereface") # aggiunta per punto 3
     args = parser.parse_args()
     
     if args.dataset_folder is None:

@@ -12,7 +12,7 @@ import test
 import util
 import parser
 import commons
-import cosface_loss # inside the file there are ArcFace and SphereFace losses too
+import cosface_loss # dentro abbiamo le 3 funzioni di loss: MarginCosineProduct (CosFace), ArcFace e SphereFace
 import augmentations
 from model import network
 from datasets.test_dataset import TestDataset
@@ -20,8 +20,8 @@ from datasets.train_dataset import TrainDataset
 
 torch.backends.cudnn.benchmark = True  # Provides a speedup
 
-args = parser.parse_arguments()
-start_time = datetime.now()
+args = parser.parse_arguments() # arguments
+start_time = datetime.now() # starting time
 output_folder = f"logs/{args.save_dir}/{start_time.strftime('%Y-%m-%d_%H-%M-%S')}"
 commons.make_deterministic(args.seed)
 commons.setup_logging(output_folder, console="debug")
@@ -30,7 +30,7 @@ logging.info(f"Arguments: {args}")
 logging.info(f"The outputs are being saved in {output_folder}")
 
 #### Model
-model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim)
+model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim) # crea il modello (guardare network.py)
 
 logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")
 
@@ -42,7 +42,7 @@ if args.resume_model is not None:
 model = model.to(args.device).train()
 
 #### Optimizer
-criterion = torch.nn.CrossEntropyLoss()
+criterion = torch.nn.CrossEntropyLoss() # criterio di ottimizzazione
 model_optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
 #### Datasets
@@ -57,13 +57,14 @@ groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, 
     #     s: norm of input feature
     #     m: margin
     # """
-loss = cosface_loss.get_loss(args.loss)
-if loss == "cosface":
-        classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups] # Original
-elif loss == "arcface":
-        classifiers = [cosface_loss.ArcFace(args.fc_output_dim, len(group)) for group in groups] # Original
-elif loss == "sphereface":
-        classifiers = [cosface_loss.SphereFace(args.fc_output_dim, len(group)) for group in groups] # Original
+# dentro args.loss ho la mia loss: per settarla scrivere negli args --loss name quando fate partire il train
+logging.info(f"Using {args.loss} function")
+if args.loss == "cosface":
+        classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]
+elif args.loss == "arcface":
+        classifiers = [cosface_loss.ArcFace(args.fc_output_dim, len(group)) for group in groups]
+elif args.loss == "sphereface":
+        classifiers = [cosface_loss.SphereFace(args.fc_output_dim, len(group)) for group in groups]
 else:
     raise ValueError()
 
@@ -72,9 +73,9 @@ else:
 
 classifiers_optimizers = [torch.optim.Adam(classifier.parameters(), lr=args.classifiers_lr) for classifier in classifiers]
 
-logging.info(f"Using {len(groups)} groups")
-logging.info(f"The {len(groups)} groups have respectively the following number of classes {[len(g) for g in groups]}")
-logging.info(f"The {len(groups)} groups have respectively the following number of images {[g.get_images_num() for g in groups]}")
+logging.info(f"Using {len(groups)} groups") # numero di gruppi
+logging.info(f"The {len(groups)} groups have respectively the following number of classes {[len(g) for g in groups]}") # numero di classi
+logging.info(f"The {len(groups)} groups have respectively the following number of images {[g.get_images_num() for g in groups]}") # numero di immagini
 
 val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold)
 test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
