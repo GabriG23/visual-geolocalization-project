@@ -17,7 +17,7 @@ def open_image(path):
     return Image.open(path).convert("RGB")
 
 
-class TrainDataset(torch.utils.data.Dataset):
+class TrainDataset(torch.utils.data.Dataset):           # ogni dataset fa riferimento ad un unico gruppo
     def __init__(self, args, dataset_folder, M=10, alpha=30, N=5, L=2,
                  current_group=0, min_images_per_class=10):
         """
@@ -42,9 +42,9 @@ class TrainDataset(torch.utils.data.Dataset):
         self.augmentation_device = args.augmentation_device
         
         # dataset_name should be either "processed", "small" or "raw", if you're using SF-XL
-        dataset_name = os.path.basename(args.dataset_folder)
+        dataset_name = os.path.basename(args.dataset_folder)        # resituisce la parte finale del path (cartella o file)
         filename = f"cache/{dataset_name}_M{M}_N{N}_mipc{min_images_per_class}.torch"
-        if not os.path.exists(filename):
+        if not os.path.exists(filename):                            # se non esiste un dataset già fatto con questi settaggi, lo crea
             os.makedirs("cache", exist_ok=True)
             logging.info(f"Cached dataset {filename} does not exist, I'll create it now.")
             self.initialize(dataset_folder, M, N, alpha, L, min_images_per_class, filename)
@@ -78,21 +78,22 @@ class TrainDataset(torch.utils.data.Dataset):
         # the image. This way each class is equally represented during training.
         
         class_id = self.classes_ids[class_num]
+
         # Pick a random image among those in this class.
         image_path = random.choice(self.images_per_class[class_id])
         
         try:
-            pil_image = open_image(image_path)
+            pil_image = open_image(image_path)          # prova ad aprire l'immagine
         except Exception as e:
             logging.info(f"ERROR image {image_path} couldn't be opened, it might be corrupted.")
             raise e
         
-        tensor_image = T.functional.to_tensor(pil_image)
+        tensor_image = T.functional.to_tensor(pil_image)                # trasforma l'immagine in un tensore
         assert tensor_image.shape == torch.Size([3, 512, 512]), \
-            f"Image {image_path} should have shape [3, 512, 512] but has {tensor_image.shape}."
+            f"Image {image_path} should have shape [3, 512, 512] but has {tensor_image.shape}."     # si assicura abbia la dimensione corretta
         
         if self.augmentation_device == "cpu":
-            tensor_image = self.transform(tensor_image)
+            tensor_image = self.transform(tensor_image)       # gli applica la trasformazione definita prima
         
         return tensor_image, class_num, image_path
     
@@ -109,7 +110,7 @@ class TrainDataset(torch.utils.data.Dataset):
         logging.debug(f"Searching training images in {dataset_folder}")
         
         images_paths = sorted(glob(f"{dataset_folder}/**/*.jpg", recursive=True))       # trova tutte le immagini per il training (che matchano quel path)
-        logging.debug(f"Found {len(images_paths)} images")
+        logging.debug(f"Found {len(images_paths)} images")                              # recursive=True permette di cercare nelle subfolder
         
         logging.debug("For each image, get its UTM east, UTM north and heading from its path")
         images_metadatas = [p.split("@") for p in images_paths]                         # i metadati delle immagini sono già nel loro nome
@@ -124,14 +125,14 @@ class TrainDataset(torch.utils.data.Dataset):
                               for m in utmeast_utmnorth_heading]                        # group e class id dei relatavi metadati (immagine)
         
         logging.debug("Group together images belonging to the same class")
-        images_per_class = defaultdict(list)
-        for image_path, (class_id, _) in zip(images_paths, class_id__group_id):
-            images_per_class[class_id].append(image_path)
+        images_per_class = defaultdict(list)                                            
+        for image_path, (class_id, _) in zip(images_paths, class_id__group_id):         # image path è preso da images_paths, è il primo membro di class_id__group_id
+            images_per_class[class_id].append(image_path)                               # dizionario che ha per key la classe e come value la lista di immagini
         
         # Images_per_class is a dict where the key is class_id, and the value
         # is a list with the paths of images within that class.
-        images_per_class = {k: v for k, v in images_per_class.items() if len(v) >= min_images_per_class}
-        
+        images_per_class = {k: v for k, v in images_per_class.items() if len(v) >= min_images_per_class}    # dict comprehension. Prende solo le classi di una 
+                                                                                                            # certa grandezza
         logging.debug("Group together classes belonging to the same group")
         # Classes_per_group is a dict where the key is group_id, and the value
         # is a list with the class_ids belonging to that group.
@@ -139,11 +140,12 @@ class TrainDataset(torch.utils.data.Dataset):
         for class_id, group_id in class_id__group_id:
             if class_id not in images_per_class:
                 continue  # Skip classes with too few images
-            classes_per_group[group_id].add(class_id)
+            classes_per_group[group_id].add(class_id)                   # come value ha in realtà un set. Qui nel nostro caso avremo solo un gruppo
+                                                                        # e le relative classi
         
         # Convert classes_per_group to a list of lists.
         # Each sublist represents the classes within a group.
-        classes_per_group = [list(c) for c in classes_per_group.values()]
+        classes_per_group = [list(c) for c in classes_per_group.values()]   # lista di liste in cui l'arg è il gruppo e la sublist è il numero di classi di quel gruppo
         
         torch.save((classes_per_group, images_per_class), filename)
     
@@ -151,10 +153,12 @@ class TrainDataset(torch.utils.data.Dataset):
     def get__class_id__group_id(utm_east, utm_north, heading, M, alpha, N, L):
         """Return class_id and group_id for a given point.
             The class_id is a triplet (tuple) of UTM_east, UTM_north and
-            heading (e.g. (396520, 4983800,120)).
+            heading (e.g. (396520, 4983800, 120)).                            
             The group_id represents the group to which the class belongs
             (e.g. (0, 1, 0)), and it is between (0, 0, 0) and (N, N, L).
         """
+
+        # essendo la classe identificata dalla tripletta, potrebbe anche esserci una classe per ogni immagine
 
         # i primi due valori sono in metri, il terzo in gradi
         rounded_utm_east = int(utm_east // M * M)  # Rounded to nearest lower multiple of M
@@ -162,7 +166,7 @@ class TrainDataset(torch.utils.data.Dataset):
         rounded_heading = int(heading // alpha * alpha)
         
         class_id = (rounded_utm_east, rounded_utm_north, rounded_heading) # la classe id è definita da questa tripletta
-        # group_id goes from (0, 0, 0) to (N, N, L)
+        # group_id goes from (0, 0, 0) to (N, N, L)                    
 
         group_id = (rounded_utm_east % (M * N) // M,        # qui entrano in gioco anche N e L che indicano la 
                     rounded_utm_north % (M * N) // M,       # distanza tra due classi dello stesso gruppo
