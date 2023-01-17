@@ -117,12 +117,12 @@ class SphereFace(nn.Module):
         s: norm of input feature
         m: margin
     """
-    def __init__(self, in_features: int, out_features: int, s: float = 30.0, m: float = 0.40):
+    def __init__(self, in_features: int, out_features: int, s: float = 30.0, m: float = 4.0):
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
         self.s = s
-        self.m = m
+        self.m = m # per sphereface, m>=1, bisogna capire questo valore di m, vedere 3.4 del paper
         self.weight = Parameter(torch.Tensor(out_features, in_features))
         nn.init.xavier_uniform_(self.weight)
     
