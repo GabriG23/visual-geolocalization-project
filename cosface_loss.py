@@ -64,7 +64,7 @@ class MarginCosineProduct(nn.Module): # CosFace
                + ', m=' + str(self.m) + ')'
 
 #################### ArcFace (ArcFace) ###############################################
-
+# SECONDA VERSIONE GIUSTA
 class ArcFace(nn.Module):
     """Implement of large margin cosine distance:
     Args:
@@ -73,7 +73,7 @@ class ArcFace(nn.Module):
         s: norm of input feature
         m: margin
     """
-    def __init__(self, in_features: int, out_features: int, s: float = 30.0, m: float = 0.40):
+    def __init__(self, in_features: int, out_features: int, s: float = 64.0, m: float = 0.50): # modificati da s = 30, m = 0.4
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
@@ -88,17 +88,14 @@ class ArcFace(nn.Module):
 
     def forward(self, inputs: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
         cosine = cosine_sim(inputs, self.weight) # calcola la cosine similarity, cos(theta)
-        # invece di sottrarre m al cosine, devo aggiungerlo all'angolo del cosine
-        # one_hot = torch.zeros_like(cosine)
-        # one_hot.scatter_(1, label.view(-1, 1), self.m) # 1 al posto self.m
+        one_hot = torch.zeros_like(cosine) # tensor di 0 con la stessa dimensione di cosine
+        one_hot.scatter_(1, label.view(-1, 1), 1.0)
+        one_hot.mul_(self.m)
         cosine.acos_() # ora ho un tensor arccos di cosine
-        # se io sommo due tensori, ottengo un matrice, io non voglio questo
-        # cosine += one_hot # * self.m # sommo m
-        cosine.add(self.m) # aggiungo m all'angolo
-        cosine.cos() # ritrasformo in cosine
-        cosine.mul(self.s) # moltiplico per s
-        # output = self.s * cosine 
-        return cosine
+        cosine += one_hot
+        cosine.cos_() # ritrasformo in cosine
+        output = self.s * cosine
+        return output
     
     def __repr__(self):
         return self.__class__.__name__ + '(' \
@@ -106,6 +103,50 @@ class ArcFace(nn.Module):
                + ', out_features=' + str(self.out_features) \
                + ', s=' + str(self.s) \
                + ', m=' + str(self.m) + ')'
+
+
+# PRIMA VERSIONE SBAGLIATA
+# class ArcFace(nn.Module):
+#     """Implement of large margin cosine distance:
+#     Args:
+#         in_features: size of each input sample
+#         out_features: size of each output sample
+#         s: norm of input feature
+#         m: margin
+#     """
+#     def __init__(self, in_features: int, out_features: int, s: float = 64.0, m: float = 0.40): # modificati da s = 30, m = 0.4
+#         super().__init__()
+#         self.in_features = in_features
+#         self.out_features = out_features
+#         self.s = s
+#         self.m = m
+#         self.weight = Parameter(torch.Tensor(out_features, in_features))
+#         nn.init.xavier_uniform_(self.weight)
+    
+#     # tensor.where(condition, x, y) ritorna un tensor di element selezionati da x o y, dipendente dalla condizione
+#     # tensor.acos(input, *, out = None) = calcola l'inverso del coseno per ogni elemento in input
+#     # tensor.cos(input, *, out = None) = calcola il coseno per ogni elemento in input
+
+#     def forward(self, inputs: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
+#         cosine = cosine_sim(inputs, self.weight) # calcola la cosine similarity, cos(theta)
+#         # invece di sottrarre m al cosine, devo aggiungerlo all'angolo del cosine
+#         # one_hot = torch.zeros_like(cosine)
+#         # one_hot.scatter_(1, label.view(-1, 1), self.m) # 1 al posto self.m
+#         cosine.acos_() # ora ho un tensor arccos di cosine
+#         # se io sommo due tensori, ottengo un matrice, io non voglio questo
+#         # cosine += one_hot # * self.m # sommo m
+#         cosine.add(self.m) # aggiungo m all'angolo
+#         cosine.cos() # ritrasformo in cosine
+#         cosine.mul(self.s) # moltiplico per s
+#         # output = self.s * cosine 
+#         return cosine
+    
+#     def __repr__(self):
+#         return self.__class__.__name__ + '(' \
+#                + 'in_features=' + str(self.in_features) \
+#                + ', out_features=' + str(self.out_features) \
+#                + ', s=' + str(self.s) \
+#                + ', m=' + str(self.m) + ')'
 
 #################### SphereFace (A-softmax) ###############################################
 
@@ -117,7 +158,7 @@ class SphereFace(nn.Module):
         s: norm of input feature
         m: margin
     """
-    def __init__(self, in_features: int, out_features: int, s: float = 30.0, m: float = 4.0):
+    def __init__(self, in_features: int, out_features: int, s: float = 30.0, m: float = 1.5): # modificati da s = 30, m = 0.4
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
@@ -132,14 +173,14 @@ class SphereFace(nn.Module):
 
     def forward(self, inputs: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
         cosine = cosine_sim(inputs, self.weight) # calcola la cosine similarity, cos(theta)
-        # invece di sottrarre m al cosine, devo aggiungerlo all'angolo del cosine
-        # one_hot = torch.zeros_like(cosine) #
-        # one_hot.scatter_(1, label.view(-1, 1), 1.0)
+        one_hot = torch.zeros_like(cosine) # tensor di 0 con la stessa dimensione di cosine
+        one_hot.scatter_(1, label.view(-1, 1), 1.0)
+        one_hot.mul_(self.m)
         cosine.acos_() # ora ho un tensor arccos di cosine
-        cosine.mul(self.m) # dovrebbe essere giusto, non ho ancora ben capito al 100% la questione del one_hot
-        cosine.cos() # lo riporto normale
-        cosine.mul(self.s)
-        return cosine
+        cosine.mul_(one_hot) # da vedere se funziona
+        cosine.cos_()# ritrasformo in cosine
+        output = self.s * cosine
+        return output
     
     def __repr__(self):
         return self.__class__.__name__ + '(' \
@@ -191,6 +232,8 @@ class SphereFace(nn.Module):
 #         cosine.cos_().mul_(self.s)
 #         return cosine
  
+
+
 #################### SphereFace (A-softmax) ###############################################
 # Ho trovato queste implementazioni di SphereFace
 # Based on https://github.com/clcarwin/sphereface_pytorch/blob/master/net_sphere.py
@@ -275,3 +318,43 @@ class SphereFace(nn.Module):
 #         phi_theta = phi_theta * xlen.view(-1,1)
 #         output = (cos_theta,phi_theta)
 #         return output # size=(B,Classnum,2)
+
+
+# class SphereFace(nn.Module):
+#     """Implement of large margin cosine distance:
+#     Args:
+#         in_features: size of each input sample
+#         out_features: size of each output sample
+#         s: norm of input feature
+#         m: margin
+#     """
+#     def __init__(self, in_features: int, out_features: int, s: float = 30.0, m: float = 1.5): # modificati da s = 30, m = 0.4
+#         super().__init__()
+#         self.in_features = in_features
+#         self.out_features = out_features
+#         self.s = s
+#         self.m = m # per sphereface, m>=1, bisogna capire questo valore di m, vedere 3.4 del paper
+#         self.weight = Parameter(torch.Tensor(out_features, in_features))
+#         nn.init.xavier_uniform_(self.weight)
+    
+#     # tensor.where(condition, x, y) ritorna un tensor di element selezionati da x o y, dipendente dalla condizione
+#     # tensor.acos(input, *, out = None) = calcola l'inverso del coseno per ogni elemento in input
+#     # tensor.cos(input, *, out = None) = calcola il coseno per ogni elemento in input
+
+#     def forward(self, inputs: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
+#         cosine = cosine_sim(inputs, self.weight) # calcola la cosine similarity, cos(theta)
+#         # invece di sottrarre m al cosine, devo aggiungerlo all'angolo del cosine
+#         # one_hot = torch.zeros_like(cosine) #
+#         # one_hot.scatter_(1, label.view(-1, 1), 1.0)
+#         cosine.acos_() # ora ho un tensor arccos di cosine
+#         cosine.mul(self.m) # dovrebbe essere giusto, non ho ancora ben capito al 100% la questione del one_hot
+#         cosine.cos_() # lo riporto normale
+#         cosine.mul(self.s)
+#         return cosine
+    
+#     def __repr__(self):
+#         return self.__class__.__name__ + '(' \
+#                + 'in_features=' + str(self.in_features) \
+#                + ', out_features=' + str(self.out_features) \
+#                + ', s=' + str(self.s) \
+#                + ', m=' + str(self.m) + ')'
