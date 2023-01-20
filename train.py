@@ -143,9 +143,11 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
     for iteration in tqdm(range(args.iterations_per_epoch), ncols=100):    # ncols è la grandezza della barra  
         images, targets, _ = next(dataloader_iterator)                     # ritorna il batch di immagini e le rispettive classi
         images, targets = images.to(args.device), targets.to(args.device)  # mette tutto su device
-        
+
         if args.augmentation_device == "cuda":
-            images = gpu_augmentation(images)                              # se il device è cuda, fa questa augmentation
+            images = gpu_augmentation(images)                              # se il device è cuda, fa questa augmentation SULL'INTERO BATCH
+                                                                           # se siamo sulla cpu, applica le trasformazioni ad un'immagine per volta
+                                                                           # direttamente in train_dataset
         
         model_optimizer.zero_grad()                                        # setta il gradiente a zero per evitare double counting (passaggio classico dopo ogni iterazione)
         classifiers_optimizers[current_group_num].zero_grad()              # fa la stessa cosa con l'ottimizzatore
