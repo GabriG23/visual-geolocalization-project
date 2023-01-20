@@ -28,6 +28,8 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--iterations_per_epoch", type=int, default=10000, help="_")
     parser.add_argument("--lr", type=float, default=0.00001, help="_")
     parser.add_argument("--classifiers_lr", type=float, default=0.01, help="_")
+    parser.add_argument("--loss_function", type=str, default="cosface",
+                        help="type of loss function: cosface, arcface or sphereface") # aggiunta per il punt o3
     # Data augmentation
     parser.add_argument("--brightness", type=float, default=0.7, help="_")
     parser.add_argument("--contrast", type=float, default=0.7, help="_")
@@ -54,8 +56,6 @@ def parse_arguments(is_training: bool = True):
                         help="path of the folder with train/val/test sets")
     parser.add_argument("--save_dir", type=str, default="default",
                         help="name of directory on which to save the logs, under logs/save_dir")
-    parser.add_argument("--loss", type=str, default="cosface",
-                        help="type of loss function: cosface, arcface or sphereface") # aggiunta per punto 3
     args = parser.parse_args()
     
     if args.dataset_folder is None:

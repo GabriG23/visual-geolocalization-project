@@ -1,9 +1,11 @@
-
-# Based on https://github.com/MuggleWang/CosFace_pytorch/blob/master/layer.py
+# Based on https://opensphere.world/
 
 import torch
 import torch.nn as nn
 from torch.nn import Parameter
+import math
+
+#################### SphereFace (A-softmax) ###############################################
 
 # dim (int) = dimensione where cosine similarity is computed. default = 1
 # eps (float) = small value to avoid division by zero. default = 1e-8
@@ -21,7 +23,7 @@ def cosine_sim(x1: torch.Tensor, x2: torch.Tensor, dim: int = 1, eps: float = 1e
 # ger: outer product of w1 and w2. if w1 is a vector of size n and w2 is a vector of size m, then out must be a matrix of size (N x M)
 # clamp: clamp all elements in input into a range [min, max]. In this case we have only min
 
-class MarginCosineProduct(nn.Module): # CosFace
+class SphereFace(nn.Module):
     """Implement of large margin cosine distance:
     Args:
         in_features: size of each input sample
@@ -29,7 +31,7 @@ class MarginCosineProduct(nn.Module): # CosFace
         s: norm of input feature
         m: margin
     """
-    def __init__(self, in_features: int, out_features: int, s: float = 30.0, m: float = 0.40): # m >= 0 e s = 30
+    def __init__(self, in_features: int, out_features: int, s: float = 30.0, m: float = 1.5): # m >= 0 e s = 30
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
@@ -42,21 +44,29 @@ class MarginCosineProduct(nn.Module): # CosFace
     # equivale a torch.zeros(input.size(), dtype=input.dtype, layout=input.layout, device=input.device).
     # tensor.scatter(dim, index, src, reduce = None) = scrive tutti i valori dal tensore src dentro self agli indici specificati del tensore
     # tensor.view() = ritorna un nuovo tensor con gli stessi dati del self tensor ma con forma diversa
+    
+    # tensor.where(condition, x, y) ritorna un tensor di element selezionati da x o y, dipendente dalla condizione
+    # tensor.acos(input, *, out = None) = calcola l'inverso del coseno per ogni elemento in input
+    # tensor.cos(input, *, out = None) = calcola il coseno per ogni elemento in input
 
     def forward(self, inputs: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
-                                                      # in input ho il feature vector
-        cosine = cosine_sim(inputs, self.weight)      # calcola la cosine similarity, cos(theta), vedi sopra
-        one_hot = torch.zeros_like(cosine)            # crea un tensore di 0 della stessa dimensione di cosine
-        one_hot.scatter_(1, label.view(-1, 1), 1.0)
-        # primo valore: dim = 1
-        # secondovalore : indice che andrà a modificare. Qui label viene trasformata in un tensore colonna di dimensione 1 x label.size (-1, 1)
-        # terzo valore: src: dati che metterà dentro one_hot, in questo caso tutti 1, volendo si può direttamente mettere self.m
-        # quarto valore: reduce, qui non c'è ma volendo si può mettere il tipo di operazione, somma, sottrazione ....
+        cos_theta = cosine_sim(inputs, self.weight) # calcola la cosine similarity, cos(theta)
 
-        output = self.s * (cosine - one_hot * self.m) # ritorna l'output, moltiplica one_hot per il margine e lo sottrae al coseno
-        # attenzione qui manca un passaggio ovvero la cross_entropy che lui fa fuori, è il "criterion" in train.py
-        return output
-    
+        with torch.no_grad():
+            m_theta = torch.acos(cos_theta.clamp(-1.+1e-5, 1.-1e-5)) # calcolo l'arcocoseno del tensor e lo clampo tra -1 e 1
+            m_theta.scatter_(1, label.view(-1, 1), self.m, reduce = 'multiply') # stessa cosa di cosface, qui devo moltiplicare il margine all'angolo
+
+            # floor: return the floor of x, the largest integer less than or equal to x. if x is not a float, delegate to x.__floor__ which should return an Integral value
+            # pit: non ho trovato nulla su questo pit
+            # remainder: compute Computes Python’s modulus operation entrywise. The result has the same sign as the divisor other and its absolute value is less than that of other.
+            k = (m_theta / math.pit).floor() # in m theta ho il mio tensore colonna con self.m moltiplicato all'angolo, cos'è k?
+            sign = -2 * torch.remainder(k, 2) + 1 # (-1)**k # calcolo il segno
+            phi_theta = sign * torch.cos(m_theta) - 2. * k   # moltiplico il segno per m_theta riportato normale e sottraggo -2. * k, cosa sto sottraendo?
+            d_theta = phi_theta - cos_theta
+
+        logits = self.s * (cos_theta + d_theta)
+        return logits
+
     def __repr__(self):
         return self.__class__.__name__ + '(' \
                + 'in_features=' + str(self.in_features) \
@@ -64,16 +74,15 @@ class MarginCosineProduct(nn.Module): # CosFace
                + ', s=' + str(self.s) \
                + ', m=' + str(self.m) + ')'
 
-#################### CosFace ##############################################################
+#################### SphereFace ##############################################################
 
-# Based on https://opensphere.world/
-
-# class CosFace(nn.Module):
-#     """reference1: <CosFace: Large Margin Cosine Loss for Deep Face Recognition>
-#        reference2: <Additive Margin Softmax for Face Verification>
+# class SphereFace(nn.Module):
+#     """ reference: <SphereFace: Deep Hypersphere Embedding for Face Recognition>"
+#         It also used characteristic gradient detachment tricks proposed in
+#         <SphereFace Revived: Unifying Hyperspherical Face Recognition>.
 #     """
-#     def __init__(self, feat_dim, num_class, s=64., m=0.35):
-#         super(CosFace, self).__init__()
+#     def __init__(self, feat_dim, num_class, s=30., m=1.5):
+#         super(SphereFace, self).__init__()
 #         self.feat_dim = feat_dim
 #         self.num_class = num_class
 #         self.s = s
@@ -82,13 +91,21 @@ class MarginCosineProduct(nn.Module): # CosFace
 #         nn.init.xavier_normal_(self.w)
 
 #     def forward(self, x, y):
+#         # weight normalization
 #         with torch.no_grad():
 #             self.w.data = F.normalize(self.w.data, dim=0)
 
+#         # cos_theta and d_theta
 #         cos_theta = F.normalize(x, dim=1).mm(self.w)
 #         with torch.no_grad():
-#             d_theta = torch.zeros_like(cos_theta)
-#             d_theta.scatter_(1, y.view(-1, 1), -self.m, reduce='add')
+#             m_theta = torch.acos(cos_theta.clamp(-1.+1e-5, 1.-1e-5))
+#             m_theta.scatter_(
+#                 1, y.view(-1, 1), self.m, reduce='multiply',
+#             )
+#             k = (m_theta / math.pi).floor()
+#             sign = -2 * torch.remainder(k, 2) + 1  # (-1)**k
+#             phi_theta = sign * torch.cos(m_theta) - 2. * k
+#             d_theta = phi_theta - cos_theta
 
 #         logits = self.s * (cos_theta + d_theta)
 #         loss = F.cross_entropy(logits, y)

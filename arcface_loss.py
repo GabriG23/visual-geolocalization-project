@@ -1,9 +1,10 @@
-
-# Based on https://github.com/MuggleWang/CosFace_pytorch/blob/master/layer.py
+# Based on https://opensphere.world/
 
 import torch
 import torch.nn as nn
 from torch.nn import Parameter
+
+#################### ArcFace (ArcFace) ###############################################
 
 # dim (int) = dimensione where cosine similarity is computed. default = 1
 # eps (float) = small value to avoid division by zero. default = 1e-8
@@ -21,7 +22,7 @@ def cosine_sim(x1: torch.Tensor, x2: torch.Tensor, dim: int = 1, eps: float = 1e
 # ger: outer product of w1 and w2. if w1 is a vector of size n and w2 is a vector of size m, then out must be a matrix of size (N x M)
 # clamp: clamp all elements in input into a range [min, max]. In this case we have only min
 
-class MarginCosineProduct(nn.Module): # CosFace
+class ArcFace(nn.Module):
     """Implement of large margin cosine distance:
     Args:
         in_features: size of each input sample
@@ -29,7 +30,7 @@ class MarginCosineProduct(nn.Module): # CosFace
         s: norm of input feature
         m: margin
     """
-    def __init__(self, in_features: int, out_features: int, s: float = 30.0, m: float = 0.40): # m >= 0 e s = 30
+    def __init__(self, in_features: int, out_features: int, s: float = 64.0, m: float = 0.50): # m >= 0 e s = 30
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
@@ -42,20 +43,25 @@ class MarginCosineProduct(nn.Module): # CosFace
     # equivale a torch.zeros(input.size(), dtype=input.dtype, layout=input.layout, device=input.device).
     # tensor.scatter(dim, index, src, reduce = None) = scrive tutti i valori dal tensore src dentro self agli indici specificati del tensore
     # tensor.view() = ritorna un nuovo tensor con gli stessi dati del self tensor ma con forma diversa
+    
+    # tensor.acos(input, *, out = None) = calcola l'inverso del coseno per ogni elemento in input
+    # tensor.cos(input, *, out = None) = calcola il coseno per ogni elemento in input
+    # tensor.no_grad():  disabilità il grandiente. Context-manager that disabled gradient calculation. Disabling gradient calculation is useful for inference, when you are sure that you will not call tensor.backward().
+    #                   It will reduce memory consuption for computations that would otherwise have requires_grad=True
 
     def forward(self, inputs: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
-                                                      # in input ho il feature vector
-        cosine = cosine_sim(inputs, self.weight)      # calcola la cosine similarity, cos(theta), vedi sopra
-        one_hot = torch.zeros_like(cosine)            # crea un tensore di 0 della stessa dimensione di cosine
-        one_hot.scatter_(1, label.view(-1, 1), 1.0)
-        # primo valore: dim = 1
-        # secondovalore : indice che andrà a modificare. Qui label viene trasformata in un tensore colonna di dimensione 1 x label.size (-1, 1)
-        # terzo valore: src: dati che metterà dentro one_hot, in questo caso tutti 1, volendo si può direttamente mettere self.m
-        # quarto valore: reduce, qui non c'è ma volendo si può mettere il tipo di operazione, somma, sottrazione ....
+        cosine = cosine_sim(inputs, self.weight) # calcola la cosine similarity, cos(theta), vedi sopra
 
-        output = self.s * (cosine - one_hot * self.m) # ritorna l'output, moltiplica one_hot per il margine e lo sottrae al coseno
-        # attenzione qui manca un passaggio ovvero la cross_entropy che lui fa fuori, è il "criterion" in train.py
-        return output
+        with torch.no_grad():
+            theta_m = torch.acos(cosine.clamp(-1+1e-5, 1-1e-5)) # calcolo l'arcocoseno del tensor e lo clampo tra -1 e 1
+            theta_m.scatter_(1, label.view(-1, 1), self.m, reduce='add') # stessa cosa di cosplace, somma self.m
+            theta_m.clamp_(1e-5, 3.14159) # clampo tra 0 e pigreco
+            d_theta = torch.cos(theta_m) - cosine # riporto al coseno e sottraggo il cosine. Non capisco perché faccia così, qui sottrae e sotto risomma cosine
+
+        logits = self.s * (cosine + d_theta) # al cosine originale somma il d_theta calcolato
+        # loss = F.cross_entropy(logits, label) # non serve, noi la facciamo fuori
+        # return loss
+        return logits
     
     def __repr__(self):
         return self.__class__.__name__ + '(' \
@@ -64,16 +70,13 @@ class MarginCosineProduct(nn.Module): # CosFace
                + ', s=' + str(self.s) \
                + ', m=' + str(self.m) + ')'
 
-#################### CosFace ##############################################################
+#################### ArcFace ##############################################################
 
-# Based on https://opensphere.world/
-
-# class CosFace(nn.Module):
-#     """reference1: <CosFace: Large Margin Cosine Loss for Deep Face Recognition>
-#        reference2: <Additive Margin Softmax for Face Verification>
+# class ArcFace(nn.Module):
+#     """ reference: <Additive Angular Margin Loss for Deep Face Recognition>
 #     """
-#     def __init__(self, feat_dim, num_class, s=64., m=0.35):
-#         super(CosFace, self).__init__()
+#     def __init__(self, feat_dim, num_class, s=64., m=0.5):
+#         super(ArcFace, self).__init__()
 #         self.feat_dim = feat_dim
 #         self.num_class = num_class
 #         self.s = s
@@ -87,8 +90,10 @@ class MarginCosineProduct(nn.Module): # CosFace
 
 #         cos_theta = F.normalize(x, dim=1).mm(self.w)
 #         with torch.no_grad():
-#             d_theta = torch.zeros_like(cos_theta)
-#             d_theta.scatter_(1, y.view(-1, 1), -self.m, reduce='add')
+#             theta_m = torch.acos(cos_theta.clamp(-1+1e-5, 1-1e-5))
+#             theta_m.scatter_(1, y.view(-1, 1), self.m, reduce='add')
+#             theta_m.clamp_(1e-5, 3.14159)
+#             d_theta = torch.cos(theta_m) - cos_theta
 
 #         logits = self.s * (cos_theta + d_theta)
 #         loss = F.cross_entropy(logits, y)
