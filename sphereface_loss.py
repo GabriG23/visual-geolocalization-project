@@ -57,9 +57,10 @@ class SphereFace(nn.Module):
             m_theta.scatter_(1, label.view(-1, 1), self.m, reduce = 'multiply') # stessa cosa di cosface, qui devo moltiplicare il margine all'angolo
 
             # floor: return the floor of x, the largest integer less than or equal to x. if x is not a float, delegate to x.__floor__ which should return an Integral value
-            # pit: non ho trovato nulla su questo pit
+            # pi: contiene variabile pigreco
             # remainder: compute Computes Python’s modulus operation entrywise. The result has the same sign as the divisor other and its absolute value is less than that of other.
-            k = (m_theta / math.pit).floor() # in m theta ho il mio tensore colonna con self.m moltiplicato all'angolo, cos'è k?
+            # m_theta / pi, si trova l'angolo in radianti??
+            k = (m_theta / math.pi).floor() # in m theta ho il mio tensore colonna con self.m moltiplicato all'angolo, cos'è k?
             sign = -2 * torch.remainder(k, 2) + 1 # (-1)**k # calcolo il segno
             phi_theta = sign * torch.cos(m_theta) - 2. * k   # moltiplico il segno per m_theta riportato normale e sottraggo -2. * k, cosa sto sottraendo?
             d_theta = phi_theta - cos_theta
