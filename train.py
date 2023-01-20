@@ -67,7 +67,7 @@ groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, 
     #     m: margin
     # """
 
-logging.info(f"Using {args.loss} function") # dentro args.loss ho la mia loss: per settarla scrivere negli args --loss_function name quando fate partire il train
+logging.info(f"Using {args.loss_function} function") # dentro args.loss ho la mia loss: per settarla scrivere negli args --loss_function name quando fate partire il train
 if args.loss == "cosface":
         classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]   # il classifier è dato dalla loss(dimensione descrittore, numero di classi nel gruppo) 
 elif args.loss == "arcface": 
