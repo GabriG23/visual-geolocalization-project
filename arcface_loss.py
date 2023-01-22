@@ -30,7 +30,7 @@ class ArcFace(nn.Module):
         s: norm of input feature
         m: margin
     """
-    def __init__(self, in_features: int, out_features: int, s: float = 64.0, m: float = 0.50): # m >= 0 e s = 30
+    def __init__(self, in_features: int, out_features: int, s: float = 30, m: float = 0.40): # m >= 0  provato con s = 64 e m = 0.5, e  s = 30 e m = 0.4
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
