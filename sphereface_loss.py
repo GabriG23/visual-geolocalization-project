@@ -31,7 +31,7 @@ class SphereFace(nn.Module):
         s: norm of input feature
         m: margin
     """
-    def __init__(self, in_features: int, out_features: int, s: float = 30.0, m: float = 1.5): # m >= 0 e s = 30
+    def __init__(self, in_features: int, out_features: int, s: float = 30.0, m: float = 2): # m >= 0 e s = 30, m = 1.5 - 2
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
