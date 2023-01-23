@@ -1,4 +1,4 @@
-# Based on https://opensphere.world/
+# Based on https://github.com/ydwen/opensphere
 
 import torch
 import torch.nn as nn
