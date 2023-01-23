@@ -140,7 +140,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
     model = model.train()                          # mette il modello in modalità training (non l'aveva già fatto?)
     
     epoch_losses = np.zeros((0, 1), dtype=np.float32)                      # 0 righe, 1 colonna -> l'array è vuoto
-    for iteration in tqdm(range(args.iterations_per_epoch), ncols=100):    # ncols è la grandezza della barra  
+    for iteration in tqdm(range(args.iterations_per_epoch), ncols=100):    # ncols è la grandezza della barra, 10k iterazioni per gruppo
         images, targets, _ = next(dataloader_iterator)                     # ritorna il batch di immagini e le rispettive classi
         images, targets = images.to(args.device), targets.to(args.device)  # mette tutto su device
 

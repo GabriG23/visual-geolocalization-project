@@ -29,7 +29,7 @@ class MarginCosineProduct(nn.Module): # CosFace
         s: norm of input feature
         m: margin
     """
-    def __init__(self, in_features: int, out_features: int, s: float = 30.0, m: float = 0.40): # m >= 0 e s = 30
+    def __init__(self, in_features: int, out_features: int, s: float = 30.0, m: float = 0.30): # m >= 0, m = 0.5, 0.4, 0.3
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
@@ -66,7 +66,7 @@ class MarginCosineProduct(nn.Module): # CosFace
 
 #################### CosFace ##############################################################
 
-# Based on https://opensphere.world/
+# Based on https://github.com/ydwen/opensphere
 
 # class CosFace(nn.Module):
 #     """reference1: <CosFace: Large Margin Cosine Loss for Deep Face Recognition>
