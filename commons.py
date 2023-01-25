@@ -8,7 +8,7 @@ import traceback
 import numpy as np
 
 
-class InfiniteDataLoader(torch.utils.data.DataLoader):      # classe che eredita dal dataloader. Non mi è chairo a cosa la usano
+class InfiniteDataLoader(torch.utils.data.DataLoader):      # classe che eredita dal dataloader. Non mi è chiaro per cosa la usano
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.dataset_iterator = super().__iter__()          # questo è l'iteratore. Fa fatto per forza perché è ereditata?

@@ -19,7 +19,7 @@ class GeM(nn.Module):
         self.eps = eps                      
     
     def forward(self, x):
-        return gem(x, p=self.p, eps=self.eps)   # esegue il farward eseguendo la funzione gem che prende gli attributi dell'oggetto
+        return gem(x, p=self.p, eps=self.eps)   # esegue il forward eseguendo la funzione gem che prende gli attributi dell'oggetto
     
     def __repr__(self):                         # metodo speciale usato per rappresentare l'oggetto di una classe come una stringa
         return f"{self.__class__.__name__}(p={self.p.data.tolist()[0]:.4f}, eps={self.eps})"    # serve a stampare l'oggetto GeM

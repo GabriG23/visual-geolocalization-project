@@ -29,7 +29,7 @@ class MarginCosineProduct(nn.Module): # CosFace
         s: norm of input feature
         m: margin
     """
-    def __init__(self, in_features: int, out_features: int, s: float = 30.0, m: float = 0.40): # m >= 0, m = 0.5, 0.4, 0.3
+    def __init__(self, in_features: int, out_features: int, s: float = 64.0, m: float = 0.40): # m >= 0, m = 0.5, 0.4, 0.3
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
