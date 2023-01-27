@@ -4,7 +4,7 @@ import logging
 import torchvision
 from torch import nn
 
-from model.layers import Flatten, L2Norm, GeM
+from model.layers import Flatten, L2Norm, GeM, SpatialAttention2d
 
 
 CHANNELS_NUM_IN_LAST_CONV = {           # questi dipendono dall'architettura della rete
@@ -19,9 +19,9 @@ CHANNELS_NUM_IN_LAST_CONV = {           # questi dipendono dall'architettura del
 class GeoLocalizationNet(nn.Module):                        # questa è la rete principale
     def __init__(self, backbone, fc_output_dim):            # l'oggetto della classe parent è creato in funzione della backbone scelta
         super().__init__()
-        backbone_until_3, backbone, features_dim = get_backbone(backbone)
-        self.backbone_until_3
-        self.backbone = backbone
+        backbone_until_3, layers_4, features_dim = get_backbone(backbone)
+        self.backbone_until_3 = backbone_until_3
+        self.layers_4 = layers_4
         self.aggregation = nn.Sequential(                   # container sequenziale di layers, che sono appunto eseguiti in sequenza come una catena
                 L2Norm(),                                   # questi sono le classi definite in layers
                 GeM(),
@@ -29,11 +29,18 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
                 nn.Linear(features_dim, fc_output_dim),     # applica la trasformazione y = x @ A.T + b dove A sono i parametri della rete in quel punto 
                 L2Norm()                                    # e b è il bias aggiunto se è passato bias=True al modello. I pesi e il bias sono inizializzati
             )                                               # random dalle features in ingresso
+        self.self.localmodel = SpatialAttention2d(1024)     # 1024?
     
     def forward(self, x):
-        feature_map = self.backbone(x)                      # prima entra nella backbone
-        global_features = self.aggregation(feature_map)     # e dopo entra nel container sequenziale
-        return global_features
+        feature_map = self.backbone_until_3(x)              # prima entra nella backbone
+        x = self.layers_4(feature_map)
+        global_features = self.aggregation(x)               # in realtà per le global features mancherebbe il cosFace
+
+        feature_map = feature_map.detach()                  # separa il tensore dal computational graph ritornando un nuovo tensore che non richiede un gradiente
+        # feature_map.requires_grad = False                 # è la stessa cosa? Evita al gradiente di non tornare indietro?
+        local_feature, att_score = self.localmodel(feature_map)
+
+        return feature_map, global_features
 
 
 def get_backbone(backbone_name):                            # backbone_name è uno degli argomenti del programma
@@ -60,15 +67,15 @@ def get_backbone(backbone_name):                            # backbone_name è u
     
     elif backbone_name == "vgg16":                                  # qui fa la stessa cosa con questa backbone
         backbone = torchvision.models.vgg16(pretrained=True)
-        layers = list(backbone.features.children())[:-2]  # Remove avg pooling and FC layer
+        layers = list(backbone.features.children())[:-2]            # Remove avg pooling and FC layer
         for layer in layers[:-5]:
             for p in layer.parameters():
                 p.requires_grad = False
         logging.debug("Train last layers of the VGG-16, freeze the previous ones")
     
     backbone_until_3 = torch.nn.Sequential(*layers_until_3)         # backbone fino al layer 3, necessaria per recuperare la feature map
-    backbone = torch.nn.Sequential(*layers)                         # crea una backbone dopo la manipolazione dei layers
+    # backbone = torch.nn.Sequential(*layers)                         # crea una backbone dopo la manipolazione dei layers
     
     features_dim = CHANNELS_NUM_IN_LAST_CONV[backbone_name]         # prende la dimensione corretta dell'utlimo layer in modo da poterla
                                                                     # mettere come dimensione di input per il linear layer successivo
-    return backbone_until_3, backbone, features_dim
+    return backbone_until_3, layers_4, features_dim
