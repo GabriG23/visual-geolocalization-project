@@ -23,13 +23,13 @@ logging.info(f"Arguments: {args}")
 logging.info(f"The outputs are being saved in {output_folder}")
 
 #### Model
-model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim)
+model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim)               # istanzia il modello
 
 logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")
 
 if args.resume_model is not None:
     logging.info(f"Loading model from {args.resume_model}")
-    model_state_dict = torch.load(args.resume_model)
+    model_state_dict = torch.load(args.resume_model)                                  # carica il modello
     model.load_state_dict(model_state_dict)
 else:
     logging.info("WARNING: You didn't provide a path to resume the model (--resume_model parameter). " +
