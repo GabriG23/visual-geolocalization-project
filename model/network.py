@@ -62,7 +62,7 @@ def get_backbone(backbone_name):                            # backbone_name è u
                 params.requires_grad = False                        # freeza i parametri del modello in modo che questi non cambino durante l'ottimizzazione   
         logging.debug(f"Train only layer3 and layer4 of the {backbone_name}, freeze the previous ones")
         layers_until_3 = list(backbone.children())[:-3]             # questo non è freezato, ragionare su sta cosa
-        layers_4 = list(backbone.children())[-2]                    # rimuove gli utlimi due layers della backbone (avg pooling and FC layer) in modo
+        layers_4 = list(backbone.children())[-3]                    # rimuove gli utlimi due layers della backbone (avg pooling and FC layer) in modo
                                                                     # da poterci attaccare i successivi del nuovo modello (aggregation)
     
     elif backbone_name == "vgg16":                                  # qui fa la stessa cosa con questa backbone
