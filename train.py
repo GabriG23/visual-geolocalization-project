@@ -7,6 +7,7 @@ from tqdm import tqdm
 import multiprocessing
 from datetime import datetime
 import torchvision.transforms as T
+from torchvision.transforms.functional import hflip
 
 import test
 import util
@@ -34,7 +35,7 @@ logging.info(f"The outputs are being saved in {output_folder}")
 
 #### Model
 model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim)      # istanzia il modello con backbone e dimensione del descrittore
-                                                                           # passati da linea di comando
+                                                                        # passati da linea di comando
 logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")  # conta GPUs e CPUs
 
 if args.resume_model is not None:                              # se c'è un modello pre-salvato da caricare
@@ -53,7 +54,7 @@ model_optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)  # utilizza l
 
 #### Datasets
 groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,
-                       current_group=n, min_images_per_class=args.min_images_per_class) for n in range(args.groups_num)]
+                    current_group=n, min_images_per_class=args.min_images_per_class) for n in range(args.groups_num)]
 
 # Each group has its own classifier, which depends on the number of classes in the group (più gruppi ci sono, più classificatori sono usati con rispettivi optimizer)
 # Noi abbiamo un solo gruppo perciò avremo un solo classifier
@@ -68,7 +69,7 @@ groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, 
     # """
 
 logging.info(f"Using {args.loss_function} function") # dentro args.loss ho la mia loss: per settarla scrivere negli args --loss_function name quando fate partire il train
-if args.loss_function== "cosface":
+if args.loss_function == "cosface":
         classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]   # il classifier è dato dalla loss(dimensione descrittore, numero di classi nel gruppo) 
 elif args.loss_function == "arcface": 
         classifiers = [arcface_loss.ArcFace(args.fc_output_dim, len(group)) for group in groups]
@@ -87,7 +88,7 @@ logging.info(f"The {len(groups)} groups have respectively the following number o
 
 val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold) 
 test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
-                      positive_dist_threshold=args.positive_dist_threshold)
+                    positive_dist_threshold=args.positive_dist_threshold)
 logging.info(f"Validation set: {val_ds}")
 logging.info(f"Test set: {test_ds}")
 
@@ -104,9 +105,9 @@ else:                           # se non c'è resume, riparte da zero
 #### Train / evaluation loop
 logging.info("Start training ...")
 logging.info(f"There are {len(groups[0])} classes for the first group, " +
-             f"each epoch has {args.iterations_per_epoch} iterations " +
-             f"with batch_size {args.batch_size}, therefore the model sees each class (on average) " +
-             f"{args.iterations_per_epoch * args.batch_size / len(groups[0]):.1f} times per epoch")
+            f"each epoch has {args.iterations_per_epoch} iterations " +
+            f"with batch_size {args.batch_size}, therefore the model sees each class (on average) " +
+            f"{args.iterations_per_epoch * args.batch_size / len(groups[0]):.1f} times per epoch")
 
 
 if args.augmentation_device == "cuda":           # data augmentation. Da cpu a gpu cambia solo il tipo di crop
@@ -116,7 +117,7 @@ if args.augmentation_device == "cuda":           # data augmentation. Da cpu a g
                                                     saturation=args.saturation,
                                                     hue=args.hue),
             augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
-                                                          scale=[1-args.random_resized_crop, 1]),
+                                                        scale=[1-args.random_resized_crop, 1]),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
 
@@ -132,7 +133,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
     classifiers[current_group_num] = classifiers[current_group_num].to(args.device)       # sposta il classfier del gruppo nel device
     util.move_to_device(classifiers_optimizers[current_group_num], args.device)           # sposta l'optimizer del gruppo nel device
     
-    dataloader = commons.InfiniteDataLoader(groups[current_group_num], num_workers=args.num_workers,     # il dataloader permetteva di iterare sul dataset
+    dataloader = commons.InfiniteDataLoader(groups[current_group_num], num_workers=args.num_workers,     # il dataloader permetteva di iterare sul dataset, batch size = 32
                                             batch_size=args.batch_size, shuffle=True,
                                             pin_memory=(args.device == "cuda"), drop_last=True)
     
@@ -146,8 +147,8 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
 
         if args.augmentation_device == "cuda":
             images = gpu_augmentation(images)                              # se il device è cuda, fa questa augmentation SULL'INTERO BATCH
-                                                                           # se siamo sulla cpu, applica le trasformazioni ad un'immagine per volta
-                                                                           # direttamente in train_dataset
+                                                                        # se siamo sulla cpu, applica le trasformazioni ad un'immagine per volta
+                                                                        # direttamente in train_dataset
         
         model_optimizer.zero_grad()                                        # setta il gradiente a zero per evitare double counting (passaggio classico dopo ogni iterazione)
         classifiers_optimizers[current_group_num].zero_grad()              # fa la stessa cosa con l'ottimizzatore
@@ -177,7 +178,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
     util.move_to_device(classifiers_optimizers[current_group_num], "cpu")   # passa anche l'optimizer alla cpu
     
     logging.debug(f"Epoch {epoch_num:02d} in {str(datetime.now() - epoch_start_time)[:-7]}, "
-                  f"loss = {epoch_losses.mean():.4f}")                  # stampa la loss
+                f"loss = {epoch_losses.mean():.4f}")                  # stampa la loss
 
     ## Se si vuole fare un grafico, si può usare "epoch_losses"
 
