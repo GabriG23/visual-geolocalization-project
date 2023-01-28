@@ -42,3 +42,17 @@ class L2Norm(nn.Module):                        # least square error
     def forward(self, x):
         return F.normalize(x, p=2.0, dim=self.dim)      # divide il vettore lungo ogni dimensione del tensore per la norma (in questo caso euclidea perché p=2)
                                                         # di base ogni vettore è elevato a p e la loro somma è elevata ad 1/p
+
+# Questo serve a GeoWarp
+def feature_L2_norm(feature):
+    epsilon = 1e-6
+    # torch.pow(feature, 2) : Calcola la potenza di 2 delle feature
+    # torch.sum(torch.pow(feature, 2), 1): somma ogni riga nella dimensione 1
+    # torch.pow(torch.sum(torch.pow(feature, 2), 1)+epsilon, 0.5): rifa la potenza a 0.5 sommando epsilon
+    # unsqueeze(1): ritorna un tensore di dimensione 1 (vettore colonna)
+    # expand_us(feature): lo espande alla dimensione originale di feature?
+    # contiguous: return a contiguois in memory tensor contenente gli stessi dati di inizio (per velocizzare il tutto??)
+    # div: divide la feature per la norma
+    norm = torch.pow(torch.sum(torch.pow(feature, 2), 1)+epsilon, 0.5).unsqueeze(1).expand_as(feature)
+    return torch.div(feature.contiguous(), norm)
+

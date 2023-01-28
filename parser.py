@@ -17,6 +17,8 @@ def parse_arguments(is_training: bool = True):
                         choices=["vgg16", "resnet18", "resnet50", "resnet101", "resnet152"], help="_")
     parser.add_argument("--fc_output_dim", type=int, default=512,
                         help="Output dimension of final fully connected layer")
+    parser.add_argument("--geowarp", type=int, default=0,
+                        help="Enable training with Geowarp")                                                # Aggiunto per cambiare training
     # Training parameters
     parser.add_argument("--use_amp16", action="store_true",
                         help="use Automatic Mixed Precision")
@@ -29,7 +31,7 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--lr", type=float, default=0.00001, help="_")
     parser.add_argument("--classifiers_lr", type=float, default=0.01, help="_")
     parser.add_argument("--loss_function", type=str, default="cosface",
-                        help="type of loss function: cosface, arcface or sphereface") # aggiunta per il punto 3
+                        help="type of loss function: cosface, arcface or sphereface")                       # Aggiunto per cambiarel loss
     # Data augmentation
     parser.add_argument("--brightness", type=float, default=0.7, help="_")
     parser.add_argument("--contrast", type=float, default=0.7, help="_")
@@ -41,6 +43,23 @@ def parse_arguments(is_training: bool = True):
                         help="Batch size for inference (validating and testing)")
     parser.add_argument("--positive_dist_threshold", type=int, default=25,
                         help="distance in meters for a prediction to be considered a positive")
+    # GeoWarp parameters
+    parser.add_argument("--ss_w", type=float, default=1,
+                        help="weight of self-supervised loss")
+    parser.add_argument("--consistency_w", type=float, default=0.1,
+                        help="weight of consistency loss")
+    parser.add_argument("--features_wise_w", type=float, default=10,
+                        help="weight of features-wise loss")
+    parser.add_argument("--qp_threshold", type=float, default=1.2,
+                        help="Threshold distance (in features space) for query-positive pairs")
+    parser.add_argument("--num_reranked_preds", type=int, default=5,
+                        help="number of predictions to re-rank at test time")
+    parser.add_argument("--kernel_sizes", nargs='+', default=[7, 5, 5, 5, 5, 5],
+                        help="size of kernels in conv layers of Homography Regression")
+    parser.add_argument("--channels", nargs='+', default=[225, 128, 128, 64, 64, 64, 64],
+                        help="num channels in conv layers of Homography Regression")
+    parser.add_argument("--num_reranked_preds", type=int, default=5,
+                        help="number of predictions to re-rank at test time")
     # Resume parameters
     parser.add_argument("--resume_train", type=str, default=None,
                         help="path to checkpoint to resume, e.g. logs/.../last_checkpoint.pth")
