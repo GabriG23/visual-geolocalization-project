@@ -144,7 +144,7 @@ class HomographyDataset(torch.utils.data.Dataset):                              
         super().__init__()
         self.dataset_folder = dataset_folder
         self.database_folder = os.path.join(dataset_folder, database_folder) 
-        self.database_paths = sorted(glob(os.path.join(self.database_folder, "**", "*.jpg"), recursive=True))
+        self.database_paths = sorted(glob(os.path.join(database_folder, "**", "*.jpg"), recursive=True))
         self.images_paths = [p for p in self.database_paths] 
 
         self.database_num = len(self.database_paths) 
