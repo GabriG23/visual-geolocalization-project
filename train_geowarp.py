@@ -23,28 +23,6 @@ from datasets.test_dataset import TestDataset
 from datasets.train_dataset import TrainDataset, GeoWarpTrainDataset
 from datasets.prediction_dataset import DatasetQP
 
-def hor_flip(points): # images flip, used to flip points in queries and positives
-    """Flip points horizontally.
-    
-    Parameters
-    ----------
-    points : torch.Tensor of shape [B, 8, 2]
-    """
-    new_points = torch.zeros_like(points)
-    new_points[:, 0::2, :] = points[:, 1::2, :]
-    new_points[:, 1::2, :] = points[:, 0::2, :]
-    new_points[:, :, 0] *= -1
-    return new_points
-
-def compute_loss(loss, weight):
-    """Compute loss and gradients separately for each loss, and free the
-    computational graph to reduce memory consumption.
-    """
-    loss *= weight
-    loss.backward()
-    return loss.item()
-
-
 torch.backends.cudnn.benchmark = True  # Provides a speedup
                                         # se il modello non cambia e l'input size rimane lo stesso, si può beneficiare
                                         # mettendolo a true
@@ -56,8 +34,6 @@ commons.setup_logging(output_folder, console="debug")       # roba che riguarda 
 logging.info(" ".join(sys.argv))                            # sys.argv è la lista di stringhe degli argomenti di linea di comando 
 logging.info(f"Arguments: {args}")                          # questi sono gli argomenti effettivi
 logging.info(f"The outputs are being saved in {output_folder}")
-
-
 
 ##### MODEL #####
 features_extractor = network.FeatureExtractor(args.backbone, args.fc_output_dim)  # arch alexnet, vgg16 o resnet50, pooling netvlad o gem, args.arch, args.pooling
@@ -74,25 +50,21 @@ else:
 homography_regression = network.HomographyRegression(kernel_sizes=args.kernel_sizes, channels=args.channels, padding=1) # inizializza il layer homography
 
 model = network.GeoWarp(features_extractor, homography_regression).cuda().eval()
-model = torch.nn.DataParallel(model)        # parallelizes the application by splitting the input across the spcified devices by chunking in the batch dimnesion
+model = torch.nn.DataParallel(model)        # parallelizes the application by splitting the input across the specified devices by chunking in the batch dimenesion
                                             # in the forward pass, the module is replicated on each device, and each replica handles a portion of the input.
                                             # During the backward pass, gradients from each replica are summed into the original module
-# lo fa giù?
+
 model = model.to(args.device).train()       # sposta il modello sulla GPU e lo mette in modalità training (alcuni layer si comporteranno di conseguenza)
 ##### MODEL #####
 
 ##### DATASETS & DATALOADERS ######
 
 # dataset per il training con i gruppi
-groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L, current_group=n, min_images_per_class=args.min_images_per_class) for n in range(args.groups_num)]
-train_ds = GeoWarpTrainDataset(args.train_set_folder, positive_dist_threshold=args.positive_dist_threshold) 
-    
-# il dataloader se lo crea più avanti
+groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L, current_group=n, min_images_per_class=args.min_images_per_class) for n in range(args.groups_num)]  # gruppi cosplace
+train_ds = GeoWarpTrainDataset(args.train_set_folder, positive_dist_threshold=args.positive_dist_threshold) # se ho tempo sistemo questa cosa, ho preso i dati di train come li prende quelli di test. Si possono prendere dai gruppi
 
-# dataset per il warping (uno per gruppo direi)
+# dataset per il warping (uno per gruppo)
 ss_dataset = [datasets.warping_dataset.HomographyDataset(args.train_set_folder, k=0.6) for n in range(args.groups_num)] # k = parameter k, defining the difficulty of ss training data, default = 0.6    
-# ss_dataloader = commons.InfiniteDataLoader(ss_dataset, shuffle=True, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True) # batch size 16, la nostra è 32
-# ss_data_iter = iter(ss_dataloader)   # crea iteratore sui data loader
 
 # dataset per le prediction(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold) 
 dataset_qp = DatasetQP(model, global_features_dim, train_ds, qp_threshold=args.qp_threshold)   # threshold = 1.2 di default
@@ -108,12 +80,10 @@ logging.info(f"Test set: {test_ds}")
 ##### DATASETS & DATALOADERS ######
 
 ##### LOSS & OPTIMIZER #####
-criterion = torch.nn.CrossEntropyLoss()  # criterio usato per CosPlace
-mse = torch.nn.MSELoss()  # criterio usato da GeoWarp. MSE misura the mean squared error tra gli elementi in input x e il target y
+criterion = torch.nn.CrossEntropyLoss()  # criterio usato per CosPlace. Abbiamo un problema di Classificazione
+mse = torch.nn.MSELoss()  # criterio usato da GeoWarp. MSE misura the mean squared error tra gli elementi in input x e il target y. Qui abbiamo un problema di Regressione
 
 model_optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)  # utilizza l'algoritmo Adam per l'ottimizzazione
-
-# optim = torch.optim.Adam(homography_regression.parameters(), lr=args.lr) # usato in geowarp, lui fa l'optimization solo su il modulo homography
 
 logging.info(f"Using {args.loss_function} function") # dentro args.loss ho la mia loss: per settarla scrivere negli args --loss_function name quando fate partire il train
 if args.loss_function == "cosface":
@@ -173,15 +143,15 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
     classifiers[current_group_num] = classifiers[current_group_num].to(args.device)       # sposta il classfier del gruppo nel device
     util.move_to_device(classifiers_optimizers[current_group_num], args.device)           # sposta l'optimizer del gruppo nel device
     
-    # il dataloader permetteva di iterare sul dataset, batch size = 32
+    # dataloader per cosplace, permetteva di iterare sul dataset, batch size = 32
     dataloader = commons.InfiniteDataLoader(groups[current_group_num], num_workers=args.num_workers, batch_size=args.batch_size, shuffle=True, pin_memory=(args.device == "cuda"), drop_last=True)
     dataloader_iterator = iter(dataloader)         # prende l'iteratore del dataloader
-    
+    # dataloader per il warping dataset
     ss_dataloader = commons.InfiniteDataLoader(ss_dataset[current_group_num], num_workers=args.num_workers, batch_size=args.batch_size, shuffle=True, pin_memory=True, drop_last=True) # batch size 16, la nostra è 32
     ss_data_iter = iter(ss_dataloader)   # crea iteratore sui data loader
 
     model = model.train()       # mette il modello in modalità training (non l'aveva già fatto?)  
-    epoch_losses = np.zeros((0, 4), dtype=np.float32)             # inizializza il vettore delle loss, ne abbiamo 4, cosface e le altre 3
+    epoch_losses = np.zeros((0, 4), dtype=np.float32)                      # inizializza il vettore delle loss, ne abbiamo 4, cosface e le altre 3
     for iteration in tqdm(range(args.iterations_per_epoch), ncols=100):    # ncols è la grandezza della barra, 10k iterazioni per gruppo
         
         images, targets, _ = next(dataloader_iterator)                     # ritorna il batch di immagini e le rispettive classi (target)
@@ -218,10 +188,10 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
             output = classifiers[current_group_num](descriptors, targets)   # riporta l'output del classifier (applica quindi la loss ai batches). Però passa sia descrittore cha label
             loss = criterion(output, targets)                               # calcola la loss (in funzione di output e target)
             loss.backward()                                                 # calcola il gradiente per ogni parametro che ha il grad settato a True
-            loss *= 1.0 # moltiplichiamo per un peso, per ora è 1
+            loss *= args.loss_weight # moltiplichiamo per un peso, per ora è 1
             loss = loss.item()
             #epoch_losses = np.append(epoch_losses, loss.item())             # in epoch losses ci appende questa loss
-            del loss, output, images                                        # elimina questi oggetti. Con la keyword del, l'intento è più chiaro
+            del output, images                                        # elimina questi oggetti. Con la keyword del, l'intento è più chiaro
                             
             if args.ss_w != 0:  # ss_loss  # self supervised loss          # calcola la prima loss, a noi serve??
                 pred_warped_intersection_points_1 = model("regression", similarity_matrix_1to2)
@@ -230,7 +200,10 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
                         mse(pred_warped_intersection_points_1[:, 4:], warped_intersection_points_2) +
                         mse(pred_warped_intersection_points_2[:, :4], warped_intersection_points_2) +
                         mse(pred_warped_intersection_points_2[:, 4:], warped_intersection_points_1))
-                ss_loss = compute_loss(ss_loss, args.ss_w)
+                ss_loss *= args.ss_w        # applica il peso alla loss
+                ss_loss.backward()
+                ss_loss = ss_loss.item()
+
                 del pred_warped_intersection_points_1, pred_warped_intersection_points_2
             else:
                 ss_loss = 0
@@ -241,15 +214,29 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
                 pred_intersection_points_p2q = model("regression", similarity_matrix_p2q)
                 fl_pred_intersection_points_q2p = model("regression", fl_similarity_matrix_q2p)
                 fl_pred_intersection_points_p2q = model("regression", fl_similarity_matrix_p2q)
+
+                new_points = torch.cat((fl_pred_intersection_points_q2p[:, 4:], fl_pred_intersection_points_q2p[:, :4]), 1)
+                third_points = torch.zeros_like(new_points)
+                third_points[:, 0::2, :] = new_points[:, 1::2, :]
+                third_points[:, 1::2, :] = new_points[:, 0::2, :]
+                third_points[:, :, 0] *= -1
+
+                fourth_points = torch.zeros_like(fl_pred_intersection_points_p2q)
+                fourth_points[:, 0::2, :] = fl_pred_intersection_points_p2q[:, 1::2, :]
+                fourth_points[:, 1::2, :] = fl_pred_intersection_points_p2q[:, 0::2, :]
+                fourth_points[:, :, 0] *= -1
+
                 four_predicted_points = [
                     torch.cat((pred_intersection_points_q2p[:, 4:], pred_intersection_points_q2p[:, :4]), 1),
                     pred_intersection_points_p2q,
-                    hor_flip(torch.cat((fl_pred_intersection_points_q2p[:, 4:], fl_pred_intersection_points_q2p[:, :4]), 1)),
-                    hor_flip(fl_pred_intersection_points_p2q)
+                    third_points,
+                    fourth_points
                 ]
                 four_predicted_points_centroids = torch.cat([p[None] for p in four_predicted_points]).mean(0).detach()
                 consistency_loss = sum([mse(pred, four_predicted_points_centroids) for pred in four_predicted_points])
-                consistency_loss = compute_loss(consistency_loss, args.consistency_w)
+                consistency_loss *= args.consistency_w
+                consistency_loss.backward()
+                consistency_loss = consistency_loss.item()
                 del pred_intersection_points_q2p, pred_intersection_points_p2q
                 del fl_pred_intersection_points_q2p, fl_pred_intersection_points_p2q
                 del four_predicted_points
@@ -264,12 +251,17 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
                 w_queries, w_positives, _, _ = datasets.warping_dataset.compute_warping(model, queries_fw, positives_fw, weights=random_weights)
                 f_queries = model("features_extractor", [w_queries, "local"])
                 f_positives = model("features_extractor", [w_positives, "local"])
-                features_wise_loss = compute_loss(mse(f_queries, f_positives), args.features_wise_w)
+                features_wise_loss = mse(f_queries, f_positives)
+                features_wise_loss *= args.features_wise_w
+                features_wise_loss.backward()
+                features_wise_loss = features_wise_loss.item()
+
                 del queries, positives, queries_fw, positives_fw, w_queries, w_positives, f_queries, f_positives
             else:
                 features_wise_loss = 0
             
             epoch_losses = np.concatenate((epoch_losses, np.array([[loss, ss_loss, consistency_loss, features_wise_loss]]))) # concateniamo le loss
+            del loss, ss_loss, consistency_loss, features_wise_loss
             model_optimizer.step()                                          # update dei parametri insieriti nell'ottimizzatore del modello
             classifiers_optimizers[current_group_num].step()                # update anche dei parametri del layer classificatore 
         
@@ -286,7 +278,8 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
             scaler.step(classifiers_optimizers[current_group_num])
             scaler.update()
         
-        epoch_losses = np.concatenate((epoch_losses, np.array([[loss, ss_loss, consistency_loss, features_wise_loss]]))) # concateniamo le loss
+            epoch_losses = np.concatenate((epoch_losses, np.array([[loss, ss_loss, consistency_loss, features_wise_loss]]))) # concateniamo le loss
+            del loss, ss_loss, consistency_loss, features_wise_loss
 
 
     classifiers[current_group_num] = classifiers[current_group_num].cpu()   # passsa il classifier alla cpu termina l'epoca  
@@ -295,7 +288,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
     logging.debug(f"Epoch {epoch_num:02d} in {str(datetime.now() - epoch_start_time)[:-7]}, "
                 f"loss = {epoch_losses.mean():.4f}")                  # stampa la loss
 
-        ##### EVALUATION #####
+    ##### EVALUATION #####
 
     recalls, recalls_str, _ = test.test_geowarp(args, val_ds, model)              # passa validation dataset e modello (allenato) per il calcolo delle recall
     logging.info(f"Epoch {epoch_num:02d} in {str(datetime.now() - epoch_start_time)[:-7]}, {val_ds}: {recalls_str[:20]}")
