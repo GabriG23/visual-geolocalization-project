@@ -140,7 +140,7 @@ def get_random_homographic_pair(source_img, k, is_debugging=False):
 
 
 class HomographyDataset(torch.utils.data.Dataset):                                      # crea il dataset per l'omografia
-    def __init__(self, dataset_folder, database_folder = "database", k=0.1, is_debugging=False):
+    def __init__(self, dataset_folder, database_folder = "train", k=0.1, is_debugging=False):
         super().__init__()
         self.dataset_folder = dataset_folder
         self.database_folder = os.path.join(dataset_folder, database_folder) 
