@@ -183,8 +183,8 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
             descriptors = model("features_extractor", [images, "global"])                                     # inserisce il batch di immagini e restituisce il descrittore
             output = classifiers[current_group_num](descriptors, targets)   # riporta l'output del classifier (applica quindi la loss ai batches). Però passa sia descrittore cha label
             loss = criterion(output, targets)                               # calcola la loss (in funzione di output e target)
+            # loss *= args.loss_weight # moltiplichiamo per un peso, per ora è 1
             loss.backward()                                                 # calcola il gradiente per ogni parametro che ha il grad settato a True
-            loss *= args.loss_weight # moltiplichiamo per un peso, per ora è 1
             loss = loss.item()
             #epoch_losses = np.append(epoch_losses, loss.item())             # in epoch losses ci appende questa loss
             del output, images                                        # elimina questi oggetti. Con la keyword del, l'intento è più chiaro
@@ -196,7 +196,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
                         mse(pred_warped_intersection_points_1[:, 4:], warped_intersection_points_2) +
                         mse(pred_warped_intersection_points_2[:, :4], warped_intersection_points_2) +
                         mse(pred_warped_intersection_points_2[:, 4:], warped_intersection_points_1))
-                ss_loss *= args.ss_w        # applica il peso alla loss
+                # ss_loss *= args.ss_w        # applica il peso alla loss
                 ss_loss.backward()
                 ss_loss = ss_loss.item()
 
