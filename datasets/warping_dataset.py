@@ -115,7 +115,9 @@ def get_random_homographic_pair(source_img, k, is_debugging=False):
     # Compute two random trapezoids and their intersection
     trap_points_1 = get_random_trapezoid(k)                                                   # genera due trapezoidi
     trap_points_2 = get_random_trapezoid(k)
-    points_trapezoids = torch.cat((trap_points_1.unsqueeze(0), trap_points_2.unsqueeze(0)))   # prende i punti dei trapezodii
+    t1 = torch.tensor(trap_points_1)
+    t2 = torch.tensor(trap_points_2)
+    points_trapezoids = torch.cat((t1.unsqueeze(0), t2.unsqueeze(0)))   # prende i punti dei trapezodii
     trap_1 = Polygon(trap_points_1)                                                           # crea una superficie con la libreria Polygon
     trap_2 = Polygon(trap_points_2)
     intersection = trap_2.intersection(trap_1)                                                # ricava l'intersezione
