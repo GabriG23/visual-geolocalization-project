@@ -3,11 +3,11 @@ import torch
 import kornia
 import os
 import random
-import torchvision.transforms as transforms
+import torchvision.transforms as T
 from PIL import Image
 from glob import glob
 from shapely.geometry import Polygon
-
+import logging
 
 def open_image(path):
     return Image.open(path).convert("RGB")
@@ -138,29 +138,72 @@ def get_random_homographic_pair(source_img, k, is_debugging=False):
         return warped_images[0], warped_images[1], warped_intersection_points[0], warped_intersection_points[1]
 
 
-# class HomographyDataset(torch.utils.data.Dataset):                                      # crea il dataset per l'omografia
-#     def __init__(self, dataset_folder, database_folder = "train", k=0.1, is_debugging=False):
-#         super().__init__()
-#         self.dataset_folder = dataset_folder
-#         self.database_golder = os.path.basename(args.dataset_folder)  
-#         #self.database_folder = os.path.join(dataset_folder, database_folder) 
-#         self.database_paths = sorted(glob(os.path.join(database_folder, "**", "*.jpg"), recursive=True))
-#         self.images_paths = [p for p in self.database_paths] 
-
-#         self.database_num = len(self.database_paths) 
-#         self.k = k                                                                      # indica quanto è difficile generare la coppia omografica
-#         self.is_debugging = is_debugging
+class HomographyDataset(torch.utils.data.Dataset):                                      # crea il dataset per l'omografia
+    def __init__(self, args, dataset_folder, M=10, N=5, current_group=0, min_images_per_class=10, k=0.1, is_debugging=False):
+        super().__init__()
+        self.M = M                                          # lunghezza della cella
+        self.N = N                                          # distanza (metri) tra due classi dello stesso gruppo
+        self.current_group = current_group                  # gruppo corrente
+        self.dataset_folder = dataset_folder
+        self.augmentation_device = args.augmentation_device
+        self.k = k                                                                      # indica quanto è difficile generare la coppia omografica
+        self.is_debugging = is_debugging
         
-#         self.base_transform = transforms.Compose([
-#             transforms.ToTensor(),
-#             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),    # stessa mean e std del train
-#         ])
+        # dataset_name should be either "processed", "small" or "raw", if you're using SF-XL
+        dataset_name = os.path.basename(args.dataset_folder)
 
-#     def __getitem__(self, index):
-#         image_path = self.images_paths[index]
-#         source_image = open_image(image_path)
-#         source_img = self.base_trasform(source_image)                       # trasforma l'immagine in un tensore, specifiche in datasets_util.py
-#         return get_random_homographic_pair(source_img, self.k, is_debugging=self.is_debugging)      # ritorna la coppia casuale
+        filename = f"cache/{dataset_name}_M{M}_N{N}_mipc{min_images_per_class}.torch"
+        
+        classes_per_group, self.images_per_class = torch.load(filename)     # caricare il filename
+
+        self.classes_ids = classes_per_group[current_group]
+
+        if self.augmentation_device == "cpu":
+            self.transform = T.Compose([
+                    T.ColorJitter(brightness=args.brightness,
+                                  contrast=args.contrast,
+                                  saturation=args.saturation,
+                                  hue=args.hue),
+                    T.RandomResizedCrop([512, 512], scale=[1-args.random_resized_crop, 1]),
+                    T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+         ])
+
+
+        self.dataset_folder = dataset_folder
+        self.database_golder = os.path.basename(args.dataset_folder)  
+        #self.database_folder = os.path.join(dataset_folder, database_folder) 
+        self.database_paths = sorted(glob(os.path.join(database_folder, "**", "*.jpg"), recursive=True))
+        self.images_paths = [p for p in self.database_paths] 
+
+        self.database_num = len(self.database_paths) 
+
+        
+        self.base_transform = T.Compose([
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),    # stessa mean e std del train
+        ])
+
+    def __getitem__(self, class_num):
+        # This function takes as input the class_num instead of the index of
+        # the image. This way each class is equally represented during warping.
+
+        class_id = self.classes_ids[class_num]
+        image_path = random.choice(self.images_per_class[class_id])
+
+        try:
+            pil_image = open_image(image_path)          # prova ad aprire l'immagine
+        except Exception as e:
+            logging.info(f"ERROR image {image_path} couldn't be opened, it might be corrupted.")
+            raise e
+        tensor_image = T.functional.to_tensor(pil_image)  
+        assert tensor_image.shape == torch.Size([3, 512, 512]), \
+            f"Image {image_path} should have shape [3, 512, 512] but has {tensor_image.shape}."     # si assicura abbia la dimensione corretta
+        
+        if self.augmentation_device == "cpu":
+            tensor_image = self.transform(tensor_image)       # gli applica la trasformazione definita prima
+   
+        return get_random_homographic_pair(tensor_image, self.k, is_debugging=self.is_debugging)      # ritorna la coppia casuale
     
-#     def __len__(self):
-#         return len(self.images_paths)
+    def __len__(self):
+        """Return the number of homography classes within this group."""
+        return len(self.classes_ids)

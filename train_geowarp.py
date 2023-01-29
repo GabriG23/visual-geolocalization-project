@@ -17,9 +17,8 @@ import cosface_loss
 import arcface_loss
 import sphereface_loss 
 import augmentations
-import datasets.warping_dataset
 from model import network
-from datasets.warping_dataset import get_random_homographic_pair
+from datasets.warping_dataset import HomographyDataset, get_random_homographic_pair
 from datasets.test_dataset import TestDataset
 from datasets.train_dataset import TrainDataset
 from datasets.prediction_dataset import DatasetQP
@@ -64,7 +63,7 @@ model = model.to(args.device).train()       # sposta il modello sulla GPU e lo m
 groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L, current_group=n, min_images_per_class=args.min_images_per_class) for n in range(args.groups_num)]  # gruppi cosplace
 
 # dataset per il warping (uno per gruppo)
-#ss_dataset = [datasets.warping_dataset.HomographyDataset(args, args.train_set_folder, k=0.6) for group in groups] # k = parameter k, defining the difficulty of ss training data, default = 0.6    
+ss_dataset = [HomographyDataset(args, args.train_set_folder, M=args.M, N=args.N, current_group=n, min_images_per_class=args.min_images_per_class, k=args.k) for n in range(args.groups_num)] # k = parameter k, defining the difficulty of ss training data, default = 0.6    
 
 # dataset per le prediction(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold) 
 if args.consistency_w != 0 or args.features_wise_w != 0:   # le prediction le calcola solo per le 2 loss, quindi se non ce le ho, non mi serve prenderle dal DB anche perchè non ho le query di train
@@ -148,8 +147,8 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
     dataloader = commons.InfiniteDataLoader(groups[current_group_num], num_workers=args.num_workers, batch_size=args.batch_size, shuffle=True, pin_memory=(args.device == "cuda"), drop_last=True)
     dataloader_iterator = iter(dataloader)         # prende l'iteratore del dataloader
     # dataloader per il warping dataset
-    # ss_dataloader = commons.InfiniteDataLoader(ss_dataset[current_group_num], num_workers=args.num_workers, batch_size=args.batch_size, shuffle=True, pin_memory=True, drop_last=True) # batch size 16, la nostra è 32
-    # ss_data_iter = iter(ss_dataloader)   # crea iteratore sui data loader
+    ss_dataloader = commons.InfiniteDataLoader(ss_dataset[current_group_num], num_workers=args.num_workers, batch_size=args.batch_size, shuffle=True, pin_memory=(args.device == "cuda"), drop_last=True)
+    ss_data_iter = iter(ss_dataloader)   # crea iteratore sui data loader
 
     model = model.train()       # mette il modello in modalità training (non l'aveva già fatto?)  
     epoch_losses = np.zeros((0, 4), dtype=np.float32)                      # inizializza il vettore delle loss, ne abbiamo 4, cosface e le altre 3
@@ -163,8 +162,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
                                                                         # se siamo sulla cpu, applica le trasformazioni ad un'immagine per volta
                                                                         # direttamente in train_dataset
         # dal warping dataset prende le due immagini warped e i due punti delle intersezioni
-        #warped_img_1, warped_img_2, warped_intersection_points_1, warped_intersection_points_2 = next(ss_data_iter)
-        warped_img_1, warped_img_2, warped_intersection_points_1, warped_intersection_points_2 = get_random_homographic_pair(images, args.k, is_debugging=False) 
+        warped_img_1, warped_img_2, warped_intersection_points_1, warped_intersection_points_2 = next(ss_data_iter)
         warped_img_1, warped_img_2, warped_intersection_points_1, warped_intersection_points_2 = warped_img_1.to(args.device), warped_img_2.to(args.device), warped_intersection_points_1.to(args.device), warped_intersection_points_2.to(args.device)  # warping dataset
         # Iq, Ip, tq e tp
         if args.consistency_w != 0 or args.features_wise_w != 0: #entra solo se devo calcolare le due loss
@@ -174,13 +172,12 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
         with torch.no_grad():                          # no gradient
             # fq e fp, calcola la misura di similarity
             similarity_matrix_1to2, similarity_matrix_2to1 = model("similarity", [warped_img_1, warped_img_2])       # crea le due matrici similarity
-        
-        if args.consistency_w != 0:
-            queries_cons = queries[:args.batch_size]                                                 # prende la conistency = 16                                          
-            positives_cons = positives[:args.batch_size]                                             # anche qui = 16
-            similarity_matrix_q2p, similarity_matrix_p2q = model("similarity", [queries_cons, positives_cons])   # seconde similarity matrix
-            fl_similarity_matrix_q2p, fl_similarity_matrix_p2q = model("similarity", [hflip(queries_cons), hflip(positives_cons)])
-            del queries_cons, positives_cons                                                                     # le cancella non ci servono più
+            if args.consistency_w != 0:
+                queries_cons = queries[:args.batch_size]                                                 # prende la conistency = 16                                          
+                positives_cons = positives[:args.batch_size]                                             # anche qui = 16
+                similarity_matrix_q2p, similarity_matrix_p2q = model("similarity", [queries_cons, positives_cons])   # seconde similarity matrix
+                fl_similarity_matrix_q2p, fl_similarity_matrix_p2q = model("similarity", [hflip(queries_cons), hflip(positives_cons)])
+                del queries_cons, positives_cons                                                                     # le cancella non ci servono più
     
         model_optimizer.zero_grad()                                        # setta il gradiente a zero per evitare double counting (passaggio classico dopo ogni iterazione)
         classifiers_optimizers[current_group_num].zero_grad()              # fa la stessa cosa con l'ottimizzatore
@@ -282,7 +279,6 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
         
             epoch_losses = np.concatenate((epoch_losses, np.array([[loss, ss_loss, consistency_loss, features_wise_loss]]))) # concateniamo le loss
             del loss, ss_loss, consistency_loss, features_wise_loss
-
 
     classifiers[current_group_num] = classifiers[current_group_num].cpu()   # passsa il classifier alla cpu termina l'epoca  
     util.move_to_device(classifiers_optimizers[current_group_num], "cpu")   # passa anche l'optimizer alla cpu
