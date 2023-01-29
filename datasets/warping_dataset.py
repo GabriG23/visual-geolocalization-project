@@ -168,6 +168,11 @@ class HomographyDataset(torch.utils.data.Dataset):                              
                     T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
          ])
 
+        self.base_transform = T.Compose([
+                T.ToTensor(),
+                T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+
     def __getitem__(self, class_num):
         # This function takes as input the class_num instead of the index of
         # the image. This way each class is equally represented during warping.
@@ -175,18 +180,9 @@ class HomographyDataset(torch.utils.data.Dataset):                              
         class_id = self.classes_ids[class_num]
         image_path = random.choice(self.images_per_class[class_id])
 
-        try:
-            pil_image = open_image(image_path)          # prova ad aprire l'immagine
-        except Exception as e:
-            logging.info(f"ERROR image {image_path} couldn't be opened, it might be corrupted.")
-            raise e
-        tensor_image = T.functional.to_tensor(pil_image)  
-        assert tensor_image.shape == torch.Size([3, 512, 512]), \
-            f"Image {image_path} should have shape [3, 512, 512] but has {tensor_image.shape}."     # si assicura abbia la dimensione corretta
-        
-        if self.augmentation_device == "cpu":
-            tensor_image = self.transform(tensor_image)       # gli applica la trasformazione definita prima
-   
+        pil_image = open_image(image_path)
+        tensor_image = self.base_transform(pil_image)
+
         return get_random_homographic_pair(tensor_image, self.k, is_debugging=self.is_debugging)      # ritorna la coppia casuale
     
     def __len__(self):
