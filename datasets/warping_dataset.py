@@ -139,7 +139,7 @@ def get_random_homographic_pair(source_img, k, is_debugging=False):
 
 
 class HomographyDataset(torch.utils.data.Dataset):                                      # crea il dataset per l'omografia
-    def __init__(self, args, dataset_folder, M=10, N=5, current_group=0, min_images_per_class=10, k=0.1, is_debugging=False):
+    def __init__(self, args, dataset_folder, M=10, N=5, current_group=0, min_images_per_class=10, k=0.1, is_debugging=True):
         super().__init__()
         self.M = M                                          # lunghezza della cella
         self.N = N                                          # distanza (metri) tra due classi dello stesso gruppo
@@ -182,7 +182,6 @@ class HomographyDataset(torch.utils.data.Dataset):                              
 
         pil_image = open_image(image_path)
         tensor_image = self.base_transform(pil_image)
-        print(tensor_image.size())
         return get_random_homographic_pair(tensor_image, self.k, is_debugging=self.is_debugging)      # ritorna la coppia casuale
     
     def __len__(self):
