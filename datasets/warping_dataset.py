@@ -32,7 +32,7 @@ def get_random_trapezoid(k=1):                                                  
     left = -rand(k)
     right = rand(k)
 
-    trap_points = np.empty(shape=(4,2), dtype=object)
+    trap_points = np.empty(shape=(4,2))
     trap_points[0] = (left, -rand(k))
     trap_points[1] = (right, -rand(k))
     trap_points[2] = (right, rand(k))
