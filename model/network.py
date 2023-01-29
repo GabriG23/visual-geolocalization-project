@@ -125,8 +125,6 @@ class HomographyRegression(nn.Module):
         x = x.contiguous().view(x.size(0), -1)
         x = self.linear(x)
         x = x.reshape(B, 8, 2)
-        print(x.dtype)
-        print(x)
         return x.reshape(B, 8, 2)
 
 ##### MODULE GEOWARP
@@ -143,7 +141,8 @@ class GeoWarp(nn.Module):
         super().__init__()
         self.features_extractor = features_extractor                    # rete uguale a Cosplace: backbone + aggregation pooling
         self.homography_regression = homography_regression              # rete per il warping
-    
+        self.float()
+
     def forward(self, operation, args):
         """Compute a forward pass, which can be of different types.
         This "ugly" step of passing the operation as a string has been adapted

@@ -198,7 +198,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
                         mse(pred_warped_intersection_points_1[:, 4:], warped_intersection_points_2) +
                         mse(pred_warped_intersection_points_2[:, :4], warped_intersection_points_2) +
                         mse(pred_warped_intersection_points_2[:, 4:], warped_intersection_points_1))
-                print(ss_loss)
+                print(ss_loss.dtype)
                 # print(ss_loss)
                 # print(ss_loss.dtype)
                 # ss_loss = ss_loss.type(torch.float32)
