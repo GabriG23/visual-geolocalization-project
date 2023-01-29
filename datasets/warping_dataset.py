@@ -148,7 +148,7 @@ def get_random_homographic_pair(source_img, k, is_debugging=False):
 
 
 class HomographyDataset(torch.utils.data.Dataset):                                      # crea il dataset per l'omografia
-    def __init__(self, args, dataset_folder, M=10, N=5, current_group=0, min_images_per_class=10, k=0.1, is_debugging=True):
+    def __init__(self, args, dataset_folder, M=10, N=5, current_group=0, min_images_per_class=10, k=0.1, is_debugging=False):
         super().__init__()
         self.M = M                                          # lunghezza della cella
         self.N = N                                          # distanza (metri) tra due classi dello stesso gruppo

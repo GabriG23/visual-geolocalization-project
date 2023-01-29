@@ -151,33 +151,32 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
     ss_data_iter = iter(ss_dataloader)   # crea iteratore sui data loader
 
     model = model.train()       # mette il modello in modalità training (non l'aveva già fatto?)  
-    epoch_losses = np.zeros((0, 4), dtype=np.float32)                      # inizializza il vettore delle loss, ne abbiamo 4, cosface e le altre 3
+    # epoch_losses = np.zeros((0, 4), dtype=np.float32)                      # inizializza il vettore delle loss, ne abbiamo 4, cosface e le altre 3
+    epoch_losses = np.zeros((0, 2), dtype=np.float32)    
     for iteration in tqdm(range(args.iterations_per_epoch), ncols=100):    # ncols è la grandezza della barra, 10k iterazioni per gruppo
         
         images, targets, _ = next(dataloader_iterator)                     # ritorna il batch di immagini e le rispettive classi (target)
         images, targets = images.to(args.device), targets.to(args.device)  # mette tutto su device (cuda o cpu)
 
         if args.augmentation_device == "cuda":
-            images = gpu_augmentation(images)                              # se il device è cuda, fa questa augmentation SULL'INTERO BATCH
-                                                                        # se siamo sulla cpu, applica le trasformazioni ad un'immagine per volta
-                                                                        # direttamente in train_dataset
+            images = gpu_augmentation(images)      # se il device è cuda, fa questa augmentation SULL'INTERO BATCH, se siamo sulla cpu, applica le trasformazioni ad un'immagine per volta, direttamente in train_dataset
         # dal warping dataset prende le due immagini warped e i due punti delle intersezioni
         warped_img_1, warped_img_2, warped_intersection_points_1, warped_intersection_points_2 = next(ss_data_iter)
         warped_img_1, warped_img_2, warped_intersection_points_1, warped_intersection_points_2 = warped_img_1.to(args.device), warped_img_2.to(args.device), warped_intersection_points_1.to(args.device), warped_intersection_points_2.to(args.device)  # warping dataset
         # Iq, Ip, tq e tp
-        if args.consistency_w != 0 or args.features_wise_w != 0: #entra solo se devo calcolare le due loss
-            queries, positives = next(data_iter_qp)
-            queries, positives = queries.to(args.device), positives.to(args.device)
+        # if args.consistency_w != 0 or args.features_wise_w != 0: #entra solo se devo calcolare le due loss
+        #     queries, positives = next(data_iter_qp)
+        #     queries, positives = queries.to(args.device), positives.to(args.device)
 
         with torch.no_grad():                          # no gradient
             # fq e fp, calcola la misura di similarity
             similarity_matrix_1to2, similarity_matrix_2to1 = model("similarity", [warped_img_1, warped_img_2])       # crea le due matrici similarity
-            if args.consistency_w != 0:
-                queries_cons = queries[:args.batch_size]                                                 # prende la conistency = 16                                          
-                positives_cons = positives[:args.batch_size]                                             # anche qui = 16
-                similarity_matrix_q2p, similarity_matrix_p2q = model("similarity", [queries_cons, positives_cons])   # seconde similarity matrix
-                fl_similarity_matrix_q2p, fl_similarity_matrix_p2q = model("similarity", [hflip(queries_cons), hflip(positives_cons)])
-                del queries_cons, positives_cons                                                                     # le cancella non ci servono più
+            # if args.consistency_w != 0:
+            #     queries_cons = queries[:args.batch_size]                                                 # prende la conistency = 16                                          
+            #     positives_cons = positives[:args.batch_size]                                             # anche qui = 16
+            #     similarity_matrix_q2p, similarity_matrix_p2q = model("similarity", [queries_cons, positives_cons])   # seconde similarity matrix
+            #     fl_similarity_matrix_q2p, fl_similarity_matrix_p2q = model("similarity", [hflip(queries_cons), hflip(positives_cons)])
+            #     del queries_cons, positives_cons                                                                     # le cancella non ci servono più
     
         model_optimizer.zero_grad()                                        # setta il gradiente a zero per evitare double counting (passaggio classico dopo ogni iterazione)
         classifiers_optimizers[current_group_num].zero_grad()              # fa la stessa cosa con l'ottimizzatore
@@ -192,7 +191,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
             #epoch_losses = np.append(epoch_losses, loss.item())             # in epoch losses ci appende questa loss
             del output, images                                        # elimina questi oggetti. Con la keyword del, l'intento è più chiaro
                             
-            if args.ss_w != 0:  # ss_loss  # self supervised loss          # calcola la prima loss, a noi serve??
+            if args.ss_w != 0:  # ss_loss  # self supervised loss    guides the network to learn to estimate the points 
                 pred_warped_intersection_points_1 = model("regression", similarity_matrix_1to2)
                 pred_warped_intersection_points_2 = model("regression", similarity_matrix_2to1)
                 ss_loss = (mse(pred_warped_intersection_points_1[:, :4], warped_intersection_points_1) +
@@ -206,61 +205,63 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
                 del pred_warped_intersection_points_1, pred_warped_intersection_points_2
             else:
                 ss_loss = 0
-        
-            # consistency_loss    # genera delle pseudo label come ground truth to further improve robustness
-            if args.consistency_w != 0:
-                pred_intersection_points_q2p = model("regression", similarity_matrix_q2p)
-                pred_intersection_points_p2q = model("regression", similarity_matrix_p2q)
-                fl_pred_intersection_points_q2p = model("regression", fl_similarity_matrix_q2p)
-                fl_pred_intersection_points_p2q = model("regression", fl_similarity_matrix_p2q)
-
-                new_points = torch.cat((fl_pred_intersection_points_q2p[:, 4:], fl_pred_intersection_points_q2p[:, :4]), 1)
-                third_points = torch.zeros_like(new_points)
-                third_points[:, 0::2, :] = new_points[:, 1::2, :]
-                third_points[:, 1::2, :] = new_points[:, 0::2, :]
-                third_points[:, :, 0] *= -1
-
-                fourth_points = torch.zeros_like(fl_pred_intersection_points_p2q)
-                fourth_points[:, 0::2, :] = fl_pred_intersection_points_p2q[:, 1::2, :]
-                fourth_points[:, 1::2, :] = fl_pred_intersection_points_p2q[:, 0::2, :]
-                fourth_points[:, :, 0] *= -1
-
-                four_predicted_points = [
-                    torch.cat((pred_intersection_points_q2p[:, 4:], pred_intersection_points_q2p[:, :4]), 1),
-                    pred_intersection_points_p2q,
-                    third_points,
-                    fourth_points
-                ]
-                four_predicted_points_centroids = torch.cat([p[None] for p in four_predicted_points]).mean(0).detach()
-                consistency_loss = sum([mse(pred, four_predicted_points_centroids) for pred in four_predicted_points])
-                consistency_loss *= args.consistency_w
-                consistency_loss.backward()
-                consistency_loss = consistency_loss.item()
-                del pred_intersection_points_q2p, pred_intersection_points_p2q
-                del fl_pred_intersection_points_q2p, fl_pred_intersection_points_p2q
-                del four_predicted_points
-            else:
-                consistency_loss = 0
-        
-            if args.features_wise_w != 0: # features_wise_loss     # assicura che le feature siano più vicine possibile dopo che vengono estratte dal training
-                queries_fw = queries[:args.batch_size_features_wise]
-                positives_fw = positives[:args.batch_size_features_wise]
-                # Add random weights to avoid numerical instability
-                random_weights = (torch.rand(args.batch_size_features_wise, 4)**0.1).cuda()
-                w_queries, w_positives, _, _ = datasets.warping_dataset.compute_warping(model, queries_fw, positives_fw, weights=random_weights)
-                f_queries = model("features_extractor", [w_queries, "local"])
-                f_positives = model("features_extractor", [w_positives, "local"])
-                features_wise_loss = mse(f_queries, f_positives)
-                features_wise_loss *= args.features_wise_w
-                features_wise_loss.backward()
-                features_wise_loss = features_wise_loss.item()
-
-                del queries, positives, queries_fw, positives_fw, w_queries, w_positives, f_queries, f_positives
-            else:
-                features_wise_loss = 0
             
-            epoch_losses = np.concatenate((epoch_losses, np.array([[loss, ss_loss, consistency_loss, features_wise_loss]]))) # concateniamo le loss
-            del loss, ss_loss, consistency_loss, features_wise_loss
+            # consistency_loss    # genera delle pseudo label come ground truth to further improve robustness
+            # if args.consistency_w != 0:
+            #     pred_intersection_points_q2p = model("regression", similarity_matrix_q2p)
+            #     pred_intersection_points_p2q = model("regression", similarity_matrix_p2q)
+            #     fl_pred_intersection_points_q2p = model("regression", fl_similarity_matrix_q2p)
+            #     fl_pred_intersection_points_p2q = model("regression", fl_similarity_matrix_p2q)
+
+            #     new_points = torch.cat((fl_pred_intersection_points_q2p[:, 4:], fl_pred_intersection_points_q2p[:, :4]), 1)
+            #     third_points = torch.zeros_like(new_points)
+            #     third_points[:, 0::2, :] = new_points[:, 1::2, :]
+            #     third_points[:, 1::2, :] = new_points[:, 0::2, :]
+            #     third_points[:, :, 0] *= -1
+
+            #     fourth_points = torch.zeros_like(fl_pred_intersection_points_p2q)
+            #     fourth_points[:, 0::2, :] = fl_pred_intersection_points_p2q[:, 1::2, :]
+            #     fourth_points[:, 1::2, :] = fl_pred_intersection_points_p2q[:, 0::2, :]
+            #     fourth_points[:, :, 0] *= -1
+
+            #     four_predicted_points = [
+            #         torch.cat((pred_intersection_points_q2p[:, 4:], pred_intersection_points_q2p[:, :4]), 1),
+            #         pred_intersection_points_p2q,
+            #         third_points,
+            #         fourth_points
+            #     ]
+            #     four_predicted_points_centroids = torch.cat([p[None] for p in four_predicted_points]).mean(0).detach()
+            #     consistency_loss = sum([mse(pred, four_predicted_points_centroids) for pred in four_predicted_points])
+            #     consistency_loss *= args.consistency_w
+            #     consistency_loss.backward()
+            #     consistency_loss = consistency_loss.item()
+            #     del pred_intersection_points_q2p, pred_intersection_points_p2q
+            #     del fl_pred_intersection_points_q2p, fl_pred_intersection_points_p2q
+            #     del four_predicted_points
+            # else:
+            #     consistency_loss = 0
+        
+            # if args.features_wise_w != 0: # features_wise_loss     # assicura che le feature siano più vicine possibile dopo che vengono estratte dal training
+            #     queries_fw = queries[:args.batch_size_features_wise]
+            #     positives_fw = positives[:args.batch_size_features_wise]
+            #     # Add random weights to avoid numerical instability
+            #     random_weights = (torch.rand(args.batch_size_features_wise, 4)**0.1).cuda()
+            #     w_queries, w_positives, _, _ = datasets.warping_dataset.compute_warping(model, queries_fw, positives_fw, weights=random_weights)
+            #     f_queries = model("features_extractor", [w_queries, "local"])
+            #     f_positives = model("features_extractor", [w_positives, "local"])
+            #     features_wise_loss = mse(f_queries, f_positives)
+            #     features_wise_loss *= args.features_wise_w
+            #     features_wise_loss.backward()
+            #     features_wise_loss = features_wise_loss.item()
+
+            #     del queries, positives, queries_fw, positives_fw, w_queries, w_positives, f_queries, f_positives
+            # else:
+            #     features_wise_loss = 0
+            
+            # epoch_losses = np.concatenate((epoch_losses, np.array([[loss, ss_loss, consistency_loss, features_wise_loss]]))) # concateniamo le loss
+            # del loss, ss_loss, consistency_loss, features_wise_loss
+            epoch_losses = np.concatenate((epoch_losses, np.array([[loss, ss_loss]]))) # concateniamo le loss
+            del loss, ss_loss
             model_optimizer.step()                                          # update dei parametri insieriti nell'ottimizzatore del modello
             classifiers_optimizers[current_group_num].step()                # update anche dei parametri del layer classificatore 
         
@@ -277,8 +278,11 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
             scaler.step(classifiers_optimizers[current_group_num])
             scaler.update()
         
-            epoch_losses = np.concatenate((epoch_losses, np.array([[loss, ss_loss, consistency_loss, features_wise_loss]]))) # concateniamo le loss
-            del loss, ss_loss, consistency_loss, features_wise_loss
+            # epoch_losses = np.concatenate((epoch_losses, np.array([[loss, ss_loss, consistency_loss, features_wise_loss]]))) # concateniamo le loss
+            # del loss, ss_loss, consistency_loss, features_wise_loss
+        
+            epoch_losses = np.concatenate((epoch_losses, np.array([[loss, ss_loss]]))) # concateniamo le loss
+            del loss, ss_loss
 
     classifiers[current_group_num] = classifiers[current_group_num].cpu()   # passsa il classifier alla cpu termina l'epoca  
     util.move_to_device(classifiers_optimizers[current_group_num], "cpu")   # passa anche l'optimizer alla cpu
