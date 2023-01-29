@@ -91,7 +91,7 @@ def warp_images(tensor_img, warping_points, weights=None):
     """
     B, C, H, W = tensor_img.shape                                                                      # dimensioni del tensore
     assert warping_points.shape == torch.Size([B, 4, 2])                                               # controlla le dimensioni dei punti?
-    rectangle_points = torch.repeat_interleave(get_random_trapezoid(k=0).unsqueeze(0), B, 0)           # repeat interleave: data un N ripete ogni elemento nel tensor N volte
+    rectangle_points = torch.repeat_interleave(torch.tensor(get_random_trapezoid(k=0)).unsqueeze(0), B, 0)           # repeat interleave: data un N ripete ogni elemento nel tensor N volte
     rectangle_points = rectangle_points.to(tensor_img.device)                                          # trasforma i punti in tensori?
     # NB for older versions of kornia use kornia.find_homography_dlt
     theta = kornia.geometry.homography.find_homography_dlt(rectangle_points, warping_points, weights)  # trova l'omografia usando kornia (è una matrice di shape B, 3, 3)
