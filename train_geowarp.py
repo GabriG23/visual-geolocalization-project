@@ -180,6 +180,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
         model_optimizer.zero_grad()                                        # setta il gradiente a zero per evitare double counting (passaggio classico dopo ogni iterazione)
         classifiers_optimizers[current_group_num].zero_grad()              # fa la stessa cosa con l'ottimizzatore
         optim.zero_grad()
+
         if not args.use_amp16:
             descriptors = model("features_extractor", [images, "global"])                                     # inserisce il batch di immagini e restituisce il descrittore
             output = classifiers[current_group_num](descriptors, targets)   # riporta l'output del classifier (applica quindi la loss ai batches). Però passa sia descrittore cha label
@@ -191,12 +192,13 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
             del output, images                                        # elimina questi oggetti. Con la keyword del, l'intento è più chiaro
                             
             if args.ss_w != 0:  # ss_loss  # self supervised loss    guides the network to learn to estimate the points 
-                pred_warped_intersection_points_1 = model("regression", similarity_matrix_1to2)
-                pred_warped_intersection_points_2 = model("regression", similarity_matrix_2to1)
+                pred_warped_intersection_points_1 = model("regression", similarity_matrix_1to2).type(torch.float)
+                pred_warped_intersection_points_2 = model("regression", similarity_matrix_2to1).type(torch.float)
                 ss_loss = (mse(pred_warped_intersection_points_1[:, :4], warped_intersection_points_1) +
                         mse(pred_warped_intersection_points_1[:, 4:], warped_intersection_points_2) +
                         mse(pred_warped_intersection_points_2[:, :4], warped_intersection_points_2) +
                         mse(pred_warped_intersection_points_2[:, 4:], warped_intersection_points_1))
+                print(ss_loss)
                 print(ss_loss.dtype)
                 ss_loss = ss_loss.type(torch.float32)
                 print(ss_loss.dtype)
