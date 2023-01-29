@@ -37,7 +37,7 @@ class TrainDataset(torch.utils.data.Dataset):           # ogni dataset fa riferi
         self.L = L                                          # distanza (gradi) tra due classi dello stesso gruppo
         self.current_group = current_group                  # gruppo corrente
         self.dataset_folder = dataset_folder
- 
+        self.augmentation_device = args.augmentation_device
         
         # dataset_name should be either "processed", "small" or "raw", if you're using SF-XL
         dataset_name = os.path.basename(args.dataset_folder)        # resituisce la parte finale del path (cartella o file)
