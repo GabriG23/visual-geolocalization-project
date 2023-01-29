@@ -89,9 +89,11 @@ class FeatureExtractor(nn.Module):                        # questa è la rete pr
         x = self.backbone(x)                # backbone per entrambi i descrittori
         if f_type == "local":
             x = self.avgpool(x)             # per descrittori locali
-            return self.l2norm(x)
+            x = self.l2norm(x)
+            return x
         elif f_type == "global":
-            x = self.aggregation(x)         # per descrittori global                     # e dopo entra nel container sequenziale
+            x = self.aggregation(x)         # per descrittori global # e dopo entra nel container sequenziale
+            return x                 
         else:
             raise ValueError(f"Invalid features type: {f_type}")
 
