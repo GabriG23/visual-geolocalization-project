@@ -182,7 +182,7 @@ class HomographyDataset(torch.utils.data.Dataset):                              
 
         pil_image = open_image(image_path)
         tensor_image = self.base_transform(pil_image)
-
+        print(tensor_image.size())
         return get_random_homographic_pair(tensor_image, self.k, is_debugging=self.is_debugging)      # ritorna la coppia casuale
     
     def __len__(self):
