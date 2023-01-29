@@ -31,7 +31,14 @@ def get_random_trapezoid(k=1):                                                  
     
     left = -rand(k)
     right = rand(k)
-    return torch.tensor([(left, -rand(k)), (right, -rand(k)), (right, rand(k)), (left, rand(k))])    # punti del trapezoide
+
+    trap_points = np.empty(shape=(4,2), dtype=object)
+    trap_points[0] = (left, -rand(k))
+    trap_points[1] = (right, -rand(k))
+    trap_points[2] = (right, rand(k))
+    trap_points[3] =( left, rand(k))
+    return trap_points
+    # return torch.tensor([(left, -rand(k)), (right, -rand(k)), (right, rand(k)), (left, rand(k))])    # punti del trapezoide
 
 
 def compute_warping(model, tensor_img_1, tensor_img_2, weights=None):                        # calcola il warping
@@ -105,14 +112,10 @@ def get_random_homographic_pair(source_img, k, is_debugging=False):
     is_debugging : bool, if True return extra information
     
     """
-    trap_points_1 = np.empty(shape=(4,2), dtype=object)
-    trap_points_2 = np.empty(shape=(4,2), dtype=object)
-
     # Compute two random trapezoids and their intersection
     trap_points_1 = get_random_trapezoid(k)                                                   # genera due trapezoidi
     trap_points_2 = get_random_trapezoid(k)
     points_trapezoids = torch.cat((trap_points_1.unsqueeze(0), trap_points_2.unsqueeze(0)))   # prende i punti dei trapezodii
-
     trap_1 = Polygon(trap_points_1)                                                           # crea una superficie con la libreria Polygon
     trap_2 = Polygon(trap_points_2)
     intersection = trap_2.intersection(trap_1)                                                # ricava l'intersezione
