@@ -23,6 +23,14 @@ from datasets.test_dataset import TestDataset
 from datasets.train_dataset import TrainDataset
 from datasets.prediction_dataset import DatasetQP
 
+def compute_loss(loss, weight):
+    """Compute loss and gradients separately for each loss, and free the
+    computational graph to reduce memory consumption.
+    """
+    loss *= weight
+    loss.backward()
+    return loss.item()
+
 torch.backends.cudnn.benchmark = True  # Provides a speedup
                                         # se il modello non cambia e l'input size rimane lo stesso, si può beneficiare
                                         # mettendolo a true
@@ -81,7 +89,8 @@ logging.info(f"Test set: {test_ds}")
 criterion = torch.nn.CrossEntropyLoss()  # criterio usato per CosPlace. Abbiamo un problema di Classificazione
 mse = torch.nn.MSELoss()  # criterio usato da GeoWarp. MSE misura the mean squared error tra gli elementi in input x e il target y. Qui abbiamo un problema di Regressione
 
-model_optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)  # utilizza l'algoritmo Adam per l'ottimizzazione
+model_optimizer = torch.optim.Adam(features_extractor.parameters(), lr=args.lr)  # utilizza l'algoritmo Adam per l'ottimizzazione
+optim = torch.optim.Adam(homography_regression.parameters(), lr=args.lr) # anche in cosplace usa adam
 
 logging.info(f"Using {args.loss_function} function") # dentro args.loss ho la mia loss: per settarla scrivere negli args --loss_function name quando fate partire il train
 if args.loss_function == "cosface":
@@ -178,7 +187,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
     
         model_optimizer.zero_grad()                                        # setta il gradiente a zero per evitare double counting (passaggio classico dopo ogni iterazione)
         classifiers_optimizers[current_group_num].zero_grad()              # fa la stessa cosa con l'ottimizzatore
-        
+        optim.zero_grad()
         if not args.use_amp16:
             descriptors = model("features_extractor", [images, "global"])                                     # inserisce il batch di immagini e restituisce il descrittore
             output = classifiers[current_group_num](descriptors, targets)   # riporta l'output del classifier (applica quindi la loss ai batches). Però passa sia descrittore cha label
@@ -197,8 +206,9 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
                         mse(pred_warped_intersection_points_2[:, :4], warped_intersection_points_2) +
                         mse(pred_warped_intersection_points_2[:, 4:], warped_intersection_points_1))
                 # ss_loss *= args.ss_w        # applica il peso alla loss
-                ss_loss.backward()
-                ss_loss = ss_loss.item()
+                # ss_loss.backward()
+                # ss_loss = ss_loss.item()
+                ss_loss = compute_loss(ss_loss, 1)
 
                 del pred_warped_intersection_points_1, pred_warped_intersection_points_2
             else:
@@ -262,7 +272,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
             del loss, ss_loss
             model_optimizer.step()                                          # update dei parametri insieriti nell'ottimizzatore del modello
             classifiers_optimizers[current_group_num].step()                # update anche dei parametri del layer classificatore 
-        
+            optim.step()
         else:  # Use AMP 16
             # a me non dovrebbe servire
             with torch.cuda.amp.autocast():                                    # funzionamento che sfrutta amp16 per uno speed-up. Non trattato
