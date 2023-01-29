@@ -79,8 +79,8 @@ if __name__ == "__main__":
     # is_depth_wise_max = (images_batch == depth_wise_max)
     # print(is_depth_wise_max)
 
-    print(images_batch.shape)                   # -> (2, 3, 512, 512)
-    print(images_batch[:, :, 0, 0].shape)       # -> (2, 3)
+    # print(images_batch.shape)                   # -> (2, 3, 512, 512)
+    # print(images_batch[:, :, 0, 0].shape)       # -> (2, 3)
 
     # all_keypoints = torch.zeros([3, 0]) 
     # print(all_keypoints.shape)

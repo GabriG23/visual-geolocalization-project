@@ -49,7 +49,13 @@ model = model.to(args.device).train()       # sposta il modello sulla GPU e lo m
 
 #### Optimizer
 criterion = torch.nn.CrossEntropyLoss() 
-model_optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)      # utilizza l'algoritmo Adam per l'ottimizzazione
+criterion_MSE = torch.nn.MSELoss() 
+backbone_parameters = [model.backbone_until_3.parameters(), model.layers_4.parameters(), model.aggregation.parameters()]
+model_optimizer = torch.optim.Adam(backbone_parameters, lr=args.lr)      # utilizza l'algoritmo Adam per l'ottimizzazione
+
+attention_parameters = [model.attn_classifier.parameters(), model.attention.parameters()]
+attention_optimizer = torch.optim.Adam(attention_parameters, lr=args.lr)
+autoencoder_optimizer = torch.optim.Adam(model.autoencoder.parameters(), lr=args.lr)
 
 #### Datasets
 groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,
@@ -105,6 +111,18 @@ if args.augmentation_device == "cuda":      # data augmentation. Da cpu a gpu ca
 if args.use_amp16:
     scaler = torch.cuda.amp.GradScaler()
 
+def grad_on_local_parameters(unfreeze):
+    local_parameter = attention_parameters + [model.attn_classifier.parameters()]
+    for params in local_parameter:
+        for param in params:
+            param.requires_grad = unfreeze
+
+def grad_on_global_parameters(unfreeze):
+    global_parameter = backbone_parameters
+    for params in global_parameter:
+        for param in params:
+            param.requires_grad = unfreeze
+
 for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il training
     
     #### Train
@@ -122,7 +140,9 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
     dataloader_iterator = iter(dataloader)                  # prende l'iteratore del dataloader
     model = model.train()                                   # mette il modello in modalità training (non l'aveva già fatto?)
     
-    epoch_losses = np.zeros((0, 1), dtype=np.float32)                       # 0 righe, 1 colonna -> l'array è vuoto
+    epoch_global_losses = np.zeros((0, 1), dtype=np.float32)                       # 0 righe, 1 colonna -> l'array è vuoto
+    epoch_attn_losses = np.zeros((0, 1), dtype=np.float32)
+    epoch_rec_losses = np.zeros((0, 1), dtype=np.float32)
     for iteration in tqdm(range(args.iterations_per_epoch), ncols=100):     # ncols è la grandezza della barra  
         images, targets, _ = next(dataloader_iterator)                      # ritorna il batch di immagini e le rispettive classi
         images, targets = images.to(args.device), targets.to(args.device)   # mette tutto su device
@@ -134,19 +154,45 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
         
         model_optimizer.zero_grad()                                         # setta il gradiente a zero per evitare double counting (passaggio classico dopo ogni iterazione)
         classifiers_optimizers[current_group_num].zero_grad()               # fa la stessa cosa con l'ottimizzatore
+
+        attention_optimizer.zero_grad()             #?????
+        autoencoder_optimizer.zero_grad()           #?????
         
         if not args.use_amp16:
-            descriptors = model(images)                                     # inserisce il batch di immagini e restituisce il descrittore
-            output = classifiers[current_group_num](descriptors, targets)   # riporta l'output del classifier (applica quindi la loss ai batches). Però passa sia descrittore cha label
-            loss = criterion(output, targets)                               # calcola la loss (in funzione di output e target)
-            loss.backward()                                                 # calcola il gradiente per ogni parametro che ha il grad settato a True
-            epoch_losses = np.append(epoch_losses, loss.item())             # in epoch losses ci appende questa loss
-            del loss, output, images                                        # elimina questi oggetti. Con la keyword del, l'intento è più chiaro
-            model_optimizer.step()                                          # update dei parametri insieriti nell'ottimizzatore del modello
-            classifiers_optimizers[current_group_num].step()                # update anche dei parametri del layer classificatore 
+            descriptors, attn_logits, feature_map, rec_feature_map = model(images)   # inserisce il batch di immagini e restituisce il descrittore
+            output = classifiers[current_group_num](descriptors, targets)            # riporta l'output del classifier (applica quindi la loss ai batches). Però passa sia descrittore cha label
+            
+            global_loss = criterion(output, targets)                                           # calcola la loss (in funzione di output e target)
+            attn_loss = criterion(attn_logits, targets)
+            rec_loss = criterion_MSE(rec_feature_map, feature_map)
+            
+            # loss = global_loss + attn_loss + rec_loss                                 # calcola il gradiente per ogni parametro che ha il grad settato a True
+
+            # Invece di usare un'unica loss, usare le tre separate e vedere che succede utilizzando tre optimizer diversi
+            # Eventualmente usare la stessa strategia per freezare i layer e usare un solo optimizer alla fine    
+
+            grad_on_local_parameters(False)         # freeze local parameter
+            global_loss.backward()
+            model_optimizer.step() 
+            classifiers_optimizers[current_group_num].step() 
+
+            grad_on_local_parameters(True)
+            grad_on_global_parameters(False)
+            attn_loss.backward()
+            rec_loss.backward()
+            attention_optimizer.step()             
+            autoencoder_optimizer.step()     
+
+            grad_on_global_parameters(True)
+
+            epoch_global_losses = np.append(epoch_global_losses, global_loss.item())                 
+            epoch_attn_losses = np.append(epoch_attn_losses, attn_loss.item())
+            epoch_rec_losses = np.append(epoch_rec_losses, rec_loss.item())
+            
+            del loss, output, images                                                                              
         else:  # Use AMP 16
-            with torch.cuda.amp.autocast():                                 # funzionamento che sfrutta amp16 per uno speed-up. Non trattato
-                descriptors = model(images)                                 # comunque di base sono gli stessi passaggi ma con qualche differenza  
+            with torch.cuda.amp.autocast():                                             # funzionamento che sfrutta amp16 per uno speed-up. Non trattato
+                descriptors = model(images)                                             # comunque di base sono gli stessi passaggi ma con qualche differenza  
                 output = classifiers[current_group_num](descriptors, targets)
                 loss = criterion(output, targets)
             scaler.scale(loss).backward()
@@ -160,7 +206,9 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
     util.move_to_device(classifiers_optimizers[current_group_num], "cpu")   # passa anche l'optimizer alla cpu
     
     logging.debug(f"Epoch {epoch_num:02d} in {str(datetime.now() - epoch_start_time)[:-7]}, "
-                  f"loss = {epoch_losses.mean():.4f}")                      # printa la loss
+                  f"global_loss = {epoch_global_losses.mean():.4f}, "  
+                  f"attn_loss = {epoch_attn_losses.mean():.4f}, " 
+                  f"rec_loss = {epoch_rec_losses.mean():.4f}, ")                    
     
     ## Se si vuole fare un grafico, si può usare "epoch_losses"
 

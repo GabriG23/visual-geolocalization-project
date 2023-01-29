@@ -44,61 +44,78 @@ class L2Norm(nn.Module):            # least square error
         return F.normalize(x, p=2.0, dim=self.dim)      # divide ogni dimensione del tensore per la norma (in questo caso euclidea perché p=2)
                                                         # di base ogni vettore è elevato a p e la loro somma è elevata ad 1/p
 
-class SpatialAttention2d(nn.Module):
-    '''
-    SpatialAttention2d
-    2-layer 1x1 conv network with softplus activation.
-    '''
-    def __init__(self, in_c, act_fn='relu'):            # in_c?
+class Attention(nn.Module):
+    def __init__(self, input_features):                     # in_c mi sembra siano 256
         super().__init__()
-        self.conv1 = nn.Conv2d(in_c, 512, 1, 1)              
-        self.bn = nn.BatchNorm2d(512, eps=cfg.BN.EPS, momentum=cfg.BN.MOM)
-        if act_fn.lower() in ['relu']:
-            self.act1 = nn.ReLU()
-        elif act_fn.lower() in ['leakyrelu', 'leaky', 'leaky_relu']:
-            self.act1 = nn.LeakyReLU()
-        self.conv2 = nn.Conv2d(512, 1, 1, 1)
-        self.softplus = nn.Softplus(beta=1, threshold=20) # use default setting.
+        self.conv1 = nn.Conv2d(input_features, 128, 1, 1)   # attention module (in 128, così come lui riduce 1024 in 512)
+                                                            # riduce solo la profondità a 512?      
+                                                            # alla fine dell'attention module, devo avere solo S' (Hs, Ws), come S (32, 32)      
+        self.bn = nn.BatchNorm2d(128)                       # in ingresso dovrebbe stesso discorso per 128. Per il resto è lasciato con parametri di default
+                                                            # il batch ritorna la stessa shape dell'input 
+                                                            # ad ogni elemento, toglie media e varianza calcolata sull'intero batch (è fatta sulla C dimension)
+        self.relu = nn.ReLU()                               # nel paper è scritto "followed by ReLU"
 
-        for conv in [self.conv1, self.conv2]: 
-            conv.apply(net.init_weights)
+        self.conv2 = nn.Conv2d(128, 1, 1, 1)                # filter è 1 come nel paper; 128 sono quelli che lui riceve
+        self.softplus = nn.Softplus()   # use default setting.
 
-    def forward(self, x):
-        '''
-        x : spatial feature map. (b x c x w x h)
-        att : softplus attention score 
-        '''
-        x = self.conv1(x)
-        x = self.bn(x)
+        # for conv in [self.conv1, self.conv2]:             # per ora non esplicito nessuna inizializzazione per il conv2
+        #     nn.init.xavier_uniform_(conv.weight)           
+
+    def forward(self, x, rec_feature_map=None):   
+        input = x                                           # ([32, 256, 32, 32])
+        x = self.conv1(x)                                   # ([32, 128, 32, 32])
+        x = self.bn(x)                                         
+        x = self.relu(x)                                   
+
+        score = self.conv2(x)                               # ([32, 1, 32, 32])                 
+        prob = self.softplus(score)                        
+
+        # Aggregate inputs if targets is None.
+        if rec_feature_map is None:                         # significa che non ha usato l'autoencoder per ridurre la dimensione
+            rec_feature_map = input   
         
-        feature_map_norm = F.normalize(x, p=2, dim=1)
-         
-        x = self.act1(x)
-        x = self.conv2(x)
-        att_score = self.softplus(x)
-        att = att_score.expand_as(feature_map_norm)
-        
-        x = att * feature_map_norm
-        return x, att_score
+         # L2-normalize the featuremap before pooling.
+        rec_feature_map_norm = F.normalize(rec_feature_map, p=2, dim=1) 
+        att = torch.mul(rec_feature_map_norm, prob)         # ([32, 256, 32, 32])  -> o comunque la dimensione di quella con più canali
+
+        feat = torch.mean(att, [1, 2])                      # ([32, 32]) -> questo passaggio non è chiaro, nel paper non pare esserci
+        # feat = tf.reduce_mean(tf.multiply(targets, prob), [1, 2], keepdims=False)         variante in tensorflow                          
+       
+        return feat, prob, score                            # passa anche lo score ma nel model non lo usa
     
-    def __repr__(self):
-        return self.__class__.__name__
+class Autoencoder(nn.Module):
+    def __init__(self, input_features, output_features):    # in_c mi sembra siano 256
+        super().__init__()
+        self.conv1 = nn.Conv2d(input_features, output_features, 1, 1)    # stiamo usando un autoencoder che riduce da 128 a 32 (per mantenere più o meno la proporzione del paper)
+        self.conv2 = nn.Conv2d(output_features, input_features, 1, 1)    # filter è 1 come nel paper; 128 sono quelli che lui riceve
+        self.relu = nn.ReLU()                               # nel paper è scritto "followed by ReLU"
+
+    def forward(self, x):                                  
+        reduced_dim = self.conv1(x)                         # ([32, 32, 32, 32])
+        x = self.conv2(reduced_dim)                         # ([32, 256, 32, 32])
+        expanded_dim = self.relu(x)           
+        # print(expanded_dim.shape)
+        return reduced_dim, expanded_dim
 
 
+# t = torch.rand([32, 256, 32, 32])
+# att = Autoencoder(256, 32)
+# t_att = att(t)
 
-p = torch.ones(1)*3     # ritorna un tensore composto di uno della dimensione passata per parametro (poi *3)
-                        # quindi è un tensore sulla CPU di dimensione 1 che contiene solo il valore 3 (in particolare 3., float32)
 
-data = [[1, 2],[3, 4]]
-x_data = torch.tensor(data)
-print(p.data)
-print(p)
+# p = torch.ones(1)*3     # ritorna un tensore composto di uno della dimensione passata per parametro (poi *3)
+#                         # quindi è un tensore sulla CPU di dimensione 1 che contiene solo il valore 3 (in particolare 3., float32)
 
-gem_obj = GeM()
-print(gem_obj)
+# data = [[1, 2],[3, 4]]
+# x_data = torch.tensor(data)
+# print(p.data)
+# print(p)
 
-flat = Flatten()
-shape = (3, 2, 1, 2)    # quando definiamo la shape di un tensore, riga e colonne delle matrici interne sono date dagli utlimi due valori
+# gem_obj = GeM()
+# print(gem_obj)
+
+# flat = Flatten()
+# shape = (3, 2, 1, 2)    # quando definiamo la shape di un tensore, riga e colonne delle matrici interne sono date dagli utlimi due valori
                         # della shape. Es (2, 3, 1) -> due matrici interne con tre righe ed una colonna. In più dimensioni è
                         # complicato da visualizzare.
                         # (3, 2, 3, 1) -> 3 gruppi da 2 matrici di dimensione 1 riga e 2 colonne.
@@ -109,8 +126,8 @@ shape = (3, 2, 1, 2)    # quando definiamo la shape di un tensore, riga e colonn
 #                         # è chiamato
 # print(f)
 
-t1 = torch.tensor(data, dtype=torch.float32)
-print(type(t1.size()))
+# t1 = torch.tensor(data, dtype=torch.float32)
+# print(type(t1.size()))
 # norm_obj = L2Norm()
 # tn = norm_obj(t1)
 # print(tn)

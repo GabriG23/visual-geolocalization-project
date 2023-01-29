@@ -4,7 +4,9 @@ import logging
 import torchvision
 from torch import nn
 
-from model.layers import Flatten, L2Norm, GeM, SpatialAttention2d
+# from model.layers import Flatten, L2Norm, GeM, Autoencoder, Attention
+from layers import Flatten, L2Norm, GeM, Autoencoder, Attention
+
 
 
 CHANNELS_NUM_IN_LAST_CONV = {           # questi dipendono dall'architettura della rete
@@ -17,7 +19,7 @@ CHANNELS_NUM_IN_LAST_CONV = {           # questi dipendono dall'architettura del
 
 
 class GeoLocalizationNet(nn.Module):                        # questa è la rete principale
-    def __init__(self, backbone, fc_output_dim):            # l'oggetto della classe parent è creato in funzione della backbone scelta
+    def __init__(self, backbone, fc_output_dim, num_classes = 5965, dim_reduction=True):            # l'oggetto della classe parent è creato in funzione della backbone scelta
         super().__init__()
         backbone_until_3, layers_4, features_dim = get_backbone(backbone)
         self.backbone_until_3 = backbone_until_3
@@ -29,18 +31,28 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
                 nn.Linear(features_dim, fc_output_dim),     # applica la trasformazione y = x @ A.T + b dove A sono i parametri della rete in quel punto 
                 L2Norm()                                    # e b è il bias aggiunto se è passato bias=True al modello. I pesi e il bias sono inizializzati
             )                                               # random dalle features in ingresso
-        self.self.localmodel = SpatialAttention2d(1024)     # 1024?
-    
+        self.attention = Attention(256)                     # 256 sono i canali di feature map (B, 256, 32, 32)
+        self.dim_reduction = dim_reduction
+        if self.dim_reduction:
+            self.autoencoder = Autoencoder(256, 32)         # entrano che sono 256, quella ridotta mettiamo a 32 cosi da mantenere lo stesso rapporto del paper (8)
+                                                            # EVENTUALMENTE DA PROVARE SENZA AUTOENCODER QUINDI SENZA RIDURRE LE FEATURES
+        self.attn_classifier = nn.Linear(32, num_classes)
+
     def forward(self, x):
         feature_map = self.backbone_until_3(x)              # prima entra nella backbone
+        
         x = self.layers_4(feature_map)
+        
         global_features = self.aggregation(x)               # in realtà per le global features mancherebbe il cosFace
-
+        
         feature_map = feature_map.detach()                  # separa il tensore dal computational graph ritornando un nuovo tensore che non richiede un gradiente
         # feature_map.requires_grad = False                 # è la stessa cosa? Evita al gradiente di non tornare indietro?
-        local_feature, att_score = self.localmodel(feature_map)
-
-        return feature_map, global_features
+        
+        if self.dim_reduction:
+            reduced_dim, rec_feature_map = self.autoencoder(feature_map)                    # non so a cosa serva il primo
+        attn_prelogits, attn_scores, _ = self.attention(feature_map, rec_feature_map)
+        attn_logits = self.attn_classifier(attn_prelogits)
+        return global_features, attn_logits, feature_map, rec_feature_map
 
 
 def get_backbone(backbone_name):                            # backbone_name è uno degli argomenti del programma
@@ -79,3 +91,21 @@ def get_backbone(backbone_name):                            # backbone_name è u
     features_dim = CHANNELS_NUM_IN_LAST_CONV[backbone_name]         # prende la dimensione corretta dell'utlimo layer in modo da poterla
                                                                     # mettere come dimensione di input per il linear layer successivo
     return backbone_until_3, layers_4, features_dim
+
+
+t = torch.rand([32, 3, 512, 512])
+model = GeoLocalizationNet('resnet18', 512)
+# t_att = model(t)
+# print(model)
+# print(model.layers_4.parameters())
+# print(model.backbone_until_3.parameters())
+# print(model.aggregation.parameters())
+# print(model.attention.parameters())
+# print(model.autoencoder.parameters())
+# parameters_to_optimize = model.layers_4.parameters()
+
+backbone_parameters = [model.backbone_until_3.parameters(), model.layers_4.parameters(), model.aggregation.parameters()]                                                
+local_parameter = backbone_parameters + [model.attn_classifier.parameters()]
+for params in local_parameter:
+    for param in params:
+        param.requires_grad = False
