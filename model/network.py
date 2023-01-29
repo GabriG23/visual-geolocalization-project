@@ -118,7 +118,8 @@ class HomographyRegression(nn.Module):
         init_points = torch.cat((init_points, init_points))
         self.linear.bias.data = init_points
         self.linear.weight.data = torch.zeros_like((self.linear.weight.data))
-    
+        self.float()
+
     def forward(self, x):
         B = x.shape[0]
         x = self.conv(x)
