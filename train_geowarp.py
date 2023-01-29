@@ -23,14 +23,6 @@ from datasets.test_dataset import TestDataset
 from datasets.train_dataset import TrainDataset
 from datasets.prediction_dataset import DatasetQP
 
-def compute_loss(loss, weight):
-    """Compute loss and gradients separately for each loss, and free the
-    computational graph to reduce memory consumption.
-    """
-    loss *= weight
-    loss.backward()
-    return loss.item()
-
 torch.backends.cudnn.benchmark = True  # Provides a speedup
                                         # se il modello non cambia e l'input size rimane lo stesso, si può beneficiare
                                         # mettendolo a true
@@ -205,11 +197,10 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
                         mse(pred_warped_intersection_points_1[:, 4:], warped_intersection_points_2) +
                         mse(pred_warped_intersection_points_2[:, :4], warped_intersection_points_2) +
                         mse(pred_warped_intersection_points_2[:, 4:], warped_intersection_points_1))
+                print(ss_loss)
                 # ss_loss *= args.ss_w        # applica il peso alla loss
-                # ss_loss.backward()
-                # ss_loss = ss_loss.item()
-                ss_loss = compute_loss(ss_loss, 1)
-
+                ss_loss.backward()
+                ss_loss = ss_loss.item()
                 del pred_warped_intersection_points_1, pred_warped_intersection_points_2
             else:
                 ss_loss = 0
