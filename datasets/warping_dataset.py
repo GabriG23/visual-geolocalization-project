@@ -8,6 +8,7 @@ from PIL import Image
 from glob import glob
 from shapely.geometry import Polygon
 import logging
+import numpy as np
 
 def open_image(path):
     return Image.open(path).convert("RGB")
@@ -104,11 +105,14 @@ def get_random_homographic_pair(source_img, k, is_debugging=False):
     is_debugging : bool, if True return extra information
     
     """
-    
+    trap_points_1 = np.empty(shape=(4,2), dtype=object)
+    trap_points_2 = np.empty(shape=(4,2), dtype=object)
+
     # Compute two random trapezoids and their intersection
     trap_points_1 = get_random_trapezoid(k)                                                   # genera due trapezoidi
     trap_points_2 = get_random_trapezoid(k)
     points_trapezoids = torch.cat((trap_points_1.unsqueeze(0), trap_points_2.unsqueeze(0)))   # prende i punti dei trapezodii
+
     trap_1 = Polygon(trap_points_1)                                                           # crea una superficie con la libreria Polygon
     trap_2 = Polygon(trap_points_2)
     intersection = trap_2.intersection(trap_1)                                                # ricava l'intersezione
