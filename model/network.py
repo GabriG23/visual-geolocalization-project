@@ -114,11 +114,10 @@ class HomographyRegression(nn.Module):
         output_dim_last_conv = shape[1] * shape[2] * shape[3]
         self.linear = nn.Linear(output_dim_last_conv, output_dim)
         # Initialize the weights/bias with identity transformation
-        init_points = torch.tensor([-1, -1, 1, -1, 1, 1, -1, 1]).type(torch.float)
+        init_points = torch.tensor([-1, -1, 1, -1, 1, 1, -1, 1])
         init_points = torch.cat((init_points, init_points))
         self.linear.bias.data = init_points
         self.linear.weight.data = torch.zeros_like((self.linear.weight.data))
-        self.float()
 
     def forward(self, x):
         B = x.shape[0]
