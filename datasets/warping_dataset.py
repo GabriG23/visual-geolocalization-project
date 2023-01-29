@@ -96,7 +96,7 @@ def warp_images(tensor_img, warping_points, weights=None):
     # NB for older versions of kornia use kornia.find_homography_dlt
     theta = kornia.geometry.homography.find_homography_dlt(rectangle_points, warping_points, weights)  # trova l'omografia usando kornia (è una matrice di shape B, 3, 3)
     # NB for older versions of kornia use kornia.homography_warp
-    warped_images = kornia.geometry.homography_warp(tensor_img.float(), theta, dsize=(H, W))                 
+    warped_images = kornia.geometry.homography_warp(tensor_img.float(), theta.float(), dsize=(H, W))                 
     return warped_images, theta
 
 
