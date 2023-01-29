@@ -168,21 +168,6 @@ class HomographyDataset(torch.utils.data.Dataset):                              
                     T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
          ])
 
-
-        self.dataset_folder = dataset_folder
-        self.database_golder = os.path.basename(args.dataset_folder)  
-        #self.database_folder = os.path.join(dataset_folder, database_folder) 
-        self.database_paths = sorted(glob(os.path.join(database_folder, "**", "*.jpg"), recursive=True))
-        self.images_paths = [p for p in self.database_paths] 
-
-        self.database_num = len(self.database_paths) 
-
-        
-        self.base_transform = T.Compose([
-            T.ToTensor(),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),    # stessa mean e std del train
-        ])
-
     def __getitem__(self, class_num):
         # This function takes as input the class_num instead of the index of
         # the image. This way each class is equally represented during warping.
