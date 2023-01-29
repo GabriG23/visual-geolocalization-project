@@ -44,17 +44,15 @@ if args.resume_model is not None:                              # se c'è un mode
     logging.debug(f"Loading model from {args.resume_model}")
     model_state_dict = torch.load(args.resume_model)           # carica un oggetto salvato con torch.save(). Serve per deserializzare l'oggetto
     features_extractor.load_state_dict(model_state_dict)                    # copia parametri e buffer dallo state_dict all'interno del modello e nei suoi discendenti
-else:
-    logging.warning("WARNING: --resume_model is set to None, meaning that the Feature Extractor is not initialized!")
 
 homography_regression = network.HomographyRegression(kernel_sizes=args.kernel_sizes, channels=args.channels, padding=1) # inizializza il layer homography
 
 model = network.GeoWarp(features_extractor, homography_regression).cuda().eval()
-model = torch.nn.DataParallel(model)        # parallelizes the application by splitting the input across the specified devices by chunking in the batch dimenesion
+#model = torch.nn.DataParallel(model)        # parallelizes the application by splitting the input across the specified devices by chunking in the batch dimenesion
                                             # in the forward pass, the module is replicated on each device, and each replica handles a portion of the input.
                                             # During the backward pass, gradients from each replica are summed into the original module
 
-model = model.to(args.device).train()       # sposta il modello sulla GPU e lo mette in modalità training (alcuni layer si comporteranno di conseguenza)
+#model = model.to(args.device).train()       # sposta il modello sulla GPU e lo mette in modalità training (alcuni layer si comporteranno di conseguenza)
 ##### MODEL #####
 
 ##### DATASETS & DATALOADERS ######
@@ -182,7 +180,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
         classifiers_optimizers[current_group_num].zero_grad()              # fa la stessa cosa con l'ottimizzatore
         
         if not args.use_amp16:
-            descriptors = model("feature_extractor", [images, "global"])                                     # inserisce il batch di immagini e restituisce il descrittore
+            descriptors = model("features_extractor", [images, "global"])                                     # inserisce il batch di immagini e restituisce il descrittore
             output = classifiers[current_group_num](descriptors, targets)   # riporta l'output del classifier (applica quindi la loss ai batches). Però passa sia descrittore cha label
             loss = criterion(output, targets)                               # calcola la loss (in funzione di output e target)
             loss.backward()                                                 # calcola il gradiente per ogni parametro che ha il grad settato a True
