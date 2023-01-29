@@ -50,10 +50,11 @@ model = model.to(args.device).train()       # sposta il modello sulla GPU e lo m
 #### Optimizer
 criterion = torch.nn.CrossEntropyLoss() 
 criterion_MSE = torch.nn.MSELoss() 
-backbone_parameters = [model.backbone_until_3.parameters(), model.layers_4.parameters(), model.aggregation.parameters()]
+backbone_parameters = [*model.backbone_until_3.parameters(), *model.layers_4.parameters(), *model.aggregation.parameters()]      
 model_optimizer = torch.optim.Adam(backbone_parameters, lr=args.lr)      # utilizza l'algoritmo Adam per l'ottimizzazione
 
-attention_parameters = [model.attn_classifier.parameters(), model.attention.parameters()]
+
+attention_parameters = [*model.attn_classifier.parameters(), *model.attention.parameters()]
 attention_optimizer = torch.optim.Adam(attention_parameters, lr=args.lr)
 autoencoder_optimizer = torch.optim.Adam(model.autoencoder.parameters(), lr=args.lr)
 

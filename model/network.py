@@ -93,8 +93,8 @@ def get_backbone(backbone_name):                            # backbone_name è u
     return backbone_until_3, layers_4, features_dim
 
 
-t = torch.rand([32, 3, 512, 512])
-model = GeoLocalizationNet('resnet18', 512)
+# t = torch.rand([32, 3, 512, 512])
+# model = GeoLocalizationNet('resnet18', 512)
 # t_att = model(t)
 # print(model)
 # print(model.layers_4.parameters())
@@ -104,8 +104,5 @@ model = GeoLocalizationNet('resnet18', 512)
 # print(model.autoencoder.parameters())
 # parameters_to_optimize = model.layers_4.parameters()
 
-backbone_parameters = [model.backbone_until_3.parameters(), model.layers_4.parameters(), model.aggregation.parameters()]                                                
-local_parameter = backbone_parameters + [model.attn_classifier.parameters()]
-for params in local_parameter:
-    for param in params:
-        param.requires_grad = False
+# backbone_parameters = [*model.backbone_until_3.parameters(), *model.layers_4.parameters(), *model.aggregation.parameters()]                                             
+# model_optimizer = torch.optim.Adam(backbone_parameters, lr=.001)     
