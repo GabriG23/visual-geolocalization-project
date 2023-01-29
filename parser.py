@@ -46,6 +46,8 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--positive_dist_threshold", type=int, default=25,
                         help="distance in meters for a prediction to be considered a positive")
     # GeoWarp parameters
+    parser.add_argument("--k", type=int, default=0.6,
+                        help="parameter k, defining the difficulty of ss training data")
     parser.add_argument("--ss_w", type=float, default=1,
                         help="weight of self-supervised loss")
     parser.add_argument("--consistency_w", type=float, default=0.1,

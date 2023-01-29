@@ -208,74 +208,74 @@ class TrainDataset(torch.utils.data.Dataset):           # ogni dataset fa riferi
 ##### GEOWARP
 # DATASET PER IL TRAINING DATASET T COMPOSTA DA GALLERY (database=) E DALLE QUERY
 
-import os
-import numpy as np
-from glob import glob
-from os.path import join
-import torch.utils.data as data
-from sklearn.neighbors import NearestNeighbors
+# import os
+# import numpy as np
+# from glob import glob
+# from os.path import join
+# import torch.utils.data as data
+# from sklearn.neighbors import NearestNeighbors
 
-class GeoWarpTrainDataset(data.Dataset):     # questo è nostr dataset T contennte la gallery e le query, in questo caso pitts30k
-    def __init__(self, dataset_folder, database_folder="database", queries_folder="queries", positive_dist_threshold=25):
-        """
-        Parameters
-        ----------
-        dataset_folder : str, should contain the path to the val or test set, which contains the folders {database_folder} and {queries_folder}.
-        database_folder : str, name of folder with the database.
-        queries_folder : str, name of folder with the queries.
-        positive_dist_threshold : int, distance in meters for a prediction to be considered a positive.
+# class GeoWarpTrainDataset(data.Dataset):     # questo è nostr dataset T contennte la gallery e le query, in questo caso pitts30k
+#     def __init__(self, dataset_folder, database_folder="database", queries_folder="queries", positive_dist_threshold=25):
+#         """
+#         Parameters
+#         ----------
+#         dataset_folder : str, should contain the path to the val or test set, which contains the folders {database_folder} and {queries_folder}.
+#         database_folder : str, name of folder with the database.
+#         queries_folder : str, name of folder with the queries.
+#         positive_dist_threshold : int, distance in meters for a prediction to be considered a positive.
         
-        """
+#         """
         
-        super().__init__()
-        self.dataset_folder = dataset_folder
-        self.database_folder = os.path.join(dataset_folder, database_folder)    # concatena il path del secondo elemento (che è solo un nome) a quello del primo (che è più lungo)
-        self.queries_folder = os.path.join(dataset_folder, queries_folder)
-        self.dataset_name = os.path.basename(dataset_folder)
+#         super().__init__()
+#         self.dataset_folder = dataset_folder
+#         self.database_folder = os.path.join(dataset_folder, database_folder)    # concatena il path del secondo elemento (che è solo un nome) a quello del primo (che è più lungo)
+#         self.queries_folder = os.path.join(dataset_folder, queries_folder)
+#         self.dataset_name = os.path.basename(dataset_folder)
 
-        if not os.path.exists(self.dataset_folder):
-            raise FileNotFoundError(f"Folder {self.dataset_folder} does not exist")
-        if not os.path.exists(self.database_folder):
-            raise FileNotFoundError(f"Folder {self.database_folder} does not exist")
-        if not os.path.exists(self.queries_folder):
-            raise FileNotFoundError(f"Folder {self.queries_folder} does not exist")  
+#         if not os.path.exists(self.dataset_folder):
+#             raise FileNotFoundError(f"Folder {self.dataset_folder} does not exist")
+#         if not os.path.exists(self.database_folder):
+#             raise FileNotFoundError(f"Folder {self.database_folder} does not exist")
+#         if not os.path.exists(self.queries_folder):
+#             raise FileNotFoundError(f"Folder {self.queries_folder} does not exist")  
 
-        self.base_transform = T.Compose([
-            T.ToTensor(),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),    # stessa mean e std del train
-        ])
+#         self.base_transform = T.Compose([
+#             T.ToTensor(),
+#             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),    # stessa mean e std del train
+#         ])
 
-        #### Read paths and UTM coordinates for all images.                                       # il dataset è diviso in due parti, gallery e queries
-        self.database_paths = sorted(glob(os.path.join(self.database_folder, "**", "*.jpg"), recursive=True))   # prende i path in ordine alfabetico che matchano
-        self.queries_paths = sorted(glob(os.path.join(self.queries_folder, "**", "*.jpg"),  recursive=True))                                   # abbiamo le query
+#         #### Read paths and UTM coordinates for all images.                                       # il dataset è diviso in due parti, gallery e queries
+#         self.database_paths = sorted(glob(os.path.join(self.database_folder, "**", "*.jpg"), recursive=True))   # prende i path in ordine alfabetico che matchano
+#         self.queries_paths = sorted(glob(os.path.join(self.queries_folder, "**", "*.jpg"),  recursive=True))                                   # abbiamo le query
 
-        # The format must be path/to/file/@utm_easting@utm_northing@...@.jpg
-        self.database_utms = np.array([(path.split("@")[1], path.split("@")[2]) for path in self.database_paths]).astype(float)  # prende  utmeast e utmnorth
-        self.queries_utms = np.array([(path.split("@")[1], path.split("@")[2]) for path in self.queries_paths]).astype(float)
+#         # The format must be path/to/file/@utm_easting@utm_northing@...@.jpg
+#         self.database_utms = np.array([(path.split("@")[1], path.split("@")[2]) for path in self.database_paths]).astype(float)  # prende  utmeast e utmnorth
+#         self.queries_utms = np.array([(path.split("@")[1], path.split("@")[2]) for path in self.queries_paths]).astype(float)
 
-        # Find soft_positives_per_query, which are within positive_dist_threshold (deafult 25 meters)
-        knn = NearestNeighbors(n_jobs=-1)                                                     # usa Knn per ragguppare i positivi delle query(tutte le query in un certo range)
-        knn.fit(self.database_utms)                                                            # fit il modello sugli utms
-        self.positives_per_query = knn.radius_neighbors(self.queries_utms,               # prende tutti i positive delle query
-                                                             radius=positive_dist_threshold,
-                                                             return_distance=False)
-        self.images_paths = [p for p in self.database_paths]        # tutti i path delle immagini nel dataset
-        self.images_paths += [p for p in self.queries_paths]                # unico path per le immagini
+#         # Find soft_positives_per_query, which are within positive_dist_threshold (deafult 25 meters)
+#         knn = NearestNeighbors(n_jobs=-1)                                                     # usa Knn per ragguppare i positivi delle query(tutte le query in un certo range)
+#         knn.fit(self.database_utms)                                                            # fit il modello sugli utms
+#         self.positives_per_query = knn.radius_neighbors(self.queries_utms,               # prende tutti i positive delle query
+#                                                              radius=positive_dist_threshold,
+#                                                              return_distance=False)
+#         self.images_paths = [p for p in self.database_paths]        # tutti i path delle immagini nel dataset
+#         self.images_paths += [p for p in self.queries_paths]                # unico path per le immagini
         
-        self.database_num = len(self.database_paths)                # restituisce il numero di paths (di immagini) del database
-        self.queries_num = len(self.queries_paths)                                        # conta le query (path diversi)
+#         self.database_num = len(self.database_paths)                # restituisce il numero di paths (di immagini) del database
+#         self.queries_num = len(self.queries_paths)                                        # conta le query (path diversi)
 
-    def __getitem__(self, index):
-        image_path = self.images_paths[index]
-        pil_image = open_image(image_path)
-        tensor_image = self.base_transform(pil_image)
-        return tensor_image, index
+#     def __getitem__(self, index):
+#         image_path = self.images_paths[index]
+#         pil_image = open_image(image_path)
+#         tensor_image = self.base_transform(pil_image)
+#         return tensor_image, index
     
-    def __len__(self):
-        return len(self.images_paths)
+#     def __len__(self):
+#         return len(self.images_paths)
     
-    def __repr__(self):
-        return f"< {self.dataset_name} - #q: {self.queries_num}; #db: {self.database_num} >"  
+#     def __repr__(self):
+#         return f"< {self.dataset_name} - #q: {self.queries_num}; #db: {self.database_num} >"  
     
-    def get_positives(self):                     # ritorna i positives per query
-        return self.positives_per_query  #soft positives
+#     def get_positives(self):                     # ritorna i positives per query
+#         return self.positives_per_query  #soft positives

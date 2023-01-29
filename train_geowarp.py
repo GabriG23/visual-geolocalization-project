@@ -19,8 +19,9 @@ import sphereface_loss
 import augmentations
 import datasets.warping_dataset
 from model import network
+from datasets.warping_dataset import get_random_homographic_pair
 from datasets.test_dataset import TestDataset
-from datasets.train_dataset import TrainDataset, GeoWarpTrainDataset
+from datasets.train_dataset import TrainDataset
 from datasets.prediction_dataset import DatasetQP
 
 torch.backends.cudnn.benchmark = True  # Provides a speedup
@@ -61,15 +62,15 @@ model = model.to(args.device).train()       # sposta il modello sulla GPU e lo m
 
 # dataset per il training con i gruppi
 groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L, current_group=n, min_images_per_class=args.min_images_per_class) for n in range(args.groups_num)]  # gruppi cosplace
-train_ds = GeoWarpTrainDataset(args.train_set_folder, positive_dist_threshold=args.positive_dist_threshold) # se ho tempo sistemo questa cosa, ho preso i dati di train come li prende quelli di test. Si possono prendere dai gruppi
 
 # dataset per il warping (uno per gruppo)
-ss_dataset = [datasets.warping_dataset.HomographyDataset(args.train_set_folder, k=0.6) for n in range(args.groups_num)] # k = parameter k, defining the difficulty of ss training data, default = 0.6    
+#ss_dataset = [datasets.warping_dataset.HomographyDataset(args, args.train_set_folder, k=0.6) for group in groups] # k = parameter k, defining the difficulty of ss training data, default = 0.6    
 
 # dataset per le prediction(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold) 
-dataset_qp = DatasetQP(model, global_features_dim, train_ds, qp_threshold=args.qp_threshold)   # threshold = 1.2 di default
-dataloader_qp = commons.InfiniteDataLoader(dataset_qp, shuffle=True, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)  # num_worker si potrebbe abbassare, ora è 8
-data_iter_qp = iter(dataloader_qp)   # iteratore prediction
+if args.consistency_w != 0 or args.features_wise_w != 0:   # le prediction le calcola solo per le 2 loss, quindi se non ce le ho, non mi serve prenderle dal DB anche perchè non ho le query di train
+    dataset_qp = [DatasetQP(model, global_features_dim, group, qp_threshold=args.qp_threshold) for group in groups]   # threshold = 1.2 di default
+    dataloader_qp = commons.InfiniteDataLoader(dataset_qp, shuffle=True, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)  # num_worker si potrebbe abbassare, ora è 8
+    data_iter_qp = iter(dataloader_qp)   # iteratore prediction
 
 # Validation and Test Dataset
 val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold) 
@@ -147,8 +148,8 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
     dataloader = commons.InfiniteDataLoader(groups[current_group_num], num_workers=args.num_workers, batch_size=args.batch_size, shuffle=True, pin_memory=(args.device == "cuda"), drop_last=True)
     dataloader_iterator = iter(dataloader)         # prende l'iteratore del dataloader
     # dataloader per il warping dataset
-    ss_dataloader = commons.InfiniteDataLoader(ss_dataset[current_group_num], num_workers=args.num_workers, batch_size=args.batch_size, shuffle=True, pin_memory=True, drop_last=True) # batch size 16, la nostra è 32
-    ss_data_iter = iter(ss_dataloader)   # crea iteratore sui data loader
+    # ss_dataloader = commons.InfiniteDataLoader(ss_dataset[current_group_num], num_workers=args.num_workers, batch_size=args.batch_size, shuffle=True, pin_memory=True, drop_last=True) # batch size 16, la nostra è 32
+    # ss_data_iter = iter(ss_dataloader)   # crea iteratore sui data loader
 
     model = model.train()       # mette il modello in modalità training (non l'aveva già fatto?)  
     epoch_losses = np.zeros((0, 4), dtype=np.float32)                      # inizializza il vettore delle loss, ne abbiamo 4, cosface e le altre 3
@@ -161,18 +162,19 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
             images = gpu_augmentation(images)                              # se il device è cuda, fa questa augmentation SULL'INTERO BATCH
                                                                         # se siamo sulla cpu, applica le trasformazioni ad un'immagine per volta
                                                                         # direttamente in train_dataset
-
         # dal warping dataset prende le due immagini warped e i due punti delle intersezioni
-        warped_img_1, warped_img_2, warped_intersection_points_1, warped_intersection_points_2 = next(ss_data_iter)
+        #warped_img_1, warped_img_2, warped_intersection_points_1, warped_intersection_points_2 = next(ss_data_iter)
+        warped_img_1, warped_img_2, warped_intersection_points_1, warped_intersection_points_2 = get_random_homographic_pair(images, args.k, is_debugging=False) 
         warped_img_1, warped_img_2, warped_intersection_points_1, warped_intersection_points_2 = warped_img_1.to(args.device), warped_img_2.to(args.device), warped_intersection_points_1.to(args.device), warped_intersection_points_2.to(args.device)  # warping dataset
         # Iq, Ip, tq e tp
-        if args.consistency_w != 0 or args.features_wise_w != 0:
+        if args.consistency_w != 0 or args.features_wise_w != 0: #entra solo se devo calcolare le due loss
             queries, positives = next(data_iter_qp)
             queries, positives = queries.to(args.device), positives.to(args.device)
 
         with torch.no_grad():                          # no gradient
             # fq e fp, calcola la misura di similarity
             similarity_matrix_1to2, similarity_matrix_2to1 = model("similarity", [warped_img_1, warped_img_2])       # crea le due matrici similarity
+        
         if args.consistency_w != 0:
             queries_cons = queries[:args.batch_size]                                                 # prende la conistency = 16                                          
             positives_cons = positives[:args.batch_size]                                             # anche qui = 16

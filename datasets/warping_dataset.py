@@ -12,7 +12,6 @@ from shapely.geometry import Polygon
 def open_image(path):
     return Image.open(path).convert("RGB")
 
-
 # DATASET PER IL WARPING
 def get_random_trapezoid(k=1):                                                                    # ottiene un trapezoide random tq e tp, questo passo avviene dolo  W                             
     """Get the points (with shape [4, 2] of a random trapezoid with two vertical sides.
@@ -139,28 +138,29 @@ def get_random_homographic_pair(source_img, k, is_debugging=False):
         return warped_images[0], warped_images[1], warped_intersection_points[0], warped_intersection_points[1]
 
 
-class HomographyDataset(torch.utils.data.Dataset):                                      # crea il dataset per l'omografia
-    def __init__(self, dataset_folder, database_folder = "train", k=0.1, is_debugging=False):
-        super().__init__()
-        self.dataset_folder = dataset_folder
-        self.database_folder = os.path.join(dataset_folder, database_folder) 
-        self.database_paths = sorted(glob(os.path.join(database_folder, "**", "*.jpg"), recursive=True))
-        self.images_paths = [p for p in self.database_paths] 
+# class HomographyDataset(torch.utils.data.Dataset):                                      # crea il dataset per l'omografia
+#     def __init__(self, dataset_folder, database_folder = "train", k=0.1, is_debugging=False):
+#         super().__init__()
+#         self.dataset_folder = dataset_folder
+#         self.database_golder = os.path.basename(args.dataset_folder)  
+#         #self.database_folder = os.path.join(dataset_folder, database_folder) 
+#         self.database_paths = sorted(glob(os.path.join(database_folder, "**", "*.jpg"), recursive=True))
+#         self.images_paths = [p for p in self.database_paths] 
 
-        self.database_num = len(self.database_paths) 
-        self.k = k                                                                      # indica quanto è difficile generare la coppia omografica
-        self.is_debugging = is_debugging
+#         self.database_num = len(self.database_paths) 
+#         self.k = k                                                                      # indica quanto è difficile generare la coppia omografica
+#         self.is_debugging = is_debugging
         
-        self.base_transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),    # stessa mean e std del train
-        ])
+#         self.base_transform = transforms.Compose([
+#             transforms.ToTensor(),
+#             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),    # stessa mean e std del train
+#         ])
 
-    def __getitem__(self, index):
-        image_path = self.images_paths[index]
-        source_image = open_image(image_path)
-        source_img = self.base_trasform(source_image)                       # trasforma l'immagine in un tensore, specifiche in datasets_util.py
-        return get_random_homographic_pair(source_img, self.k, is_debugging=self.is_debugging)      # ritorna la coppia casuale
+#     def __getitem__(self, index):
+#         image_path = self.images_paths[index]
+#         source_image = open_image(image_path)
+#         source_img = self.base_trasform(source_image)                       # trasforma l'immagine in un tensore, specifiche in datasets_util.py
+#         return get_random_homographic_pair(source_img, self.k, is_debugging=self.is_debugging)      # ritorna la coppia casuale
     
-    def __len__(self):
-        return len(self.images_paths)
+#     def __len__(self):
+#         return len(self.images_paths)

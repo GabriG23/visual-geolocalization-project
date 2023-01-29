@@ -92,8 +92,7 @@ def test_geowarp(args: Namespace, eval_ds: Dataset, model: torch.nn.Module):
         logging.debug("Extracting queries descriptors for evaluation/testing using batch size 1")
         queries_infer_batch_size = 1                                                                              # sembra che venga valutata un'immagine per volta
         queries_subset_ds = Subset(eval_ds, list(range(eval_ds.database_num, eval_ds.database_num+eval_ds.queries_num)))    # in questo caso, crea un subset con sole query
-        queries_dataloader = DataLoader(dataset=queries_subset_ds, num_workers=args.num_workers,
-                                        batch_size=queries_infer_batch_size, pin_memory=(args.device == "cuda"))            # crea il dataloader associato a questo secondo subset
+        queries_dataloader = DataLoader(dataset=queries_subset_ds, num_workers=args.num_workers, batch_size=queries_infer_batch_size, pin_memory=(args.device == "cuda"))            # crea il dataloader associato a questo secondo subset
         for images, indices in tqdm(queries_dataloader, ncols=100):                            
             images.to(args.device)
             descriptors = model("feature_extractor", [images, "global"])                         # fa lo stesso lavoro precedente, calcolando per ogni immagine di query il descrittore
