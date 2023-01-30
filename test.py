@@ -84,8 +84,8 @@ def test_geowarp(args: Namespace, eval_ds: Dataset, model: torch.nn.Module):
         all_descriptors = np.empty((len(eval_ds), args.fc_output_dim), dtype="float32")   
                                 # ritorna un vettore non inizializzato con una riga per ogni sample da valutare
         for images, indices in tqdm(database_dataloader, ncols=100):                                              # è un numero di colonne pari alla dimensione di descrittori
-            images.to(args.device)
-            descriptors = model("features_extractor", [images, "global"])                                          # mette le immagini su device e ne calcola il risultato del MODELLO -> i descrittori
+            images = images.to(args.device)
+            descriptors = model("features_extractor", [images, "global"])                                         # mette le immagini su device e ne calcola il risultato del MODELLO -> i descrittori
             descriptors = descriptors.cpu().numpy()                                                               # porta i descrittori su cpu e li traforma da tensori ad array
             all_descriptors[indices.numpy(), :] = descriptors                                                     # riempie l'array mettendo ad ogni indice il descrittore calcolato
         
@@ -94,7 +94,7 @@ def test_geowarp(args: Namespace, eval_ds: Dataset, model: torch.nn.Module):
         queries_subset_ds = Subset(eval_ds, list(range(eval_ds.database_num, eval_ds.database_num+eval_ds.queries_num)))    # in questo caso, crea un subset con sole query
         queries_dataloader = DataLoader(dataset=queries_subset_ds, num_workers=args.num_workers, batch_size=queries_infer_batch_size, pin_memory=(args.device == "cuda"))            # crea il dataloader associato a questo secondo subset
         for images, indices in tqdm(queries_dataloader, ncols=100):                            
-            images.to(args.device)
+            images = images.to(args.device)
             descriptors = model("features_extractor", [images, "global"])                         # fa lo stesso lavoro precedente, calcolando per ogni immagine di query il descrittore
             descriptors = descriptors.cpu().numpy()
             all_descriptors[indices.numpy(), :] = descriptors                 # rimepiendo il vettore all_descriptors 

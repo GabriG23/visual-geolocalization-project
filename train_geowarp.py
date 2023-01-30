@@ -174,7 +174,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):      #### Train
             optim.step()
         else:  # Use AMP 16
             with torch.cuda.amp.autocast():                                    # funzionamento che sfrutta amp16 per uno speed-up. Non trattato
-                descriptors = model("feature_extractor", [images, "global"])   # comunque di base sono gli stessi passaggi ma con qualche differenza  
+                descriptors = model("features_extractor", [images, "global"])   # comunque di base sono gli stessi passaggi ma con qualche differenza  
                 output = classifiers[current_group_num](descriptors, targets)
                 loss = criterion(output, targets)
             scaler.scale(loss).backward()
