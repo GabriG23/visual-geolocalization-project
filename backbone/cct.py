@@ -52,38 +52,37 @@ class CCT(nn.Module):
                  *args, **kwargs):
         super(CCT, self).__init__()
 
-        self.tokenizer = Tokenizer(n_input_channels=n_input_channels,
-                                   n_output_channels=embedding_dim,
-                                   kernel_size=kernel_size,
-                                   stride=stride,
-                                   padding=padding,
-                                   pooling_kernel_size=pooling_kernel_size,
-                                   pooling_stride=pooling_stride,
-                                   pooling_padding=pooling_padding,
-                                   max_pool=True,
-                                   activation=nn.ReLU,
-                                   n_conv_layers=n_conv_layers,
-                                   conv_bias=False)
+        self.tokenizer = Tokenizer( n_input_channels=n_input_channels,
+                                    n_output_channels=embedding_dim,
+                                    kernel_size=kernel_size,
+                                    stride=stride,
+                                    padding=padding,
+                                    pooling_kernel_size=pooling_kernel_size,
+                                    pooling_stride=pooling_stride,
+                                    pooling_padding=pooling_padding,
+                                    max_pool=True,
+                                    activation=nn.ReLU,
+                                    n_conv_layers=n_conv_layers,
+                                    conv_bias=False)
 
         self.classifier = TransformerClassifier(
-            sequence_length=self.tokenizer.sequence_length(n_channels=n_input_channels,
-                                                           height=img_size,
-                                                           width=img_size),
-            embedding_dim=embedding_dim,
-            seq_pool=True,
-            dropout=dropout,
-            attention_dropout=attention_dropout,
-            stochastic_depth=stochastic_depth,
-            num_layers=num_layers,
-            num_heads=num_heads,
-            mlp_ratio=mlp_ratio,
-            num_classes=num_classes,
-            positional_embedding=positional_embedding
-        )
+                                    sequence_length=self.tokenizer.sequence_length(n_channels=n_input_channels, height=img_size, width=img_size),
+                                    embedding_dim=embedding_dim,
+                                    seq_pool=True,
+                                    dropout=dropout,
+                                    attention_dropout=attention_dropout,
+                                    stochastic_depth=stochastic_depth,
+                                    num_layers=num_layers,
+                                    num_heads=num_heads,
+                                    mlp_ratio=mlp_ratio,
+                                    num_classes=num_classes,
+                                    positional_embedding=positional_embedding
+                                )
 
     def forward(self, x):
         x = self.tokenizer(x)
-        return self.classifier(x)
+        x = self.classifier(x)
+        return x
 
 
 def _cct(arch, pretrained, progress,
