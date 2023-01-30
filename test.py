@@ -172,7 +172,7 @@ def test_reranked(model, predictions, test_dataset, num_reranked_predictions=5, 
                 
                 preds = []
                 for i in batch_indexes:
-                    pred_path = test_dataset.gallery_paths[predictions[num_q, i]]
+                    pred_path = test_dataset.database_paths[predictions[num_q, i]]
                     pil_image = open_image(pred_path)
                     query = base_transform(pil_image)
                     preds.append(query)
