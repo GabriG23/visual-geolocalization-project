@@ -194,10 +194,10 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
             if args.ss_w != 0:  # ss_loss  # self supervised loss    guides the network to learn to estimate the points 
                 pred_warped_intersection_points_1 = model("regression", similarity_matrix_1to2)
                 pred_warped_intersection_points_2 = model("regression", similarity_matrix_2to1)
-                ss_loss = (mse(pred_warped_intersection_points_1[:, :4].float(), warped_intersection_points_1)+
-                        mse(pred_warped_intersection_points_1[:, 4:].float(), warped_intersection_points_2) +
-                        mse(pred_warped_intersection_points_2[:, :4].float(), warped_intersection_points_2) +
-                        mse(pred_warped_intersection_points_2[:, 4:].float(), warped_intersection_points_1))
+                ss_loss = (mse(pred_warped_intersection_points_1[:, :4].float(), warped_intersection_points_1.float())+
+                        mse(pred_warped_intersection_points_1[:, 4:].float(), warped_intersection_points_2.float()) +
+                        mse(pred_warped_intersection_points_2[:, :4].float(), warped_intersection_points_2.float()) +
+                        mse(pred_warped_intersection_points_2[:, 4:].float(), warped_intersection_points_1.float()))
                 print(ss_loss.dtype)
                 ss_loss.backward()
                 ss_loss = ss_loss.item()
