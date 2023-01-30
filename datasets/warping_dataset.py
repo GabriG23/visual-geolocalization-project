@@ -67,8 +67,8 @@ def compute_warping(model, tensor_img_1, tensor_img_2, weights=None):           
     # Get both predictions
     pred_points_1to2, pred_points_2to1 = model("similarity_and_regression", [tensor_img_1, tensor_img_2])   # prende le due predizioni (le predizioni sono immagini)
     # Average them
-    mean_pred_points_1 = (pred_points_1to2[:, :4].float() + pred_points_2to1[:, 4:].float()) / 2                # calcola la media
-    mean_pred_points_2 = (pred_points_1to2[:, 4:].float() + pred_points_2to1[:, :4].float()) / 2
+    mean_pred_points_1 = (pred_points_1to2[:, :4] + pred_points_2to1[:, 4:]) / 2                # calcola la media
+    mean_pred_points_2 = (pred_points_1to2[:, 4:] + pred_points_2to1[:, :4]) / 2
     # Apply the homography
     warped_tensor_img_1, _ = warp_images(tensor_img_1, mean_pred_points_1, weights)             # warp le immagini
     warped_tensor_img_2, _ = warp_images(tensor_img_2, mean_pred_points_2, weights)
@@ -94,9 +94,9 @@ def warp_images(tensor_img, warping_points, weights=None):
     rectangle_points = torch.repeat_interleave(torch.tensor(get_random_trapezoid(k=0)).unsqueeze(0), B, 0)           # repeat interleave: data un N ripete ogni elemento nel tensor N volte
     rectangle_points = rectangle_points.to(tensor_img.device)                                          # trasforma i punti in tensori?
     # NB for older versions of kornia use kornia.find_homography_dlt
-    theta = kornia.geometry.homography.find_homography_dlt(rectangle_points, warping_points, weights)  # trova l'omografia usando kornia (è una matrice di shape B, 3, 3)
+    theta = kornia.geometry.homography.find_homography_dlt(rectangle_points.float(), warping_points.float(), weights)  # trova l'omografia usando kornia (è una matrice di shape B, 3, 3)
     # NB for older versions of kornia use kornia.homography_warp
-    warped_images = kornia.geometry.homography_warp(tensor_img.float(), theta.float(), dsize=(H, W))                 
+    warped_images = kornia.geometry.homography_warp(tensor_img, theta, dsize=(H, W))                 
     return warped_images, theta
 
 
