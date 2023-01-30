@@ -18,7 +18,7 @@ import arcface_loss
 import sphereface_loss 
 import augmentations
 from model import network
-from datasets.warping_dataset import HomographyDataset, get_random_homographic_pair
+from datasets.warping_dataset import HomographyDataset
 from datasets.test_dataset import TestDataset
 from datasets.train_dataset import TrainDataset
 from datasets.prediction_dataset import DatasetQP
@@ -198,7 +198,6 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
                         mse(pred_warped_intersection_points_1[:, 4:].float(), warped_intersection_points_2.float()) +
                         mse(pred_warped_intersection_points_2[:, :4].float(), warped_intersection_points_2.float()) +
                         mse(pred_warped_intersection_points_2[:, 4:].float(), warped_intersection_points_1.float()))
-                print(ss_loss.dtype)
                 ss_loss.backward()
                 ss_loss = ss_loss.item()
                 del pred_warped_intersection_points_1, pred_warped_intersection_points_2
