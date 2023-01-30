@@ -168,7 +168,7 @@ def test_reranked(model, predictions, test_dataset, num_reranked_predictions=5, 
                 current_batch_size = len(batch_indexes)
                 pil_image = open_image(query_path)
                 query = base_transform(pil_image)
-                query_repeated_twice = torch.repeat_interleave(query.unsqueeze(0), current_batch_size, 0)
+                query_repeated_twice = torch.repeat_interleave(query.unsqueeze(0), current_batch_size, 0).float()
                 
                 preds = []
                 for i in batch_indexes:

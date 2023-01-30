@@ -67,8 +67,8 @@ def compute_warping(model, tensor_img_1, tensor_img_2, weights=None):           
     # Get both predictions
     pred_points_1to2, pred_points_2to1 = model("similarity_and_regression", [tensor_img_1, tensor_img_2])   # prende le due predizioni (le predizioni sono immagini)
     # Average them
-    mean_pred_points_1 = (pred_points_1to2[:, :4] + pred_points_2to1[:, 4:]) / 2                # calcola la media
-    mean_pred_points_2 = (pred_points_1to2[:, 4:] + pred_points_2to1[:, :4]) / 2
+    mean_pred_points_1 = (pred_points_1to2[:, :4] + pred_points_2to1[:, 4:]).float() / 2                # calcola la media
+    mean_pred_points_2 = (pred_points_1to2[:, 4:] + pred_points_2to1[:, :4]).float() / 2
     # Apply the homography
     warped_tensor_img_1, _ = warp_images(tensor_img_1, mean_pred_points_1, weights)             # warp le immagini
     warped_tensor_img_2, _ = warp_images(tensor_img_2, mean_pred_points_2, weights)
