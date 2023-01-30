@@ -21,7 +21,6 @@ from model import network
 from datasets.warping_dataset import HomographyDataset
 from datasets.test_dataset import TestDataset
 from datasets.train_dataset import TrainDataset
-from datasets.prediction_dataset import DatasetQP
 
 torch.backends.cudnn.benchmark = True  # Provides a speedup, se il modello non cambia e l'input size rimane lo stesso, si può beneficiare,  mettendolo a true
 
