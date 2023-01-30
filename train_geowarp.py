@@ -228,13 +228,14 @@ model.load_state_dict(best_model_state_dict)
 
 logging.info(f"Now testing on the test set: {test_ds}")
 
+logging.info(f"Start testing")
 recalls, recalls_str, predictions = test.test_geowarp(args, test_ds, model)                   # prova il modello migliore sul dataset di test (queries v1)
 
-logging.info(f"Normal test: {test_ds}: {recalls_str}")
-
+logging.info(f"Start re-ranking")
 _, reranked_recalls_str = test.test_reranked(model, predictions, test_ds, num_reranked_predictions = args.num_reranked_preds) # num_reranked_predictions, di default sono 5
 
-logging.info(f"Test after warping - {reranked_recalls_str}") # stampa le recall warpate
+logging.info(f"Test without warping: {test_ds}: {recalls_str}")
+logging.info(f"  Test after warping: {test_ds}: {reranked_recalls_str}") # stampa le recall warpate
 
 logging.info("Experiment finished (without any errors)")
 

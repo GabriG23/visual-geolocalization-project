@@ -29,7 +29,8 @@ logging.info(f"The outputs are being saved in {output_folder}")
 features_extractor = network.FeatureExtractor(args.backbone, args.fc_output_dim) 
 global_features_dim = commons.get_output_dim(features_extractor, "gem")    
 homography_regression = network.HomographyRegression(kernel_sizes=args.kernel_sizes, channels=args.channels, padding=1) # inizializza il layer homography
-model = network.GeoWarp(features_extractor, homography_regression).cuda().eval()
+
+model = network.GeoWarp(features_extractor, homography_regression)
 
 
 
@@ -47,14 +48,13 @@ model = model.to(args.device)
 
 test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1", positive_dist_threshold=args.positive_dist_threshold)
 
-# recalls, recalls_str = test.test(args, test_ds, model)
+logging.info(f"Start testing")
+recalls, recalls_str, predictions = test.test_geowarp(args, test_ds, model)                   # prova il modello migliore sul dataset di test (queries v1)
 
-recalls, recalls_str, predictions = test.test_geowarp(args, test_ds, model)
-
-logging.info(f"Normal test: {test_ds}: {recalls_str}")  
-
+logging.info(f"Start re-ranking")
 _, reranked_recalls_str = test.test_reranked(model, predictions, test_ds, num_reranked_predictions = args.num_reranked_preds) # num_reranked_predictions, di default sono 5
 
-logging.info(f"Test after warping - {reranked_recalls_str}") # stampa le recall warpate
+logging.info(f"Test without warping: {test_ds}: {recalls_str}")
+logging.info(f"  Test after warping: {test_ds}: {reranked_recalls_str}") # stampa le recall warpate
 
 logging.info("Experiment finished (without any errors)")
