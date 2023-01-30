@@ -54,7 +54,7 @@ class DatasetQP(torch.nn.Module):                                               
         query = open_image(query_path)
         source_query = self.base_trasform(query)   
         positive = open_image(positive_path)
-        source_positive = self.base_trasform(query)   
+        source_positive = self.base_trasform(positive)   
         return source_query, source_positive
     
     def __len__(self):

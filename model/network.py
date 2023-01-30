@@ -89,9 +89,11 @@ class FeatureExtractor(nn.Module):                        # questa è la rete pr
         x = self.backbone(x)                # backbone per entrambi i descrittori
         if f_type == "local":
             x = self.avgpool(x)             # per descrittori locali
-            return self.l2norm(x)
+            x = self.l2norm(x)
+            return x
         elif f_type == "global":
-            x = self.aggregation(x)         # per descrittori global                     # e dopo entra nel container sequenziale
+            x = self.aggregation(x)         # per descrittori global # e dopo entra nel container sequenziale
+            return x                 
         else:
             raise ValueError(f"Invalid features type: {f_type}")
 
@@ -116,12 +118,13 @@ class HomographyRegression(nn.Module):
         init_points = torch.cat((init_points, init_points))
         self.linear.bias.data = init_points
         self.linear.weight.data = torch.zeros_like((self.linear.weight.data))
-    
+
     def forward(self, x):
         B = x.shape[0]
         x = self.conv(x)
         x = x.contiguous().view(x.size(0), -1)
         x = self.linear(x)
+        x = x.reshape(B, 8, 2)
         return x.reshape(B, 8, 2)
 
 ##### MODULE GEOWARP
@@ -138,7 +141,7 @@ class GeoWarp(nn.Module):
         super().__init__()
         self.features_extractor = features_extractor                    # rete uguale a Cosplace: backbone + aggregation pooling
         self.homography_regression = homography_regression              # rete per il warping
-    
+
     def forward(self, operation, args):
         """Compute a forward pass, which can be of different types.
         This "ugly" step of passing the operation as a string has been adapted

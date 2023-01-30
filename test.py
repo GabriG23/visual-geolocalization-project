@@ -85,18 +85,17 @@ def test_geowarp(args: Namespace, eval_ds: Dataset, model: torch.nn.Module):
                                 # ritorna un vettore non inizializzato con una riga per ogni sample da valutare
         for images, indices in tqdm(database_dataloader, ncols=100):                                              # è un numero di colonne pari alla dimensione di descrittori
             images.to(args.device)
-            descriptors = model("feature_extractor", [images, "global"])                                          # mette le immagini su device e ne calcola il risultato del MODELLO -> i descrittori
+            descriptors = model("features_extractor", [images, "global"])                                          # mette le immagini su device e ne calcola il risultato del MODELLO -> i descrittori
             descriptors = descriptors.cpu().numpy()                                                               # porta i descrittori su cpu e li traforma da tensori ad array
             all_descriptors[indices.numpy(), :] = descriptors                                                     # riempie l'array mettendo ad ogni indice il descrittore calcolato
         
         logging.debug("Extracting queries descriptors for evaluation/testing using batch size 1")
         queries_infer_batch_size = 1                                                                              # sembra che venga valutata un'immagine per volta
         queries_subset_ds = Subset(eval_ds, list(range(eval_ds.database_num, eval_ds.database_num+eval_ds.queries_num)))    # in questo caso, crea un subset con sole query
-        queries_dataloader = DataLoader(dataset=queries_subset_ds, num_workers=args.num_workers,
-                                        batch_size=queries_infer_batch_size, pin_memory=(args.device == "cuda"))            # crea il dataloader associato a questo secondo subset
+        queries_dataloader = DataLoader(dataset=queries_subset_ds, num_workers=args.num_workers, batch_size=queries_infer_batch_size, pin_memory=(args.device == "cuda"))            # crea il dataloader associato a questo secondo subset
         for images, indices in tqdm(queries_dataloader, ncols=100):                            
             images.to(args.device)
-            descriptors = model("feature_extractor", [images, "global"])                         # fa lo stesso lavoro precedente, calcolando per ogni immagine di query il descrittore
+            descriptors = model("features_extractor", [images, "global"])                         # fa lo stesso lavoro precedente, calcolando per ogni immagine di query il descrittore
             descriptors = descriptors.cpu().numpy()
             all_descriptors[indices.numpy(), :] = descriptors                 # rimepiendo il vettore all_descriptors 
     
@@ -173,7 +172,7 @@ def test_reranked(model, predictions, test_dataset, num_reranked_predictions=5, 
                 
                 preds = []
                 for i in batch_indexes:
-                    pred_path = test_dataset.gallery_paths[predictions[num_q, i]]
+                    pred_path = test_dataset.database_paths[predictions[num_q, i]]
                     pil_image = open_image(pred_path)
                     query = base_transform(pil_image)
                     preds.append(query)

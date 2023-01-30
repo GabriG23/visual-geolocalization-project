@@ -3,15 +3,15 @@ import torch
 import kornia
 import os
 import random
-import torchvision.transforms as transforms
+import torchvision.transforms as T
 from PIL import Image
 from glob import glob
 from shapely.geometry import Polygon
-
+import logging
+import numpy as np
 
 def open_image(path):
     return Image.open(path).convert("RGB")
-
 
 # DATASET PER IL WARPING
 def get_random_trapezoid(k=1):                                                                    # ottiene un trapezoide random tq e tp, questo passo avviene dolo  W                             
@@ -31,7 +31,14 @@ def get_random_trapezoid(k=1):                                                  
     
     left = -rand(k)
     right = rand(k)
-    return torch.tensor([(left, -rand(k)), (right, -rand(k)), (right, rand(k)), (left, rand(k))])    # punti del trapezoide
+
+    trap_points = np.empty(shape=(4,2))
+    trap_points[0] = (left, -rand(k))
+    trap_points[1] = (right, -rand(k))
+    trap_points[2] = (right, rand(k))
+    trap_points[3] =( left, rand(k))
+    return trap_points
+    # return torch.tensor([(left, -rand(k)), (right, -rand(k)), (right, rand(k)), (left, rand(k))])    # punti del trapezoide
 
 
 def compute_warping(model, tensor_img_1, tensor_img_2, weights=None):                        # calcola il warping
@@ -84,10 +91,10 @@ def warp_images(tensor_img, warping_points, weights=None):
     """
     B, C, H, W = tensor_img.shape                                                                      # dimensioni del tensore
     assert warping_points.shape == torch.Size([B, 4, 2])                                               # controlla le dimensioni dei punti?
-    rectangle_points = torch.repeat_interleave(get_random_trapezoid(k=0).unsqueeze(0), B, 0)           # repeat interleave: data un N ripete ogni elemento nel tensor N volte
+    rectangle_points = torch.repeat_interleave(torch.tensor(get_random_trapezoid(k=0)).unsqueeze(0), B, 0)           # repeat interleave: data un N ripete ogni elemento nel tensor N volte
     rectangle_points = rectangle_points.to(tensor_img.device)                                          # trasforma i punti in tensori?
     # NB for older versions of kornia use kornia.find_homography_dlt
-    theta = kornia.geometry.homography.find_homography_dlt(rectangle_points, warping_points, weights)  # trova l'omografia usando kornia (è una matrice di shape B, 3, 3)
+    theta = kornia.geometry.homography.find_homography_dlt(rectangle_points.float(), warping_points.float(), weights)  # trova l'omografia usando kornia (è una matrice di shape B, 3, 3)
     # NB for older versions of kornia use kornia.homography_warp
     warped_images = kornia.geometry.homography_warp(tensor_img, theta, dsize=(H, W))                 
     return warped_images, theta
@@ -105,11 +112,12 @@ def get_random_homographic_pair(source_img, k, is_debugging=False):
     is_debugging : bool, if True return extra information
     
     """
-    
     # Compute two random trapezoids and their intersection
     trap_points_1 = get_random_trapezoid(k)                                                   # genera due trapezoidi
     trap_points_2 = get_random_trapezoid(k)
-    points_trapezoids = torch.cat((trap_points_1.unsqueeze(0), trap_points_2.unsqueeze(0)))   # prende i punti dei trapezodii
+    t1 = torch.tensor(trap_points_1)
+    t2 = torch.tensor(trap_points_2)
+    points_trapezoids = torch.cat((t1.unsqueeze(0), t2.unsqueeze(0)))   # prende i punti dei trapezodii
     trap_1 = Polygon(trap_points_1)                                                           # crea una superficie con la libreria Polygon
     trap_2 = Polygon(trap_points_2)
     intersection = trap_2.intersection(trap_1)                                                # ricava l'intersezione
@@ -140,27 +148,51 @@ def get_random_homographic_pair(source_img, k, is_debugging=False):
 
 
 class HomographyDataset(torch.utils.data.Dataset):                                      # crea il dataset per l'omografia
-    def __init__(self, dataset_folder, database_folder = "database", k=0.1, is_debugging=False):
+    def __init__(self, args, dataset_folder, M=10, N=5, current_group=0, min_images_per_class=10, k=0.1, is_debugging=False):
         super().__init__()
+        self.M = M                                          # lunghezza della cella
+        self.N = N                                          # distanza (metri) tra due classi dello stesso gruppo
+        self.current_group = current_group                  # gruppo corrente
         self.dataset_folder = dataset_folder
-        self.database_folder = os.path.join(dataset_folder, database_folder) 
-        self.database_paths = sorted(glob(os.path.join(self.database_folder, "**", "*.jpg"), recursive=True))
-        self.images_paths = [p for p in self.database_paths] 
-
-        self.database_num = len(self.database_paths) 
+        self.augmentation_device = args.augmentation_device
         self.k = k                                                                      # indica quanto è difficile generare la coppia omografica
         self.is_debugging = is_debugging
         
-        self.base_transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),    # stessa mean e std del train
+        # dataset_name should be either "processed", "small" or "raw", if you're using SF-XL
+        dataset_name = os.path.basename(args.dataset_folder)
+
+        filename = f"cache/{dataset_name}_M{M}_N{N}_mipc{min_images_per_class}.torch"
+        
+        classes_per_group, self.images_per_class = torch.load(filename)     # caricare il filename
+
+        self.classes_ids = classes_per_group[current_group]
+
+        if self.augmentation_device == "cpu":
+            self.transform = T.Compose([
+                    T.ColorJitter(brightness=args.brightness,
+                                  contrast=args.contrast,
+                                  saturation=args.saturation,
+                                  hue=args.hue),
+                    T.RandomResizedCrop([512, 512], scale=[1-args.random_resized_crop, 1]),
+                    T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+         ])
+
+        self.base_transform = T.Compose([
+                T.ToTensor(),
+                T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
-    def __getitem__(self, index):
-        image_path = self.images_paths[index]
-        source_image = open_image(image_path)
-        source_img = self.base_trasform(source_image)                       # trasforma l'immagine in un tensore, specifiche in datasets_util.py
-        return get_random_homographic_pair(source_img, self.k, is_debugging=self.is_debugging)      # ritorna la coppia casuale
+    def __getitem__(self, class_num):
+        # This function takes as input the class_num instead of the index of
+        # the image. This way each class is equally represented during warping.
+
+        class_id = self.classes_ids[class_num]
+        image_path = random.choice(self.images_per_class[class_id])
+
+        pil_image = open_image(image_path)
+        tensor_image = self.base_transform(pil_image)
+        return get_random_homographic_pair(tensor_image, self.k, is_debugging=self.is_debugging)      # ritorna la coppia casuale
     
     def __len__(self):
-        return len(self.images_paths)
+        """Return the number of homography classes within this group."""
+        return len(self.classes_ids)
