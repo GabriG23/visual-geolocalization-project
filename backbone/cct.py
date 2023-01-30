@@ -28,6 +28,10 @@ model_urls = {
         'https://shi-labs.com/projects/cct/checkpoints/finetuned/cct_14_7x2_384_flowers102.pth',
 }
 
+# Compact Convolutional Trasformers: utilizes a convolutional tokenizer, generating richer toknes and preserving local information.
+# The The convolutional tokenizer is better at encoding relationships between patches compared to the original ViT
+
+# Tokenizer: in order to introduce an inductive bias into the mode has been introduced a 
 
 class CCT(nn.Module):
     def __init__(self,
