@@ -60,6 +60,10 @@ def parse_arguments(is_training: bool = True):
                         help="size of kernels in conv layers of Homography Regression")
     parser.add_argument("--channels", nargs='+', default=[225, 128, 128, 64, 64, 64, 64],
                         help="num channels in conv layers of Homography Regression")
+    parser.add_argument("--resume_fe", type=str, default=None,
+                        help="path to resume for Feature Extractor")
+    parser.add_argument("--resume_hr", type=str, default=None,
+                        help="path to resume for Homography Regression")
     # Resume parameters
     parser.add_argument("--resume_train", type=str, default=None,
                         help="path to checkpoint to resume, e.g. logs/.../last_checkpoint.pth")

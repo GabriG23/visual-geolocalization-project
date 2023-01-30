@@ -30,20 +30,26 @@ features_extractor = network.FeatureExtractor(args.backbone, args.fc_output_dim)
 global_features_dim = commons.get_output_dim(features_extractor, "gem")    
 homography_regression = network.HomographyRegression(kernel_sizes=args.kernel_sizes, channels=args.channels, padding=1) # inizializza il layer homography
 
-model = network.GeoWarp(features_extractor, homography_regression)
-
-
-
 logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")
 
-if args.resume_model is not None:
-    logging.info(f"Loading model from {args.resume_model}")
-    model_state_dict = torch.load(args.resume_model)
-    model.load_state_dict(model_state_dict)
+if args.resume_fe is not None:
+    state_dict = torch.load(args.resume_fe)
+    features_extractor.load_state_dict(state_dict)
+    del state_dict
 else:
-    logging.info("WARNING: You didn't provide a path to resume the model (--resume_model parameter). " +
-                 "Evaluation will be computed using randomly initialized weights.")
+    logging.warning("WARNING: --resume_fe is set to None, meaning that the "
+                    "Feature Extractor is not initialized!")
 
+if args.resume_hr is not None:
+    state_dict = torch.load(args.resume_hr)
+    homography_regression.load_state_dict(state_dict)
+    del state_dict
+else:
+    logging.warning("WARNING: --resume_hr is set to None, meaning that the "
+                    "Homography Regression is not initialized!")
+
+model = network.GeoWarp(features_extractor, homography_regression).cuda().eval()             # mette il modello in evaluation 
+#model = torch.nn.DataParallel(model)       
 model = model.to(args.device)
 
 test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1", positive_dist_threshold=args.positive_dist_threshold)

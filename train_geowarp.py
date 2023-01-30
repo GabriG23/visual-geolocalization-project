@@ -214,7 +214,8 @@ for epoch_num in range(start_epoch_num, args.epochs_num):      #### Train
         "optimizers_state_dict": [c.state_dict() for c in classifiers_optimizers],
         "best_val_recall1": best_val_recall1
     }, is_best, output_folder)
-
+    torch.save(features_extractor.state_dict(), f"{output_folder}/features_extractor.pth")
+    torch.save(homography_regression.state_dict(), f"{output_folder}/homography_regression.pth")
     ##### EVALUATION #####
 ##### TRAIN #####
 
