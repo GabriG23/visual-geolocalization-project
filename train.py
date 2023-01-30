@@ -50,13 +50,12 @@ model = model.to(args.device).train()       # sposta il modello sulla GPU e lo m
 #### Optimizer
 criterion = torch.nn.CrossEntropyLoss() 
 criterion_MSE = torch.nn.MSELoss() 
-backbone_parameters = [*model.backbone_until_3.parameters(), *model.layers_4.parameters(), *model.aggregation.parameters()]      
-model_optimizer = torch.optim.Adam(backbone_parameters, lr=args.lr)      # utilizza l'algoritmo Adam per l'ottimizzazione
 
-
-attention_parameters = [*model.attn_classifier.parameters(), *model.attention.parameters()]
-attention_optimizer = torch.optim.Adam(attention_parameters, lr=args.lr)
+# attention_parameters = [*model.attn_classifier.parameters(), *model.attention.parameters()]
 autoencoder_optimizer = torch.optim.Adam(model.autoencoder.parameters(), lr=args.lr)
+
+backbone_parameters = [*model.backbone_until_3.parameters(), *model.layers_4.parameters(), *model.aggregation.parameters(), *model.attn_classifier.parameters(), *model.attention.parameters()]      
+model_optimizer = torch.optim.Adam(backbone_parameters, lr=args.lr)   
 
 #### Datasets
 groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,
@@ -112,17 +111,7 @@ if args.augmentation_device == "cuda":      # data augmentation. Da cpu a gpu ca
 if args.use_amp16:
     scaler = torch.cuda.amp.GradScaler()
 
-def grad_on_local_parameters(unfreeze):
-    local_parameter = attention_parameters + [model.attn_classifier.parameters()]
-    for params in local_parameter:
-        for param in params:
-            param.requires_grad = unfreeze
 
-def grad_on_global_parameters(unfreeze):
-    global_parameter = backbone_parameters
-    for params in global_parameter:
-        for param in params:
-            param.requires_grad = unfreeze
 
 for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il training
     
@@ -155,40 +144,23 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
         
         model_optimizer.zero_grad()                                         # setta il gradiente a zero per evitare double counting (passaggio classico dopo ogni iterazione)
         classifiers_optimizers[current_group_num].zero_grad()               # fa la stessa cosa con l'ottimizzatore
-
-        attention_optimizer.zero_grad()             #?????
-        autoencoder_optimizer.zero_grad()           #?????
+        autoencoder_optimizer.zero_grad()        
         
         if not args.use_amp16:
             descriptors, attn_logits, feature_map, rec_feature_map = model(images)   # inserisce il batch di immagini e restituisce il descrittore
             output = classifiers[current_group_num](descriptors, targets)            # riporta l'output del classifier (applica quindi la loss ai batches). Però passa sia descrittore cha label
             
+            feature_map = feature_map.detach() 
             global_loss = criterion(output, targets)                                           # calcola la loss (in funzione di output e target)
             attn_loss = criterion(attn_logits, targets)
             rec_loss = criterion_MSE(rec_feature_map, feature_map)
             
-            # loss = global_loss + attn_loss + rec_loss                                 # calcola il gradiente per ogni parametro che ha il grad settato a True
-
-            # Invece di usare un'unica loss, usare le tre separate e vedere che succede utilizzando tre optimizer diversi
-            # Eventualmente usare la stessa strategia per freezare i layer e usare un solo optimizer alla fine    
-            
-            print(*model.layers_4.parameters())
-            
-            # grad_on_local_parameters(False)         # freeze local parameter
-            global_loss.backward()
+            loss = global_loss + attn_loss + rec_loss                                 # calcola il gradiente per ogni parametro che ha il grad settato a True
+    
+            loss.backward()
             model_optimizer.step() 
             classifiers_optimizers[current_group_num].step() 
-
-            print(*model.layers_4.parameters())
-
-            # grad_on_local_parameters(True)
-            # grad_on_global_parameters(False)
-            attn_loss.backward()
-            rec_loss.backward()
-            attention_optimizer.step()             
-            autoencoder_optimizer.step()     
-
-            # grad_on_global_parameters(True)
+            autoencoder_optimizer.step()                  
 
             epoch_global_losses = np.append(epoch_global_losses, global_loss.item())                 
             epoch_attn_losses = np.append(epoch_attn_losses, attn_loss.item())
