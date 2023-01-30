@@ -46,8 +46,9 @@ if args.resume_model is not None:                                               
 
 homography_regression = network.HomographyRegression(kernel_sizes=args.kernel_sizes, channels=args.channels, padding=1) # inizializza il layer homography
 
-model = network.GeoWarp(features_extractor, homography_regression).cuda().eval()
-model = torch.nn.DataParallel(model)        # parallelizes the application by splitting the input across the specified devices by chunking in the batch dimenesion in the forward pass, the module is replicated on each device, and each replica handles a portion of the input. During the backward pass, gradients from each replica are summed into the original module
+model = network.GeoWarp(features_extractor, homography_regression)
+model = model.to(args.device).train()      # sposta il modello sulla GPU e lo mette in modalità training (alcuni layer si comporteranno di conseguenza)
+
 ##### MODEL #####
 
 ##### DATASETS & DATALOADERS ######
@@ -69,16 +70,7 @@ mse = torch.nn.MSELoss()  # criterio usato da GeoWarp. MSE misura the mean squar
 model_optimizer = torch.optim.Adam(features_extractor.parameters(), lr=args.lr)  # utilizza l'algoritmo Adam per l'ottimizzazione
 optim = torch.optim.Adam(homography_regression.parameters(), lr=args.lr) # anche in cosplace usa adam
 
-logging.info(f"Using {args.loss_function} function") # dentro args.loss ho la mia loss: per settarla scrivere negli args --loss_function name quando fate partire il train
-if args.loss_function == "cosface":
-        classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]   # il classifier è dato dalla loss(dimensione descrittore, numero di classi nel gruppo) 
-elif args.loss_function == "arcface": 
-        classifiers = [arcface_loss.ArcFace(args.fc_output_dim, len(group)) for group in groups]
-elif args.loss_function == "sphereface":
-        classifiers = [sphereface_loss.SphereFace(args.fc_output_dim, len(group)) for group in groups]
-else:
-    raise ValueError()
-
+classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]   # il classifier è dato dalla loss(dimensione descrittore, numero di classi nel gruppo) 
 classifiers_optimizers = [torch.optim.Adam(classifier.parameters(), lr=args.classifiers_lr) for classifier in classifiers] # rispettivo optimizer
 
 logging.info(f"Using {len(groups)} groups")                                                                                        # numero di gruppi
@@ -121,6 +113,7 @@ if args.use_amp16:
 
 ##### TRAIN #####
 for epoch_num in range(start_epoch_num, args.epochs_num):      #### Train
+    
     epoch_start_time = datetime.now()                                                        # prende tempo e data di oggi
     current_group_num = epoch_num % args.groups_num                                          # avendo un solo gruppo, il resto è sempre zero. Se avessi due gruppi, nelle
     classifiers[current_group_num] = classifiers[current_group_num].to(args.device)          # sposta il classfier del gruppo nel device
@@ -134,6 +127,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):      #### Train
 
     model = model.train()       # mette il modello in modalità training (non l'aveva già fatto?)  
     epoch_losses = np.zeros((0, 2), dtype=np.float32)    
+
     for iteration in tqdm(range(args.iterations_per_epoch), ncols=100):    # ncols è la grandezza della barra, 10k iterazioni per gruppo
         
         images, targets, _ = next(dataloader_iterator)                     # ritorna il batch di immagini e le rispettive classi (target)
@@ -233,7 +227,7 @@ logging.info(f"Start testing")
 recalls, recalls_str, predictions = test.test_geowarp(args, test_ds, model)                   # prova il modello migliore sul dataset di test (queries v1)
 
 logging.info(f"Start re-ranking")
-_, reranked_recalls_str = test.test_reranked(model, predictions, test_ds, num_reranked_predictions = args.num_reranked_preds) # num_reranked_predictions, di default sono 5
+_, reranked_recalls_str = test.test_reranked(args, model, predictions, test_ds, num_reranked_predictions = args.num_reranked_preds) # num_reranked_predictions, di default sono 5
 
 logging.info(f"Test without warping: {test_ds}: {recalls_str}")
 logging.info(f"  Test after warping: {test_ds}: {reranked_recalls_str}") # stampa le recall warpate

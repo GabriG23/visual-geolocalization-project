@@ -137,7 +137,7 @@ base_transform = transforms.Compose([
 def open_image(path):
     return Image.open(path).convert("RGB")
 
-def test_reranked(model, predictions, test_dataset, num_reranked_predictions=5, test_batch_size=16):
+def test_reranked(args, model, predictions, test_dataset, num_reranked_predictions=5, test_batch_size=16):
     """Compute the test by warping the query-prediction pairs.
     
     Parameters
@@ -168,7 +168,7 @@ def test_reranked(model, predictions, test_dataset, num_reranked_predictions=5, 
                 current_batch_size = len(batch_indexes)
                 pil_image = open_image(query_path)
                 query = base_transform(pil_image)
-                query_repeated_twice = torch.repeat_interleave(query.unsqueeze(0), current_batch_size, 0)
+                query_repeated_twice = torch.repeat_interleave(query.unsqueeze(0), current_batch_size, 0).to(args.device)
                 
                 preds = []
                 for i in batch_indexes:
@@ -176,9 +176,9 @@ def test_reranked(model, predictions, test_dataset, num_reranked_predictions=5, 
                     pil_image = open_image(pred_path)
                     query = base_transform(pil_image)
                     preds.append(query)
-                preds = torch.stack(preds)
+                preds = torch.stack(preds).to(args.device)
                 
-                warped_pair = compute_warping(model, query_repeated_twice.cuda(), preds.cuda())
+                warped_pair = compute_warping(model, query_repeated_twice, preds)
                 q_features = model("features_extractor", [warped_pair[0], "local"])
                 p_features = model("features_extractor", [warped_pair[1], "local"])
                 # Sum along all axes except for B. wqp stands for warped query-prediction
