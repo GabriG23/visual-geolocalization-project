@@ -48,7 +48,7 @@ else:
     logging.warning("WARNING: --resume_hr is set to None, meaning that the "
                     "Homography Regression is not initialized!")
 
-model = network.GeoWarp(features_extractor, homography_regression).cuda().eval()             # mette il modello in evaluation 
+model = network.GeoWarp(features_extractor, homography_regression)          # mette il modello in evaluation 
 #model = torch.nn.DataParallel(model)       
 model = model.to(args.device)
 
