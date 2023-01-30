@@ -1,5 +1,5 @@
 ### Students
-- Aiello Davide: x303296
+- Aiello Davide: s303296
 - Gabriele Greco: s303435
 # Visual Geolocalization: mapping images to GPS
 
