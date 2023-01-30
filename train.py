@@ -171,20 +171,24 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
 
             # Invece di usare un'unica loss, usare le tre separate e vedere che succede utilizzando tre optimizer diversi
             # Eventualmente usare la stessa strategia per freezare i layer e usare un solo optimizer alla fine    
-
-            grad_on_local_parameters(False)         # freeze local parameter
+            
+            print(*model.layers_4.parameters())
+            
+            # grad_on_local_parameters(False)         # freeze local parameter
             global_loss.backward()
             model_optimizer.step() 
             classifiers_optimizers[current_group_num].step() 
 
-            grad_on_local_parameters(True)
-            grad_on_global_parameters(False)
+            print(*model.layers_4.parameters())
+
+            # grad_on_local_parameters(True)
+            # grad_on_global_parameters(False)
             attn_loss.backward()
             rec_loss.backward()
             attention_optimizer.step()             
             autoencoder_optimizer.step()     
 
-            grad_on_global_parameters(True)
+            # grad_on_global_parameters(True)
 
             epoch_global_losses = np.append(epoch_global_losses, global_loss.item())                 
             epoch_attn_losses = np.append(epoch_attn_losses, attn_loss.item())

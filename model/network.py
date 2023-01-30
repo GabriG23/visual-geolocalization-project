@@ -52,6 +52,7 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
             reduced_dim, rec_feature_map = self.autoencoder(feature_map)                    # non so a cosa serva il primo
         attn_prelogits, attn_scores, _ = self.attention(feature_map, rec_feature_map)
         attn_logits = self.attn_classifier(attn_prelogits)
+
         return global_features, attn_logits, feature_map, rec_feature_map
 
 
@@ -93,8 +94,29 @@ def get_backbone(backbone_name):                            # backbone_name è u
     return backbone_until_3, layers_4, features_dim
 
 
-# t = torch.rand([32, 3, 512, 512])
 # model = GeoLocalizationNet('resnet18', 512)
+
+# lr = 00.1
+# criterion = torch.nn.CrossEntropyLoss() 
+# criterion_MSE = torch.nn.MSELoss() 
+# backbone_parameters = [*model.backbone_until_3.parameters(), *model.layers_4.parameters(), *model.aggregation.parameters()]      
+# model_optimizer = torch.optim.Adam(backbone_parameters, lr=lr)      # utilizza l'algoritmo Adam per l'ottimizzazione
+
+
+# attention_parameters = [*model.attn_classifier.parameters(), *model.attention.parameters()]
+# attention_optimizer = torch.optim.Adam(attention_parameters, lr=lr)
+# autoencoder_optimizer = torch.optim.Adam(model.autoencoder.parameters(), lr=lr)
+
+# classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]         # il classifier è dato dalla loss(dimensione descrittore, numero di classi nel gruppo) 
+# classifiers_optimizers = [torch.optim.Adam(classifier.parameters(), lr=args.classifiers_lr) for classifier in classifiers] 
+
+# targets = torch.rand([2, 10])
+# images = torch.rand([2, 3, 512, 512])
+# descriptors, attn_logits, feature_map, rec_feature_map = model(images)
+
+# global_loss = criterion(output, targets)                                           # calcola la loss (in funzione di output e target)
+# attn_loss = criterion(attn_logits, targets)
+# rec_loss = criterion_MSE(rec_feature_map, feature_map)
 # t_att = model(t)
 # print(model)
 # print(model.layers_4.parameters())
