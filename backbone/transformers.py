@@ -1,7 +1,7 @@
 import torch
 from torch.nn import Module, ModuleList, Linear, Dropout, LayerNorm, Identity, Parameter, init
 import torch.nn.functional as F
-from stochastic_depth import DropPath
+from .stochastic_depth import DropPath
 
 class Attention(Module): # MHSA layer Multi-Headed Self-Attention
     """
