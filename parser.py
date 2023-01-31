@@ -48,10 +48,6 @@ def parse_arguments(is_training: bool = True):
                         help="parameter k, defining the difficulty of ss training data")
     parser.add_argument("--ss_w", type=float, default=1,
                         help="weight of self-supervised loss")
-    parser.add_argument("--consistency_w", type=float, default=0.1,
-                        help="weight of consistency loss")
-    parser.add_argument("--features_wise_w", type=float, default=10,
-                        help="weight of features-wise loss")
     parser.add_argument("--qp_threshold", type=float, default=1.2,
                         help="Threshold distance (in features space) for query-positive pairs")
     parser.add_argument("--num_reranked_preds", type=int, default=5,
