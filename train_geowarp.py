@@ -67,7 +67,6 @@ criterion = torch.nn.CrossEntropyLoss()  # criterio usato per CosPlace. Abbiamo 
 mse = torch.nn.MSELoss()  # criterio usato da GeoWarp. MSE misura the mean squared error tra gli elementi in input x e il target y. Qui abbiamo un problema di Regressione
 
 model_optimizer = torch.optim.Adam(features_extractor.parameters(), lr=args.lr)  # utilizza l'algoritmo Adam per l'ottimizzazione
-optim = torch.optim.Adam(homography_regression.parameters(), lr=args.lr) # anche in cosplace usa adam
 
 classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]   # il classifier è dato dalla loss(dimensione descrittore, numero di classi nel gruppo) 
 classifiers_optimizers = [torch.optim.Adam(classifier.parameters(), lr=args.classifiers_lr) for classifier in classifiers] # rispettivo optimizer
@@ -143,7 +142,6 @@ for epoch_num in range(start_epoch_num, args.epochs_num):      #### Train
     
         model_optimizer.zero_grad()                                        # setta il gradiente a zero per evitare double counting (passaggio classico dopo ogni iterazione)
         classifiers_optimizers[current_group_num].zero_grad()              # fa la stessa cosa con l'ottimizzatore
-        optim.zero_grad()
 
         if not args.use_amp16:
             descriptors = model("features_extractor", [images, "global"])                                     # inserisce il batch di immagini e restituisce il descrittore
@@ -170,7 +168,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):      #### Train
             del loss, ss_loss
             model_optimizer.step()                                          # update dei parametri insieriti nell'ottimizzatore del modello
             classifiers_optimizers[current_group_num].step()                # update anche dei parametri del layer classificatore 
-            optim.step()
+
         else:  # Use AMP 16
             with torch.cuda.amp.autocast():                                    # funzionamento che sfrutta amp16 per uno speed-up. Non trattato
                 descriptors = model("features_extractor", [images, "global"])   # comunque di base sono gli stessi passaggi ma con qualche differenza  
