@@ -67,15 +67,15 @@ class ViTLite(nn.Module):
         return x
 
 
-def _vit_lite(num_layers, num_heads, mlp_ratio, embedding_dim, kernel_size=4, *args, **kwargs): 
+def _vit_lite(num_layers, num_heads, mlp_ratio, embedding_dim, kernel_size=4): 
                                     
-    model = ViTLite(num_layers=num_layers,                          # numero layer                   2 - 4 - 6 - 7
-                    num_heads=num_heads,                            # numero head                    2 - 2 - 4 - 4
-                    mlp_ratio=mlp_ratio,                            # multi layer perceptron         1 - 1 - 2 - 2
-                    embedding_dim=embedding_dim,                    # dim feature                   128 - 128 - 256 - 256
+    model = ViTLite(num_layers=num_layers,                          # numero layer                   2 - 4 - 6 - 7 - 8
+                    num_heads=num_heads,                            # numero head                    2 - 2 - 4 - 4 - 4
+                    mlp_ratio=mlp_ratio,                            # multi layer perceptron         1 - 1 - 2 - 2 - 2
+                    embedding_dim=embedding_dim,                    # dim feature                   128 - 128 - 256 - 256 - 256
                     kernel_size=kernel_size,                        # dim kernel
-                    positional_embedding='learnable',               # non ho capito, ma non dovrebbe servirci       
-                    *args, **kwargs)
+                    positional_embedding='learnable'                # non ho capito, ma non dovrebbe servirci       
+                    )
     return model
 
 
@@ -95,4 +95,4 @@ def vit_7():
     return _vit_lite(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256)
 
 def vit_8():
-    return _vit_lite(num_layers=8, num_heads=4, mlp_ratio=2, embedding_dim=256)
+    return _vit_lite(num_layers=8, num_heads=4, mlp_ratio=2, embedding_dim=256) # aggiunto io
