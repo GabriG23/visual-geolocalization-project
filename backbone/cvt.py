@@ -29,7 +29,7 @@ class CVT(nn.Module):
                  num_heads=6,
                  mlp_ratio=4.0,
                  num_classes=5965,
-                 positional_embedding='learnable'
+                 positional_embedding='learnable'                       # dipende molto dal positional_embedding come Vit-Lite
                  ):
         super(CVT, self).__init__()
 

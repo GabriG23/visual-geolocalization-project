@@ -10,17 +10,17 @@ class Attention(Module): # MHSA layer Multi-Headed Self-Attention
 
     def __init__(self, dim, num_heads=8, attention_dropout=0.1, projection_dropout=0.1):
         super().__init__()
-        self.num_heads = num_heads
-        head_dim = dim // self.num_heads
-        self.scale = head_dim ** -0.5
+        self.num_heads = num_heads                          # numero head
+        head_dim = dim // self.num_heads                    # divisione intera 
+        self.scale = head_dim ** -0.5                       # potenza di - 1/2
 
-        self.qkv = Linear(dim, dim * 3, bias=False)
-        self.attn_drop = Dropout(attention_dropout)
+        self.qkv = Linear(dim, dim * 3, bias=False)         # 
+        self.attn_drop = Dropout(attention_dropout)         # butta fuori l'attention dropout
         self.proj = Linear(dim, dim)
         self.proj_drop = Dropout(projection_dropout)
 
     def forward(self, x):
-        B, N, C = x.shape
+        B, N, C = x.shape           # B batch N ? C ?
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]
 
@@ -65,23 +65,25 @@ class TransformerEncoderLayer(Module):
 
 class TransformerClassifier(Module):  # Multi Layer Perceptron
     def __init__(self,
-                 seq_pool=True,
-                 embedding_dim=768,
-                 num_layers=12,
-                 num_heads=12,
-                 mlp_ratio=4.0,
-                 num_classes=1000,
+                 seq_pool=True,                                                     # True per CVT e CCT
+                 embedding_dim=768,                                                 # dimensione data in ingresso
+                 num_layers=12,                                                     # layers
+                 num_heads=12,                                                      # head
+                 mlp_ratio=4.0,                                                     # niente di nuovo
+                 num_classes=5965,
                  dropout=0.1,
                  attention_dropout=0.1,
                  stochastic_depth=0.1,
                  positional_embedding='learnable',
                  sequence_length=None):
         super().__init__()
+        # controlla il positional
         positional_embedding = positional_embedding if \
             positional_embedding in ['sine', 'learnable', 'none'] else 'sine'
-        dim_feedforward = int(embedding_dim * mlp_ratio)
-        self.embedding_dim = embedding_dim
-        self.sequence_length = sequence_length
+        
+        dim_feedforward = int(embedding_dim * mlp_ratio)                        # int 128 * 0.1 = 12.8
+        self.embedding_dim = embedding_dim                                      # dim 128
+        self.sequence_length = sequence_length                                  # lunghezza della sequenza
         self.seq_pool = seq_pool
         self.num_tokens = 0
 
@@ -89,18 +91,17 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
             f"Positional embedding is set to {positional_embedding} and" \
             f" the sequence length was not specified."
 
-        if not seq_pool:
+        if not seq_pool:            # controlla il sequence pool, per ViT non serve
             sequence_length += 1
             self.class_emb = Parameter(torch.zeros(1, 1, self.embedding_dim),
                                        requires_grad=True)
             self.num_tokens = 1
         else:
-            self.attention_pool = Linear(self.embedding_dim, 1)
+            self.attention_pool = Linear(self.embedding_dim, 1)     # questo per ViT
 
         if positional_embedding != 'none':
-            if positional_embedding == 'learnable':
-                self.positional_emb = Parameter(torch.zeros(1, sequence_length, embedding_dim),
-                                                requires_grad=True)
+            if positional_embedding == 'learnable':                 # per ViT e CVT
+                self.positional_emb = Parameter(torch.zeros(1, sequence_length, embedding_dim), requires_grad=True)
                 init.trunc_normal_(self.positional_emb, std=0.2)
             else:
                 self.positional_emb = Parameter(self.sinusoidal_embedding(sequence_length, embedding_dim),
@@ -108,7 +109,7 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
         else:
             self.positional_emb = None
 
-        self.dropout = Dropout(p=dropout)
+        self.dropout = Dropout(p=dropout)                   # init dropout
         dpr = [x.item() for x in torch.linspace(0, stochastic_depth, num_layers)]
         self.blocks = ModuleList([
             TransformerEncoderLayer(d_model=embedding_dim, nhead=num_heads,

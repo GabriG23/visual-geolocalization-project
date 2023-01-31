@@ -4,21 +4,22 @@ import torch.nn.functional as F
 
 class Tokenizer(nn.Module):
     def __init__(self,
-                 kernel_size, stride, padding,
-                 pooling_kernel_size=3, pooling_stride=2, pooling_padding=1,
-                 n_conv_layers=1,
-                 n_input_channels=3,
-                 n_output_channels=64,
-                 in_planes=64,
-                 activation=None,
-                 max_pool=True,
-                 conv_bias=False):
+                 kernel_size, stride, padding,                                          # dimensione del blocco, kernel stride padding
+                 pooling_kernel_size=3, pooling_stride=2, pooling_padding=1,            # dimensione del pooling layer
+                 n_conv_layers=1,                                                       # full convolutional layer
+                 n_input_channels=3,                                                    # canali ingresso
+                 n_output_channels=64,                                                  # canali output
+                 in_planes=64,                                                          # piani di ingresso
+                 activation=None,                                                       # True solo per CCT
+                 max_pool=True,                                                         # True solo per CCT
+                 conv_bias=False):                                                      # True per vit e CVT
         super(Tokenizer, self).__init__()
 
+        # numero di filtri
         n_filter_list = [n_input_channels] + \
                         [in_planes for _ in range(n_conv_layers - 1)] + \
                         [n_output_channels]
-
+        #convolutional layer
         self.conv_layers = nn.Sequential(
                 *[nn.Sequential(
                 nn.Conv2d(n_filter_list[i], n_filter_list[i + 1],
@@ -36,8 +37,8 @@ class Tokenizer(nn.Module):
         self.flattener = nn.Flatten(2, 3)
         self.apply(self.init_weight)
 
-    def sequence_length(self, n_channels=3, height=224, width=224):
-        return self.forward(torch.zeros((1, n_channels, height, width))).shape[1]
+    def sequence_length(self, n_channels=3, height=224, width=224):               # dimensioni immagini B C H W
+        return self.forward(torch.zeros((1, n_channels, height, width))).shape[1] # ritorna i canali?
 
     def forward(self, x):
         return self.flattener(self.conv_layers(x)).transpose(-2, -1)
