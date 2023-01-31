@@ -1,6 +1,6 @@
 import torch.nn as nn
-from transformers import TransformerClassifier
-from tokenizer import Tokenizer
+from .transformers import TransformerClassifier
+from .tokenizer import Tokenizer
 
 
 def convolutional_compact_transformer(type):
