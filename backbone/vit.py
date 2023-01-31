@@ -30,7 +30,7 @@ class ViTLite(nn.Module):
                  num_heads=6,                                # numero di head
                  mlp_ratio=4.0,
                  num_classes=5965,                          
-                 positional_embedding='learnable'
+                 positional_embedding='learnable'           # learnable
                 ):
         super(ViTLite, self).__init__()
         assert img_size % kernel_size == 0, f"Image size ({img_size}) has to be" \
@@ -74,7 +74,7 @@ def _vit_lite(num_layers, num_heads, mlp_ratio, embedding_dim, kernel_size=4):
                     mlp_ratio=mlp_ratio,                            # multi layer perceptron         1 - 1 - 2 - 2 - 2
                     embedding_dim=embedding_dim,                    # dim feature                   128 - 128 - 256 - 256 - 256
                     kernel_size=kernel_size,                        # dim kernel
-                    positional_embedding='learnable'                # non ho capito, ma non dovrebbe servirci       
+                    positional_embedding=None                       # non ho capito, ma non dovrebbe servirci, mettere su learnable se lo ri vuole reinserire    
                     )
     return model
 
