@@ -28,7 +28,7 @@ class CVT(nn.Module):
                  num_layers=14,
                  num_heads=6,
                  mlp_ratio=4.0,
-                 num_classes=1000,
+                 num_classes=5965,
                  positional_embedding='learnable'
                  ):
         super(CVT, self).__init__()

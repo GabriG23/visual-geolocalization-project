@@ -29,7 +29,7 @@ class ViTLite(nn.Module):
                  num_layers=14,                              # numero di layers
                  num_heads=6,                                # numero di head
                  mlp_ratio=4.0,
-                 num_classes=1000,                          
+                 num_classes=5965,                          
                  positional_embedding='learnable'
                 ):
         super(ViTLite, self).__init__()
