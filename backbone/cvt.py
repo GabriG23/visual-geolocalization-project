@@ -49,7 +49,7 @@ class CVT(nn.Module):
         self.classifier = TransformerClassifier(
             sequence_length=self.tokenizer.sequence_length(n_channels=n_input_channels, height=img_size, width=img_size),
             embedding_dim=embedding_dim,
-            seq_pool=True,
+            seq_pool=True,              # questa è l'unica cosa che cambia da ViT
             dropout=dropout,
             attention_dropout=attention_dropout,
             stochastic_depth=stochastic_depth,
