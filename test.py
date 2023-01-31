@@ -154,28 +154,28 @@ def test_reranked(args, model, predictions, test_dataset, num_reranked_predictio
     recalls_pretty_str : str, pretty-printed recalls
     """
     
-    model = model.eval()
-    reranked_predictions = predictions.copy()
+    model = model.eval()                                                                    # mette il modello in evaluation (alcuni moduli si comporteranno in modo diverso)
+    reranked_predictions = predictions.copy()                                               # prende il numero di predizioni (5) per cui effettuare il re-rank
     with torch.no_grad():
-        for num_q in tqdm(range(test_dataset.queries_num), desc="Testing", ncols=100):
+        for num_q in tqdm(range(test_dataset.queries_num), desc="Testing", ncols=100):      # prende tutte le query da test
 
-            dot_prods_wqp = np.zeros((num_reranked_predictions))
-            query_path = test_dataset.queries_paths[num_q]
+            dot_prods_wqp = np.zeros((num_reranked_predictions))                            # crea un vettore di dim delle predizioni
+            query_path = test_dataset.queries_paths[num_q]                                  # path della query
 
-            for i1 in range(0, num_reranked_predictions, test_batch_size):
+            for i1 in range(0, num_reranked_predictions, test_batch_size):                  # per ogni predizione
 
-                batch_indexes = list(range(num_reranked_predictions))[i1:i1+test_batch_size]
-                current_batch_size = len(batch_indexes)
-                pil_image = open_image(query_path)
-                query = base_transform(pil_image)
-                query_repeated_twice = torch.repeat_interleave(query.unsqueeze(0), current_batch_size, 0).to(args.device)
+                batch_indexes = list(range(num_reranked_predictions))[i1:i1+test_batch_size]    # indici dei batch
+                current_batch_size = len(batch_indexes)                                         # lunghezza del batch (32)
+                pil_image = open_image(query_path)                                              # apre l'immagine
+                query = base_transform(pil_image)                                               # prende la query
+                query_repeated_twice = torch.repeat_interleave(query.unsqueeze(0), current_batch_size, 0).to(args.device) # crea un copia della query con i valori sdoppiati e mette in batch come quarta dimensione
                 
-                preds = []
-                for i in batch_indexes:
-                    pred_path = test_dataset.database_paths[predictions[num_q, i]]
-                    pil_image = open_image(pred_path)
-                    query = base_transform(pil_image)
-                    preds.append(query)
+                preds = []                                                                  # predizioni
+                for i in batch_indexes:                                                     # per ogni batch 
+                    pred_path = test_dataset.database_paths[predictions[num_q, i]]          # path della predizione dal database
+                    pil_image = open_image(pred_path)                                       # apre l'immagine
+                    query = base_transform(pil_image)                                       # prende la immagine
+                    preds.append(query)                                                     # la aggiunge alle predizioni
                 preds = torch.stack(preds).to(args.device)
                 
                 warped_pair = compute_warping(model, query_repeated_twice, preds)
@@ -199,3 +199,9 @@ def test_reranked(args, model, predictions, test_dataset, num_reranked_predictio
     recalls = recalls / test_dataset.queries_num * 100
     recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, recalls)])
     return recalls, recalls_str
+
+
+### esempio pred = 5
+# query = 100
+# database = tot
+# continua....
