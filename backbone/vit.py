@@ -74,7 +74,7 @@ def _vit_lite(num_layers, num_heads, mlp_ratio, embedding_dim, kernel_size=4):
                     mlp_ratio=mlp_ratio,                            # multi layer perceptron         1 - 1 - 2 - 2 - 2
                     embedding_dim=embedding_dim,                    # dim feature                   128 - 128 - 256 - 256 - 256
                     kernel_size=kernel_size,                        # dim kernel
-                    positional_embedding=None                       # non ho capito, ma non dovrebbe servirci, mettere su learnable se lo ri vuole reinserire    
+                    positional_embedding='none'                       # non ho capito, ma non dovrebbe servirci, mettere su learnable se lo ri vuole reinserire    
                     )
     return model
 
