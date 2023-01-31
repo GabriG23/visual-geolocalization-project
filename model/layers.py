@@ -74,14 +74,14 @@ class Attention(nn.Module):
         if rec_feature_map is None:                         # significa che non ha usato l'autoencoder per ridurre la dimensione
             rec_feature_map = input   
         
-         # L2-normalize the featuremap before pooling.
+        # L2-normalize the featuremap before pooling.
         rec_feature_map_norm = F.normalize(rec_feature_map, p=2, dim=1) 
         att = torch.mul(rec_feature_map_norm, prob)         # ([32, 256, 32, 32])  -> o comunque la dimensione di quella con più canali
-
-        feat = torch.mean(att, [1, 2])                      # ([32, 32]) -> questo passaggio non è chiaro, nel paper non pare esserci
+        print(f"att:{att.shape}")
+        feat = torch.mean(att, [2, 3])                      # ([32, 256]) 
         # feat = tf.reduce_mean(tf.multiply(targets, prob), [1, 2], keepdims=False)         variante in tensorflow                          
-       
-        return feat, prob, score                            # passa anche lo score ma nel model non lo usa
+        print(f"att:{feat.shape}")
+        return feat, prob, att                              # passa anche lo score ma nel model non lo usa
     
 class Autoencoder(nn.Module):
     def __init__(self, input_features, output_features):    # in_c mi sembra siano 256

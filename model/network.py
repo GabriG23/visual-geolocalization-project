@@ -34,9 +34,9 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
         self.attention = Attention(256)                     # 256 sono i canali di feature map (B, 256, 32, 32)
         self.dim_reduction = dim_reduction
         if self.dim_reduction:
-            self.autoencoder = Autoencoder(256, 32)         # entrano che sono 256, quella ridotta mettiamo a 32 cosi da mantenere lo stesso rapporto del paper (8)
+            self.autoencoder = Autoencoder(256, 64)         # entrano che sono 256, quella ridotta mettiamo a 32 cosi da mantenere lo stesso rapporto del paper (8)
                                                             # EVENTUALMENTE DA PROVARE SENZA AUTOENCODER QUINDI SENZA RIDURRE LE FEATURES
-        self.attn_classifier = nn.Linear(32, num_classes)
+        self.attn_classifier = nn.Linear(256, num_classes)  # è il numero di descrottori locali
 
     def forward(self, x):
         feature_map = self.backbone_until_3(x)              # prima entra nella backbone
@@ -50,10 +50,11 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
         
         if self.dim_reduction:
             reduced_dim, rec_feature_map = self.autoencoder(feature_map)                    # non so a cosa serva il primo
-        attn_prelogits, attn_scores, _ = self.attention(feature_map, rec_feature_map)
+        attn_prelogits, attn_scores, att = self.attention(feature_map, rec_feature_map)
+        
         attn_logits = self.attn_classifier(attn_prelogits)
-
-        return global_features, attn_logits, feature_map, rec_feature_map
+        print(reduced_dim.shape)
+        return global_features, attn_logits, feature_map, rec_feature_map, attn_prelogits
 
 
 def get_backbone(backbone_name):                            # backbone_name è uno degli argomenti del programma
@@ -111,13 +112,16 @@ def get_backbone(backbone_name):                            # backbone_name è u
 # classifiers_optimizers = [torch.optim.Adam(classifier.parameters(), lr=args.classifiers_lr) for classifier in classifiers] 
 
 # targets = torch.rand([2, 10])
-# images = torch.rand([2, 3, 512, 512])
+
 # descriptors, attn_logits, feature_map, rec_feature_map = model(images)
 
 # global_loss = criterion(output, targets)                                           # calcola la loss (in funzione di output e target)
+
 # attn_loss = criterion(attn_logits, targets)
 # rec_loss = criterion_MSE(rec_feature_map, feature_map)
-# t_att = model(t)
+image = torch.rand([1, 3, 512, 512])
+model = GeoLocalizationNet('resnet18', 512)
+t_att = model(image)
 # print(model)
 # print(model.layers_4.parameters())
 # print(model.backbone_until_3.parameters())
