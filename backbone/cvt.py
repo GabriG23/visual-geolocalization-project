@@ -32,8 +32,10 @@ class CVT(nn.Module):
                  positional_embedding='learnable'
                  ):
         super(CVT, self).__init__()
+
         assert img_size % kernel_size == 0, f"Image size ({img_size}) has to be" \
                                             f"divisible by patch size ({kernel_size})"
+
         self.tokenizer = Tokenizer(n_input_channels=n_input_channels,                       # canali input
                                    n_output_channels=embedding_dim,
                                    kernel_size=kernel_size,
@@ -45,9 +47,7 @@ class CVT(nn.Module):
                                    conv_bias=True)
 
         self.classifier = TransformerClassifier(
-            sequence_length=self.tokenizer.sequence_length(n_channels=n_input_channels,
-                                                           height=img_size,
-                                                           width=img_size),
+            sequence_length=self.tokenizer.sequence_length(n_channels=n_input_channels, height=img_size, width=img_size),
             embedding_dim=embedding_dim,
             seq_pool=True,
             dropout=dropout,

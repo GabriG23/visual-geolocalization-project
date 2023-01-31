@@ -3,7 +3,6 @@ from torch.nn import Module, ModuleList, Linear, Dropout, LayerNorm, Identity, P
 import torch.nn.functional as F
 from stochastic_depth import DropPath
 
-
 class Attention(Module): # MHSA layer Multi-Headed Self-Attention
     """
     Obtained from timm: github.com:rwightman/pytorch-image-models
