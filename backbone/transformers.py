@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from stochastic_depth import DropPath
 
 
-class Attention(Module):
+class Attention(Module): # MHSA layer Multi-Headed Self-Attention
     """
     Obtained from timm: github.com:rwightman/pytorch-image-models
     """
@@ -54,17 +54,17 @@ class TransformerEncoderLayer(Module):
 
         self.drop_path = DropPath(drop_path_rate) if drop_path_rate > 0 else Identity()
 
-        self.activation = F.gelu
+        self.activation = F.gelu                                                        
 
     def forward(self, src: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         src = src + self.drop_path(self.self_attn(self.pre_norm(src)))
-        src = self.norm1(src)
-        src2 = self.linear2(self.dropout1(self.activation(self.linear1(src))))
-        src = src + self.drop_path(self.dropout2(src2))
+        src = self.norm1(src)                                                                                       # Layer Normalization
+        src2 = self.linear2(self.dropout1(self.activation(self.linear1(src))))                                      # GeLU activation
+        src = src + self.drop_path(self.dropout2(src2))                                                             # Dropout
         return src
 
 
-class TransformerClassifier(Module):
+class TransformerClassifier(Module):  # Multi Layer Perceptron
     def __init__(self,
                  seq_pool=True,
                  embedding_dim=768,
@@ -116,7 +116,7 @@ class TransformerClassifier(Module):
                                     dim_feedforward=dim_feedforward, dropout=dropout,
                                     attention_dropout=attention_dropout, drop_path_rate=dpr[i])
             for i in range(num_layers)])
-        self.norm = LayerNorm(embedding_dim)
+        self.norm = LayerNorm(embedding_dim)                                                             # Layer Normalization
 
         self.fc = Linear(embedding_dim, num_classes)
         self.apply(self.init_weight)
@@ -132,14 +132,14 @@ class TransformerClassifier(Module):
         if self.positional_emb is not None:
             x += self.positional_emb
 
-        x = self.dropout(x)
+        x = self.dropout(x)                                                             # Dropout
 
         for blk in self.blocks:
             x = blk(x)
-        x = self.norm(x)
+        x = self.norm(x)                                                                # Layer Normalization
 
         if self.seq_pool:
-            x = torch.matmul(F.softmax(self.attention_pool(x), dim=1).transpose(-1, -2), x).squeeze(-2)
+            x = torch.matmul(F.softmax(self.attention_pool(x), dim=1).transpose(-1, -2), x).squeeze(-2)                         # softmax
         else:
             x = x[:, 0]
 
