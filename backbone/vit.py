@@ -98,9 +98,9 @@ class ViTLite(nn.Module):
         # il nostro input: B C H W -> da cambiare in H W C
         # input: immagine H W C
         print(x.shape)
-        x = torch.transpose(x, 1, 2)
-        x = torch.transpose(x, 2, 3)
-        print(x.shape)
+        # x = torch.transpose(x, 1, 2)
+        # x = torch.transpose(x, 2, 3)
+        # print(x.shape)
         x = self.tokenizer(x)  
         print(x.shape)
         x = self.classifier(x) # transformers

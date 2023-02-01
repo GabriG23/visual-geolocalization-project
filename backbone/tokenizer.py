@@ -41,7 +41,15 @@ class Tokenizer(nn.Module):
         return self.forward(torch.zeros((1, n_channels, height, width))).shape[1] # ritorna i canali, 3
 
     def forward(self, x):
-        return self.flattener(self.conv_layers(x)).transpose(-2, -1)  # fa flatten unisce terza e quarta dimensione, traspose cambia la seconda dimensione con la terza
+        print(x.shape)
+        x = self.conv_layers(x)
+        print(x.shape)
+        x = self.flattener(x)
+        print(x.shape)
+        x = x.transpose(-2, -1)
+        print(x.shape)
+        return x
+        # return self.flattener(self.conv_layers(x)).transpose(-2, -1)  # fa flatten unisce terza e quarta dimensione, traspose cambia la seconda dimensione con la terza
 
     @staticmethod
     def init_weight(m):
