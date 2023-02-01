@@ -36,7 +36,7 @@ class Attention(Module): # MHSA layer Multi-Headed Self-Attention
         B, N, C = x.shape           # B N C = 32 16385 128
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]
-
+        # fault segmentation qui
         attn = (q @ k.transpose(-2, -1)) * self.scale     # non riesce a fare questo prodotto matriciale, la dim di 512 è troppo grande, per questo metteva 224
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
@@ -152,14 +152,12 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
             x = blk(x)
         x = self.norm(x)
                                                                         # Layer Normalization
-        # print(x.shape)
         if self.seq_pool:
             x = torch.matmul(F.softmax(self.attention_pool(x), dim=1).transpose(-1, -2), x).squeeze(-2)                         # softmax
         else:
             x = x[:, 0]
 
         x = self.fc(x)
-        # print(x.shape)
         return x
 
     @staticmethod

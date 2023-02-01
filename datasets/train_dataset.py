@@ -100,7 +100,7 @@ class TrainDataset(torch.utils.data.Dataset):           # ogni dataset fa riferi
         
         tensor_image = T.functional.to_tensor(pil_image)                # trasforma l'immagine in un tensore
         # assert tensor_image.shape == torch.Size([3, 512, 512]), \
-        assert tensor_image.shape == torch.Size([3, 224, 224]), \
+        assert tensor_image.shape == torch.Size([3, 512, 512]), \
             f"Image {image_path} should have shape [3, 512, 512] but has {tensor_image.shape}."     # si assicura abbia la dimensione corretta
         
         if self.augmentation_device == "cpu":
