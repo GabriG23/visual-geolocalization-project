@@ -158,7 +158,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):      #### Train
 
     ##### EVALUATION #####
 
-    recalls, recalls_str, _ = test.test(args, val_ds, model)              # passa validation dataset e modello (allenato) per il calcolo delle recall
+    recalls, recalls_str = test.test(args, val_ds, model)              # passa validation dataset e modello (allenato) per il calcolo delle recall
     logging.info(f"Epoch {epoch_num:02d} in {str(datetime.now() - epoch_start_time)[:-7]}, {val_ds}: {recalls_str[:20]}")
     is_best = recalls[0] > best_val_recall1                            # lo confronta con il valore della recall maggiore. E' un valore booleano
     best_val_recall1 = max(recalls[0], best_val_recall1)               # prende il valore massimo tra le due  
