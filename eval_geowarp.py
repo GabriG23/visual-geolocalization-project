@@ -24,7 +24,7 @@ logging.info(f"The outputs are being saved in {output_folder}")
 
 ##### MODEL #####
 features_extractor = network.FeatureExtractor(args.backbone, args.fc_output_dim) 
-global_features_dim = commons.get_output_dim(features_extractor, "gem")    
+# global_features_dim = commons.get_output_dim(features_extractor, "gem")    
 homography_regression = network.HomographyRegression(kernel_sizes=args.kernel_sizes, channels=args.channels, padding=1) # inizializza il layer homography
 
 logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")
@@ -51,9 +51,9 @@ model = model.to(args.device)
 test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1", positive_dist_threshold=args.positive_dist_threshold)
 
 recalls, recalls_str, predictions, _, _ = \
-    test.compute_features(args, test_ds, model, global_features_dim)
+    test.compute_features(args, test_ds, model)
 
-_, reranked_recalls_str = test.test_reranked(args, model, predictions, test_ds, num_reranked_predictions=args.num_reranked_preds)
+_, reranked_recalls_str = test.test_reranked(args, model, predictions, test_ds)
 
 logging.info(f"Test without warping: {test_ds}: {recalls_str}")
 logging.info(f"  Test after warping: {test_ds}: {reranked_recalls_str}") # stampa le recall warpate

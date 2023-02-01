@@ -50,7 +50,7 @@ def parse_arguments(is_training: bool = True):
                         help="weight of self-supervised loss")
     parser.add_argument("--qp_threshold", type=float, default=1.2,
                         help="Threshold distance (in features space) for query-positive pairs")
-    parser.add_argument("--num_reranked_preds", type=int, default=5,
+    parser.add_argument("--num_reranked_predictions", type=int, default=5,
                         help="number of predictions to re-rank at test time")
     parser.add_argument("--kernel_sizes", nargs='+', default=[7, 5, 5, 5, 5, 5],
                         help="size of kernels in conv layers of Homography Regression")

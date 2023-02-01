@@ -126,10 +126,10 @@ for epoch_num in range(start_epoch_num, args.epochs_num):      #### Train
         if args.ss_w != 0:  # ss_loss  # self supervised loss    guides the network to learn to estimate the points 
             pred_warped_intersection_points_1 = model("regression", similarity_matrix_1to2)
             pred_warped_intersection_points_2 = model("regression", similarity_matrix_2to1)
-            ss_loss = (criterion_mse(pred_warped_intersection_points_1[:, :4].float(), warped_intersection_points_1.float())+
-                    criterion_mse(pred_warped_intersection_points_1[:, 4:].float(), warped_intersection_points_2.float()) +
-                    criterion_mse(pred_warped_intersection_points_2[:, :4].float(), warped_intersection_points_2.float()) +
-                    criterion_mse(pred_warped_intersection_points_2[:, 4:].float(), warped_intersection_points_1.float()))
+            ss_loss = (criterion_mse(pred_warped_intersection_points_1[:, :4], warped_intersection_points_1)+
+                    criterion_mse(pred_warped_intersection_points_1[:, 4:], warped_intersection_points_2) +
+                    criterion_mse(pred_warped_intersection_points_2[:, :4], warped_intersection_points_2) +
+                    criterion_mse(pred_warped_intersection_points_2[:, 4:], warped_intersection_points_1))
             ss_loss.backward()
             epoch_losses = np.append(epoch_losses, ss_loss.item()) 
             del ss_loss, pred_warped_intersection_points_1, pred_warped_intersection_points_2
@@ -163,7 +163,7 @@ model.load_state_dict(best_model_state_dict)
 recalls, recalls_str, predictions, _, _ = \
     test.compute_features(args, test_ds, model)
 
-_, reranked_recalls_str = test.test_reranked(args, model, predictions, test_ds, num_reranked_predictions=args.num_reranked_preds)
+_, reranked_recalls_str = test.test_reranked(args, model, predictions, test_ds)
 
 logging.info(f"Test without warping: {test_ds}: {recalls_str}")
 logging.info(f"  Test after warping: {test_ds}: {reranked_recalls_str}") # stampa le recall warpate
