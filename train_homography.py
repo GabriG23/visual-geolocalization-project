@@ -116,8 +116,6 @@ for epoch_num in range(start_epoch_num, args.epochs_num):      #### Train
     for iteration in tqdm(range(args.iterations_per_epoch), ncols=100):    # ncols è la grandezza della barra, 10k iterazioni per gruppo
         
         warped_img_1, warped_img_2, warped_intersection_points_1, warped_intersection_points_2 = next(ss_data_iter)   # dal warping dataset prende le due immagini warped e i due punti delle intersezioni
-        print(warped_img_1.shape)
-        print(warped_img_2.shape)
         warped_img_1, warped_img_2, warped_intersection_points_1, warped_intersection_points_2 = warped_img_1.to(args.device), warped_img_2.to(args.device), warped_intersection_points_1.to(args.device), warped_intersection_points_2.to(args.device)  # warping dataset
 
         with torch.no_grad():  # no gradient
