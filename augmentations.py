@@ -64,11 +64,13 @@ if __name__ == "__main__":
                                                                         # images_batch ha quindi shape (2, 3, 512, 512) -> le due immagini, canali, matrice
     # Apply augmentation (individually on each of the 2 images)
     # augmented_batch = random_crop(images_batch)                         # applica il random crop di classe DeviceAgnosticRandomResizedCrop al batch (chiama forward)
-    # Convert to PIL images   
+    # # Convert to PIL images   
     # augmented_image_0 = T.functional.to_pil_image(augmented_batch[0])   # riconverte le immagini indietro così da poterle mostrare
     # augmented_image_1 = T.functional.to_pil_image(augmented_batch[1])
-    # Visualize the original image, as well as the two augmented ones
-    # pil_image.show()
+    # # Visualize the original image, as well as the two augmented ones
+    # # pil_image.show()
+    # tensor_image = T.functional.to_tensor(augmented_image_1)
+    # print(tensor_image.shape)
     # augmented_image_0.show()
     # augmented_image_1.show()
 

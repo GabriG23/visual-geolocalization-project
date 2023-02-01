@@ -130,9 +130,10 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
     dataloader_iterator = iter(dataloader)                  # prende l'iteratore del dataloader
     model = model.train()                                   # mette il modello in modalità training (non l'aveva già fatto?)
     
-    epoch_global_losses = np.zeros((0, 1), dtype=np.float32)                       # 0 righe, 1 colonna -> l'array è vuoto
-    epoch_attn_losses = np.zeros((0, 1), dtype=np.float32)
-    epoch_rec_losses = np.zeros((0, 1), dtype=np.float32)
+    epoch_losses = np.zeros((0, 1), dtype=np.float32)
+    # epoch_global_losses = np.zeros((0, 1), dtype=np.float32)                       # 0 righe, 1 colonna -> l'array è vuoto
+    # epoch_attn_losses = np.zeros((0, 1), dtype=np.float32)
+    # epoch_rec_losses = np.zeros((0, 1), dtype=np.float32)
     for iteration in tqdm(range(args.iterations_per_epoch), ncols=100):     # ncols è la grandezza della barra  
         images, targets, _ = next(dataloader_iterator)                      # ritorna il batch di immagini e le rispettive classi
         images, targets = images.to(args.device), targets.to(args.device)   # mette tutto su device
@@ -162,9 +163,10 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
             classifiers_optimizers[current_group_num].step() 
             autoencoder_optimizer.step()                                                # lasciato separato perché la parte del classifier dovremme modificarsi in base alle classi del gruppo
 
-            epoch_global_losses = np.append(epoch_global_losses, global_loss.item())                 
-            epoch_attn_losses = np.append(epoch_attn_losses, attn_loss.item())
-            epoch_rec_losses = np.append(epoch_rec_losses, rec_loss.item())
+            epoch_losses = np.append(epoch_losses, loss.item()) 
+            # epoch_global_losses = np.append(epoch_global_losses, global_loss.item())                 
+            # epoch_attn_losses = np.append(epoch_attn_losses, attn_loss.item())
+            # epoch_rec_losses = np.append(epoch_rec_losses, rec_loss.item())
             
             del loss, output, images                                                                              
         else:  # Use AMP 16
@@ -179,32 +181,35 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
             scaler.step(classifiers_optimizers[current_group_num])
             scaler.update()
     
-    classifiers[current_group_num] = classifiers[current_group_num].cpu()   # passsa il classifier alla cpu terminat l'epoca       
+    classifiers[current_group_num] = classifiers[current_group_num].cpu()   # passsa il classifier alla cpu terminata l'epoca       
     util.move_to_device(classifiers_optimizers[current_group_num], "cpu")   # passa anche l'optimizer alla cpu
     
     logging.debug(f"Epoch {epoch_num:02d} in {str(datetime.now() - epoch_start_time)[:-7]}, "
-                  f"global_loss = {epoch_global_losses.mean():.4f}, "  
-                  f"attn_loss = {epoch_attn_losses.mean():.4f}, " 
-                  f"rec_loss = {epoch_rec_losses.mean():.4f}, ")                    
+                f"loss = {epoch_losses.mean():.4f}, ")
+                #   f"global_loss = {epoch_global_losses.mean():.4f}, "  
+                #   f"attn_loss = {epoch_attn_losses.mean():.4f}, " 
+                #   f"rec_loss = {epoch_rec_losses.mean():.4f}, ")                    
     
     ## Se si vuole fare un grafico, si può usare "epoch_losses"
 
     #### Evaluation
-    recalls, recalls_str = test.test(args, val_ds, model)           # passa validation dataset e modello (allenato) per il calcolo delle recall
-    logging.info(f"Epoch {epoch_num:02d} in {str(datetime.now() - epoch_start_time)[:-7]}, {val_ds}: {recalls_str[:20]}")
-    is_best = recalls[0] > best_val_recall1                         # lo confronta con il valore della recall maggiore. E' un valore booleano
-    best_val_recall1 = max(recalls[0], best_val_recall1)            # prende il valore massimo tra le due   
+    # recalls, recalls_str = test.test(args, val_ds, model)           # passa validation dataset e modello (allenato) per il calcolo delle recall
+    # logging.info(f"Epoch {epoch_num:02d} in {str(datetime.now() - epoch_start_time)[:-7]}, {val_ds}: {recalls_str[:20]}")
+    # is_best = recalls[0] > best_val_recall1                         # lo confronta con il valore della recall maggiore. E' un valore booleano
+    # best_val_recall1 = max(recalls[0], best_val_recall1)            # prende il valore massimo tra le due   
 
-    # Save checkpoint, which contains all training parameters
-    util.save_checkpoint({                                          
-        "epoch_num": epoch_num + 1,
-        "model_state_dict": model.state_dict(),
-        "optimizer_state_dict": model_optimizer.state_dict(),
-        "classifiers_state_dict": [c.state_dict() for c in classifiers],
-        "optimizers_state_dict": [c.state_dict() for c in classifiers_optimizers],
-        "best_val_recall1": best_val_recall1
-    }, is_best, output_folder)
+    # # Save checkpoint, which contains all training parameters
+    # util.save_checkpoint({                                          
+    #     "epoch_num": epoch_num + 1,
+    #     "model_state_dict": model.state_dict(),
+    #     "autoencoder_optimizer_state_dict": autoencoder_optimizer.state_dict(),
+    #     "optimizer_state_dict": model_optimizer.state_dict(),
+    #     "classifiers_state_dict": [c.state_dict() for c in classifiers],
+    #     "optimizers_state_dict": [c.state_dict() for c in classifiers_optimizers],
+    #     "best_val_recall1": best_val_recall1
+    # }, is_best, output_folder)
 
+torch.save(model.state_dict(), f"{output_folder}/best_model.pth")
 # Fa un checkpoint ad ogni epoca salvando il dizionario di su (chiamato state in save_checkpoint) ed inoltre salva anche il modello
 # finora migliore come "best_model". Questo significa che non è detto che il migliore sia nella ultima epoca. Anche perché ad ogni epoca 
 # il gruppo cambia
@@ -213,11 +218,11 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
 logging.info(f"Trained for {epoch_num+1:02d} epochs, in total in {str(datetime.now() - start_time)[:-7]}")
 
 #### Test best model on test set v1
-best_model_state_dict = torch.load(f"{output_folder}/best_model.pth")           # carica il best model (salvato da save_checkpoint se is_best è True)
-model.load_state_dict(best_model_state_dict)
+# best_model_state_dict = torch.load(f"{output_folder}/best_model.pth")           # carica il best model (salvato da save_checkpoint se is_best è True)
+# model.load_state_dict(best_model_state_dict)
 
-logging.info(f"Now testing on the test set: {test_ds}")                         
-recalls, recalls_str = test.test(args, test_ds, model)                          # prova il modello migliore sul dataset di test (queries v1)
-logging.info(f"{test_ds}: {recalls_str}")
+# logging.info(f"Now testing on the test set: {test_ds}")                         
+# recalls, recalls_str = test.test(args, test_ds, model)                          # prova il modello migliore sul dataset di test (queries v1)
+# logging.info(f"{test_ds}: {recalls_str}")
 
 logging.info("Experiment finished (without any errors)")

@@ -14,6 +14,8 @@ from torch.utils.data import DataLoader, Dataset
 RECALL_VALUES = [1, 5, 10, 20]
 
 
+
+
 def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.ndarray, str]:      # restituisce l'array con le recall e un stringa che riporta i valori
     """Compute descriptors of the given dataset and compute the recalls."""
     
@@ -24,9 +26,9 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
         database_dataloader = DataLoader(dataset=database_subset_ds, num_workers=args.num_workers,
                                          batch_size=args.infer_batch_size, pin_memory=(args.device == "cuda"))  # creazione del dataloader in grado di iterare sul dataset
         all_global_descriptors = np.empty((len(eval_ds), args.fc_output_dim), dtype="float32")     # ritorna un vettore non inizializzato con una riga per ogni sample da valutare
-        
+    
         for images, indices in tqdm(database_dataloader, ncols=100):                        # e un numero di colonne pari alla dimensione di descrittori
-            global_descriptors, _, _, _, local_descriptors = model(images.to(args.device))                                     # mette le immagini su device e ne calcola il risultato del MODELLO -> i descrittori
+            global_descriptors, _, _, _, local_descriptors, attention_prob = model(images.to(args.device))                                     # mette le immagini su device e ne calcola il risultato del MODELLO -> i descrittori
             global_descriptors = global_descriptors.cpu().numpy()                                         # porta i descrittori su cpu e li traforma da tensori ad array
             # per quanto riguarda i local descriptors, lui sembra fare una sogliatura, che eventualmente sarà aggiunta successivamente
             local_descriptors = local_descriptors.cpu().numpy() 
@@ -49,7 +51,7 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
                                                             # faiss.IndexFlatL2 misura la l2 distance (o distanza euclidea) tra tutti i vettori dati e il quey vector 
     faiss_index = faiss.IndexFlatL2(args.fc_output_dim)     # qui sembra che lo stia inizializzando con la dimensione dei descrittori  
     faiss_index.add(database_descriptors)                   # dopodiché ci aggiunge tutti i descrittori delle immagini di test 
-    del database_descriptors, all_descriptors               # elimina roba non piiù utile
+    del database_descriptors, all_descriptors               # elimina roba non più utile
     
     logging.debug("Calculating recalls")
     _, predictions = faiss_index.search(queries_descriptors, max(RECALL_VALUES))    # effettua la ricerca con i descrittori delle query con i valori di recall specificati
@@ -71,3 +73,5 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
     recalls = recalls / eval_ds.queries_num * 100                               # valori di recall espressi in percentuale (cioè quante query in percentuale sono cadute in quel valore di recall)                                                                                     
     recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, recalls)])    # valori di recall in stringa
     return recalls, recalls_str
+
+

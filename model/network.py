@@ -53,8 +53,7 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
         attn_prelogits, attn_scores, att = self.attention(feature_map, rec_feature_map)
         
         attn_logits = self.attn_classifier(attn_prelogits)
-        print(reduced_dim.shape)
-        return global_features, attn_logits, feature_map, rec_feature_map, attn_prelogits
+        return global_features, attn_logits, feature_map, rec_feature_map, reduced_dim, attn_scores
 
 
 def get_backbone(backbone_name):                            # backbone_name è uno degli argomenti del programma
