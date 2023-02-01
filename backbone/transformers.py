@@ -83,7 +83,7 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
         
         dim_feedforward = int(embedding_dim * mlp_ratio)                        # int 128 * 0.1 = 12.8
         self.embedding_dim = embedding_dim                                      # dim 128
-        self.sequence_length = sequence_length                                  # lunghezza della sequenza
+        self.sequence_length = sequence_length                                  # 3
         self.seq_pool = seq_pool
         self.num_tokens = 0
 
@@ -93,15 +93,14 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
 
         if not seq_pool:            # controlla il sequence pool, per ViT non serve
             sequence_length += 1
-            self.class_emb = Parameter(torch.zeros(1, 1, self.embedding_dim),
-                                       requires_grad=True)
+            self.class_emb = Parameter(torch.zeros(1, 1, self.embedding_dim), requires_grad=True)  #tensore di 128 zeri dim 1 1
             self.num_tokens = 1
         else:
             self.attention_pool = Linear(self.embedding_dim, 1)     # questo per ViT
 
         if positional_embedding != 'none':
             if positional_embedding == 'learnable':                 # per ViT e CVT
-                self.positional_emb = Parameter(torch.zeros(1, sequence_length, embedding_dim), requires_grad=True)
+                self.positional_emb = Parameter(torch.zeros(1, sequence_length, embedding_dim), requires_grad=True) # zeri 1 3 128
                 init.trunc_normal_(self.positional_emb, std=0.2)
             else:
                 self.positional_emb = Parameter(self.sinusoidal_embedding(sequence_length, embedding_dim),
@@ -121,15 +120,15 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
         self.fc = Linear(embedding_dim, num_classes)
         self.apply(self.init_weight)
 
-    def forward(self, x):
-        if self.positional_emb is None and x.size(1) < self.sequence_length:
+    def forward(self, x):     # x è quello che esce dal tokenizer
+        if self.positional_emb is None and x.size(1) < self.sequence_length:                    # entra subito dopo l'init di self.positional
             x = F.pad(x, (0, 0, 0, self.n_channels - x.size(1)), mode='constant', value=0)
 
         if not self.seq_pool:
             cls_token = self.class_emb.expand(x.shape[0], -1, -1)
             x = torch.cat((cls_token, x), dim=1)
 
-        if self.positional_emb is not None:
+        if self.positional_emb is not None:         # entra se non è 0, all'init sono tutti 0   # PROBLEMA QUI
             x += self.positional_emb
 
         x = self.dropout(x)                                                             # Dropout

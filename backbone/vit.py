@@ -79,7 +79,7 @@ class ViTLite(nn.Module):
                                    conv_bias=True)                                          # convolutional bias
 
         self.classifier = TransformerClassifier(
-            sequence_length=self.tokenizer.sequence_length(n_channels=n_input_channels, height=img_size, width=img_size), # per 
+            sequence_length=self.tokenizer.sequence_length(n_channels=n_input_channels, height=img_size, width=img_size), # = 3
             embedding_dim=embedding_dim,                                        # dimensione come sopra
             seq_pool=False,                                                     # lo usa cvt          
             dropout=dropout,                                                    # dropout sopra
