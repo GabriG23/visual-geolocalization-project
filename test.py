@@ -137,72 +137,8 @@ base_transform = transforms.Compose([
 def open_image(path):
     return Image.open(path).convert("RGB")
 
-# test dell'homography
-def test_reranked(args, model, predictions, test_dataset, num_reranked_predictions=5, test_batch_size=16):
-    """Compute the test by warping the query-prediction pairs.
-    
-    Parameters
-    ----------
-    model : network.Network
-    predictions : np.array of int, containing the first 20 predictions for each query, with shape [queries_num, 20].
-    test_dataset : dataset_geoloc.GeolocDataset, which contains the test-time images (queries and gallery).
-    num_reranked_predictions : int, how many predictions to re-rank.
-    test_batch_size : int.
-    
-    Returns
-    -------
-    recalls : np.array of int, containing R@1, R@5, r@10, r@20.
-    recalls_pretty_str : str, pretty-printed recalls
-    """
-    
-    model = model.eval()                                                                    # mette il modello in evaluation (alcuni moduli si comporteranno in modo diverso)
-    reranked_predictions = predictions.copy()                                               # prende il numero di predizioni (5) per cui effettuare il re-rank
-    with torch.no_grad():
-        for num_q in tqdm(range(test_dataset.queries_num), desc="Testing", ncols=100):      # prende tutte le query da test
-
-            dot_prods_wqp = np.zeros((num_reranked_predictions))                            # crea un vettore di dim delle predizioni
-            query_path = test_dataset.queries_paths[num_q]                                  # path della query
-
-            for i1 in range(0, num_reranked_predictions, test_batch_size):                  # per ogni predizione
-
-                batch_indexes = list(range(num_reranked_predictions))[i1:i1+test_batch_size]    # indici dei batch
-                current_batch_size = len(batch_indexes)                                         # lunghezza del batch (32)
-                pil_image = open_image(query_path)                                              # apre l'immagine
-                query = base_transform(pil_image)                                               # prende la query
-                query_repeated_twice = torch.repeat_interleave(query.unsqueeze(0), current_batch_size, 0).to(args.device) # crea un copia della query con i valori sdoppiati e mette in batch come quarta dimensione
-                
-                preds = []                                                                  # predizioni
-                for i in batch_indexes:                                                     # per ogni batch 
-                    pred_path = test_dataset.database_paths[predictions[num_q, i]]          # path della predizione dal database
-                    pil_image = open_image(pred_path)                                       # apre l'immagine
-                    query = base_transform(pil_image)                                       # prende la immagine
-                    preds.append(query)                                                     # la aggiunge alle predizioni
-                preds = torch.stack(preds).to(args.device)
-                
-                warped_pair = compute_warping(model, query_repeated_twice, preds)
-                q_features = model("features_extractor", [warped_pair[0], "local"])
-                p_features = model("features_extractor", [warped_pair[1], "local"])
-                # Sum along all axes except for B. wqp stands for warped query-prediction
-                dot_prod_wqp = (q_features * p_features).sum(list(range(1, len(p_features.shape)))).cpu().numpy()
-                
-                dot_prods_wqp[i1:i1+test_batch_size] = dot_prod_wqp
-            
-            reranking_indexes = dot_prods_wqp.argsort()[::-1]
-            reranked_predictions[num_q, :num_reranked_predictions] = predictions[num_q][reranking_indexes]
-    
-    ground_truths = test_dataset.get_positives()
-    recalls = np.zeros(len(RECALL_VALUES))  
-    for query_index, preds in enumerate(reranked_predictions): 
-        for i, n in enumerate(RECALL_VALUES):
-            if np.any(np.in1d(preds[:n], ground_truths[query_index])): 
-                recalls[i:] += 1   
-                break  
-    recalls = recalls / test_dataset.queries_num * 100
-    recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, recalls)])
-    return recalls, recalls_str
-
 # computer_features per GeoWarp
-def compute_features(args: Namespace, test_ds: Dataset, model: torch.nn.Module, global_features_dim, num_workers=2, eval_batch_size=32):
+def compute_features(args: Namespace, test_ds: Dataset, model: torch.nn.Module):
     """Compute the features of all images within the geoloc_dataset.
     
     Parameters
@@ -224,18 +160,17 @@ def compute_features(args: Namespace, test_ds: Dataset, model: torch.nn.Module, 
     """
     model = model.eval()  
     with torch.no_grad(): # no gradient
+        logging.debug("Extracting database descriptors for evaluation/testing")
         database_subset_ds = Subset(test_ds, list(range(test_ds.database_num)))    
-        database_dataloader = DataLoader(dataset=database_subset_ds, num_workers=num_workers, batch_size=args.infer_batch_size, pin_memory=(args.device == "cuda"))
-        all_descriptors = np.empty((len(test_ds), global_features_dim), dtype="float32")   
-        
+        database_dataloader = DataLoader(dataset=database_subset_ds, num_workers=args.num_workers, batch_size=args.infer_batch_size, pin_memory=(args.device == "cuda"))
+        all_descriptors = np.empty((len(test_ds),  args.fc_output_dim), dtype="float32")   
         for images, indices in tqdm(database_dataloader, ncols=100):   # 100 lunghezza della barra
             images = images.to(args.device)
-            # Compute outputs using global features (e.g. GeM, NetVLAD...)
-            output = model("features_extractor", [images, "global"])
-            output = output.cpu().numpy()  
-            # output = output.reshape(B, global_features_dim)
-            all_descriptors[indices.numpy(), :] = output
-            
+            descriptors = model("features_extractor", [images, "global"])
+            descriptors = descriptors.cpu().numpy()  
+            all_descriptors[indices.numpy(), :] = descriptors
+        
+        logging.debug("Extracting queries descriptors for evaluation/testing using batch size 1")
         queries_infer_batch_size = 1                                                                              # sembra che venga valutata un'immagine per volta
         queries_subset_ds = Subset(test_ds, list(range(test_ds.database_num, test_ds.database_num+test_ds.queries_num)))    # in questo caso, crea un subset con sole query
         queries_dataloader = DataLoader(dataset=queries_subset_ds, num_workers=args.num_workers, batch_size=queries_infer_batch_size, pin_memory=(args.device == "cuda"))            # crea il dataloader associato a questo secondo subset
@@ -248,7 +183,7 @@ def compute_features(args: Namespace, test_ds: Dataset, model: torch.nn.Module, 
     queries_descriptors = all_descriptors[test_ds.database_num:]  # features della query
     database_descriptors = all_descriptors[:test_ds.database_num]  # features del database
 
-    faiss_index = faiss.IndexFlatL2(global_features_dim) # Faiss is a library for efficient similarity search and clustering of dense vectors
+    faiss_index = faiss.IndexFlatL2( args.fc_output_dim) # Faiss is a library for efficient similarity search and clustering of dense vectors
     faiss_index.add(database_descriptors) # aggiunge le features del database
     del database_descriptors, all_descriptors                # elimina roba non piiù utile
     
@@ -274,3 +209,67 @@ def compute_features(args: Namespace, test_ds: Dataset, model: torch.nn.Module, 
                 correct_bool_mat[query_index, pred_index] = 1
                 
     return recalls, recalls_str, predictions, correct_bool_mat, distances
+
+# test dell'homography
+def test_reranked(args, model, predictions, test_dataset):
+    """Compute the test by warping the query-prediction pairs.
+    
+    Parameters
+    ----------
+    model : network.Network
+    predictions : np.array of int, containing the first 20 predictions for each query, with shape [queries_num, 20].
+    test_dataset : dataset_geoloc.GeolocDataset, which contains the test-time images (queries and gallery).
+    num_reranked_predictions : int, how many predictions to re-rank.
+    test_batch_size : int.
+    
+    Returns
+    -------
+    recalls : np.array of int, containing R@1, R@5, r@10, r@20.
+    recalls_pretty_str : str, pretty-printed recalls
+    """
+    
+    model = model.eval()                                                                    # mette il modello in evaluation (alcuni moduli si comporteranno in modo diverso)
+    reranked_predictions = predictions.copy()                                               # prende il numero di predizioni (5) per cui effettuare il re-rank
+    with torch.no_grad():
+        for num_q in tqdm(range(test_dataset.queries_num), desc="Testing", ncols=100):      # prende tutte le query da test
+
+            dot_prods_wqp = np.zeros((args.num_reranked_predictions))                            # crea un vettore di dim delle predizioni
+            query_path = test_dataset.queries_paths[num_q]                                  # path della query
+
+            for i1 in range(0, args.num_reranked_predictions, args.infer_batch_size):                  # per ogni predizione
+
+                batch_indexes = list(range(args.num_reranked_predictions))[i1:i1+args.infer_batch_size]    # indici dei batch
+                current_batch_size = len(batch_indexes)                                         # lunghezza del batch (32)
+                pil_image = open_image(query_path)                                              # apre l'immagine
+                query = base_transform(pil_image)                                               # prende la query
+                query_repeated_twice = torch.repeat_interleave(query.unsqueeze(0), current_batch_size, 0).to(args.device) # crea un copia della query con i valori sdoppiati e mette in batch come quarta dimensione
+                
+                preds = []                                                                  # predizioni
+                for i in batch_indexes:                                                     # per ogni batch 
+                    pred_path = test_dataset.database_paths[predictions[num_q, i]]          # path della predizione dal database
+                    pil_image = open_image(pred_path)                                       # apre l'immagine
+                    query = base_transform(pil_image)                                       # prende la immagine
+                    preds.append(query)                                                     # la aggiunge alle predizioni
+                preds = torch.stack(preds).to(args.device)
+                
+                warped_pair = compute_warping(model, query_repeated_twice, preds)
+                q_features = model("features_extractor", [warped_pair[0], "local"])
+                p_features = model("features_extractor", [warped_pair[1], "local"])
+                # Sum along all axes except for B. wqp stands for warped query-prediction
+                dot_prod_wqp = (q_features * p_features).sum(list(range(1, len(p_features.shape)))).cpu().numpy()
+                
+                dot_prods_wqp[i1:i1+args.infer_batch_size] = dot_prod_wqp
+            
+            reranking_indexes = dot_prods_wqp.argsort()[::-1]
+            reranked_predictions[num_q, :args.num_reranked_predictions] = predictions[num_q][reranking_indexes]
+    
+    ground_truths = test_dataset.get_positives()
+    recalls = np.zeros(len(RECALL_VALUES))  
+    for query_index, preds in enumerate(reranked_predictions): 
+        for i, n in enumerate(RECALL_VALUES):
+            if np.any(np.in1d(preds[:n], ground_truths[query_index])): 
+                recalls[i:] += 1   
+                break  
+    recalls = recalls / test_dataset.queries_num * 100
+    recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, recalls)])
+    return recalls, recalls_str

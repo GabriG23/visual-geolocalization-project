@@ -35,7 +35,7 @@ logging.info(f"The outputs are being saved in {output_folder}")
 
 ##### MODEL #####
 features_extractor = network.FeatureExtractor(args.backbone, args.fc_output_dim)     # arch alexnet, vgg16 o resnet50, pooling netvlad o gem, args.arch, args.pooling
-global_features_dim = commons.get_output_dim(features_extractor, "gem")              # dimensione dei descrittori = 512 con resnet18
+# global_features_dim = commons.get_output_dim(features_extractor, "gem")              # dimensione dei descrittori = 512 con resnet18
 
 logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")  # conta GPUs e CPUs
 if args.resume_fe is not None:                                                    # se c'è un modello pre-salvato da caricare
@@ -161,7 +161,7 @@ best_model_state_dict = torch.load(f"{output_folder}/best_model.pth")    # caric
 model.load_state_dict(best_model_state_dict)
 
 recalls, recalls_str, predictions, _, _ = \
-    test.compute_features(args, test_ds, model, global_features_dim)
+    test.compute_features(args, test_ds, model)
 
 _, reranked_recalls_str = test.test_reranked(args, model, predictions, test_ds, num_reranked_predictions=args.num_reranked_preds)
 

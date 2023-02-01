@@ -90,11 +90,11 @@ def setup_logging(output_folder: str, exist_ok: bool = False, console: str = "de
     sys.excepthook = my_handler
 
 
-# Prende le dimensioni dei descriptor ##### GEOWARP
-def get_output_dim(model, pooling_type="gem"):                    # prende la dimensione dei descrittori
-    """Dinamically compute the output size of a model.
-    """
-    output_dim = model(torch.ones([2, 3, 224, 224])).shape[1]
-    if pooling_type == "netvlad":
-        output_dim *= 64  # NetVLAD layer has 64x bigger output dimensions
-    return output_dim
+# # Prende le dimensioni dei descriptor ##### GEOWARP
+# def get_output_dim(model, pooling_type="gem"):                    # prende la dimensione dei descrittori
+#     """Dinamically compute the output size of a model.
+#     """
+#     output_dim = model(torch.ones([2, 3, 224, 224])).shape[1]
+#     if pooling_type == "netvlad":
+#         output_dim *= 64  # NetVLAD layer has 64x bigger output dimensions
+#     return output_dim
