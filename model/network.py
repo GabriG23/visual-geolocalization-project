@@ -4,8 +4,8 @@ import logging
 import torchvision
 from torch import nn
 
-# from model.layers import Flatten, L2Norm, GeM, Autoencoder, Attention
-from layers import Flatten, L2Norm, GeM, Autoencoder, Attention
+from model.layers import Flatten, L2Norm, GeM, Autoencoder, Attention
+# from layers import Flatten, L2Norm, GeM, Autoencoder, Attention
 
 
 
@@ -118,9 +118,9 @@ def get_backbone(backbone_name):                            # backbone_name è u
 
 # attn_loss = criterion(attn_logits, targets)
 # rec_loss = criterion_MSE(rec_feature_map, feature_map)
-image = torch.rand([1, 3, 512, 512])
-model = GeoLocalizationNet('resnet18', 512)
-t_att = model(image)
+# image = torch.rand([1, 3, 512, 512])
+# model = GeoLocalizationNet('resnet18', 512)
+# t_att = model(image)
 # print(model)
 # print(model.layers_4.parameters())
 # print(model.backbone_until_3.parameters())

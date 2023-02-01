@@ -148,7 +148,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
         autoencoder_optimizer.zero_grad()        
         
         if not args.use_amp16:
-            descriptors, attn_logits, feature_map, rec_feature_map, _ = model(images)   # inserisce il batch di immagini e restituisce il descrittore
+            descriptors, attn_logits, feature_map, rec_feature_map, reduced_dim, attn_scores = model(images)   # inserisce il batch di immagini e restituisce il descrittore
             output = classifiers[current_group_num](descriptors, targets)            # riporta l'output del classifier (applica quindi la loss ai batches). Però passa sia descrittore cha label
             
             feature_map = feature_map.detach() 
