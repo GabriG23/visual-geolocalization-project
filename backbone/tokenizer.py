@@ -38,7 +38,7 @@ class Tokenizer(nn.Module):
         self.apply(self.init_weight)
 
     def sequence_length(self, n_channels=3, height=224, width=224):               # dimensioni immagini B C H W
-        return self.forward(torch.zeros((1, n_channels, height, width))).shape[1] # ritorna i canali, 3
+        return self.forward(torch.zeros((1, n_channels, height, width))).shape[1] # ritorna il forward di questo tensore
 
     def forward(self, x):
         return self.flattener(self.conv_layers(x)).transpose(-2, -1)  # fa flatten unisce terza e quarta dimensione, traspose cambia la seconda dimensione con la terza

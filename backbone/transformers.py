@@ -93,7 +93,7 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
 
         if not seq_pool:            # controlla il sequence pool, per ViT non serve
             sequence_length += 1
-            self.class_emb = Parameter(torch.zeros(1, 1, self.embedding_dim), requires_grad=True)  #tensore di 128 zeri dim 1 1
+            self.class_emb = Parameter(torch.zeros(1, 1, self.embedding_dim), requires_grad=True)  # 1 1 128
             self.num_tokens = 1
         else:
             self.attention_pool = Linear(self.embedding_dim, 1)     # questo per ViT
@@ -103,8 +103,7 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
                 self.positional_emb = Parameter(torch.zeros(1, sequence_length, embedding_dim), requires_grad=True) # zeri 1 3 128
                 init.trunc_normal_(self.positional_emb, std=0.2)
             else:
-                self.positional_emb = Parameter(self.sinusoidal_embedding(sequence_length, embedding_dim),
-                                                requires_grad=False)
+                self.positional_emb = Parameter(self.sinusoidal_embedding(sequence_length, embedding_dim), requires_grad=False)
         else:
             self.positional_emb = None
 
@@ -121,36 +120,34 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
         self.apply(self.init_weight)
 
     def forward(self, x):     # x è quello che esce dal tokenizer
-        print(x.shape)
+        # input x = 32 16384 128
         if self.positional_emb is None and x.size(1) < self.sequence_length:                    # entra subito dopo l'init di self.positional
             x = F.pad(x, (0, 0, 0, self.n_channels - x.size(1)), mode='constant', value=0)
-            print(x.shape)
-            print("1")
 
         if not self.seq_pool:
             cls_token = self.class_emb.expand(x.shape[0], -1, -1)
             x = torch.cat((cls_token, x), dim=1)
-            print(x.shape)
-            print("2")
+            # x = 32 16385 128  #aggiunge un token
 
         if self.positional_emb is not None:         # entra se non è 0, all'init sono tutti 0   # PROBLEMA QUI
-            print(self.positional_emb.shape)
+            # shape of self.positional_ emb = 1 3137 128
             x += self.positional_emb
             print(x.shape)
             print("3")
 
         x = self.dropout(x)                                                             # Dropout
-
+        print(x.shape)
         for blk in self.blocks:
             x = blk(x)
         x = self.norm(x)                                                                # Layer Normalization
-
+        print(x.shape)
         if self.seq_pool:
             x = torch.matmul(F.softmax(self.attention_pool(x), dim=1).transpose(-1, -2), x).squeeze(-2)                         # softmax
         else:
             x = x[:, 0]
 
         x = self.fc(x)
+        print(x.shape)
         return x
 
     @staticmethod

@@ -54,7 +54,7 @@ def _vit_lite(num_layers, num_heads, mlp_ratio, embedding_dim, kernel_size=4):  
 
 class ViTLite(nn.Module):
     def __init__(self,
-                 img_size=224,                               # dim immagini
+                 img_size=512,                               # dim immagini, era 224
                  embedding_dim=768,                          # dim - passata da parametro -> 128 128 256 256 256 
                  n_input_channels=3,                         # input channel
                  kernel_size=16,                             # kernel, dovrebbe essere la patch, 16
@@ -81,6 +81,7 @@ class ViTLite(nn.Module):
                                    conv_bias=True)                                          # convolutional bias
 
         self.classifier = TransformerClassifier(
+            # sequence lenght canali 3, height 224, width 224: ritorna un tensore di di zero 1, 3, 224, 224
             sequence_length=self.tokenizer.sequence_length(n_channels=n_input_channels, height=img_size, width=img_size), # = 3
             embedding_dim=embedding_dim,                                        # dimensione come sopra
             seq_pool=False,                                                     # lo usa cvt          
