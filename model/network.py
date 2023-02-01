@@ -85,7 +85,7 @@ class FeatureExtractor(nn.Module):                        # questa è la rete pr
         self.avgpool = nn.AdaptiveAvgPool2d((15, 15))           # avgpool per i descrittori locali
         self.l2norm = L2Norm()                                  # norma per i descrittori locali
 
-    def forward(self, x, f_type = "local"):
+    def forward(self, x, f_type = "global"):
         x = self.backbone(x)                # backbone per entrambi i descrittori
         if f_type == "local":
             x = self.avgpool(x)             # per descrittori locali
