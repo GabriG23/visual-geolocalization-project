@@ -134,7 +134,6 @@ for epoch_num in range(start_epoch_num, args.epochs_num):      #### Train
             output = classifiers[current_group_num](descriptors, targets)   # riporta l'output del classifier (applica quindi la loss ai batches). Però passa sia descrittore cha label
             loss = criterion(output, targets)                               # calcola la loss (in funzione di output e target)
             loss.backward()                                                 # calcola il gradiente per ogni parametro che ha il grad settato a True
-            loss = loss.item()
             epoch_losses = np.append(epoch_losses, loss.item())    # concateniamo le loss
             del output, images                                        # elimina questi oggetti. Con la keyword del, l'intento è più chiaro       
             model_optimizer.step()                                          # update dei parametri insieriti nell'ottimizzatore del modello
