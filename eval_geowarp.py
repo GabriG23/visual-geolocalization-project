@@ -50,11 +50,10 @@ model = model.to(args.device)
 
 test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1", positive_dist_threshold=args.positive_dist_threshold)
 
-logging.info(f"Start testing")
-recalls, recalls_str, predictions = test.test_geowarp(args, test_ds, model)                   # prova il modello migliore sul dataset di test (queries v1)
+recalls, recalls_str, predictions, _, _ = \
+    test.compute_features(test_ds, model, global_features_dim)
 
-logging.info(f"Start re-ranking")
-_, reranked_recalls_str = test.test_reranked(args, model, predictions, test_ds, num_reranked_predictions = args.num_reranked_preds) # num_reranked_predictions, di default sono 5
+_, reranked_recalls_str = test.test_reranked(model, predictions, test_ds, num_reranked_predictions=args.num_reranked_preds)
 
 logging.info(f"Test without warping: {test_ds}: {recalls_str}")
 logging.info(f"  Test after warping: {test_ds}: {reranked_recalls_str}") # stampa le recall warpate

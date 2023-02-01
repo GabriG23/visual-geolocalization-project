@@ -137,6 +137,7 @@ base_transform = transforms.Compose([
 def open_image(path):
     return Image.open(path).convert("RGB")
 
+# test dell'homography
 def test_reranked(args, model, predictions, test_dataset, num_reranked_predictions=5, test_batch_size=16):
     """Compute the test by warping the query-prediction pairs.
     
@@ -200,8 +201,66 @@ def test_reranked(args, model, predictions, test_dataset, num_reranked_predictio
     recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, recalls)])
     return recalls, recalls_str
 
+# computer_features per GeoWarp
+def compute_features(test_ds, model, global_features_dim, num_workers=4,                  # calcola le feature di tutte le immagini
+                     eval_batch_size=32, recall_values=[1, 5, 10, 20]):
+    """Compute the features of all images within the geoloc_dataset.
+    
+    Parameters
+    ----------
+    test_ds : dataset_geoloc.GeolocDataset,  which contains the images (queries and database).
+    model : network.Network.
+    global_features_dim : int, dimension of the features (e.g. 256 for AlexNet with GeM).
+    num_workers : int.
+    eval_batch_size : int.
+    recall_values : list of int, recalls to compute (e.g. R@1, R@5...).
+    
+    Returns
+    -------
+    recalls : np.array of int, containing R@1, R@5, r@10, r@20.
+    recalls_pretty_str : str, pretty-printed recalls.
+    predictions : np.array of int, containing the first 20 predictions for each query, with shape [queries_num, 20].
+    correct_bool_mat : np.array of int, with same dimension of predictions,
+        indicates of the prediction is correct or wrong. Its values are only [0, 1].
+    distances : np.array of float, with same dimension of predictions, indicates the distance in features space from the query to its prediction.
+    ground_truths : list of lists of int, containing for each query the list of its positives.  It's a list of lists because each query has different amount of positives.
+    """
+    test_dataloader = DataLoader(dataset=test_ds, num_workers=num_workers,            # prende le immagini
+                                 batch_size=eval_batch_size, pin_memory=True)
+    model = model.eval()                                                                     # modello in evaluation
+    with torch.no_grad(): # no gradient
+        database_features = np.empty((len(test_ds), global_features_dim), dtype="float32")        #prende le features della gallery
+        for inputs, indices in tqdm(test_dataloader, desc=f"Comp feats {test_ds}", ncols=120):   # 120 lunghezza della barra
+            B, C, H, W = inputs.shape                                                        # mette in B C H W le dimensioni di inputs
+            inputs = inputs.cuda()
+            # Compute outputs using global features (e.g. GeM, NetVLAD...)
+            output = model("features_extractor", [inputs, "global"])
+            output = output.reshape(B, global_features_dim)
+            database_features[indices.detach().numpy(), :] = output.detach().cpu().numpy()
+    query_features = database_features[test_ds.database_num:]  # features della query
+    database_features = database_features[:test_ds.database_num]  # features del database
+    faiss_index = faiss.IndexFlatL2(global_features_dim) # Faiss is a library for efficient similarity search and clustering of dense vectors
+    faiss_index.add(database_features) # aggiunge le features del database
+    
+    max_recall_value = max(RECALL_VALUES)  # Usually it's 20, valore massimo di recall, di solito è 20
+    distances, predictions = faiss_index.search(query_features, max_recall_value) # cerca in faiss le distanze e le predictions
+    ground_truths = test_ds.get_positives()  
+    
+    recalls = np.zeros(len(RECALL_VALUES))              # calcolo recalls e recalls_str
+    for query_index, pred in enumerate(predictions):
+        for i, n in enumerate(RECALL_VALUES):
+            if np.any(np.in1d(pred[:n], ground_truths[query_index])):
+                recalls[i:] += 1
+                break
+    recalls = recalls / test_ds.queries_num * 100
+    recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, recalls)])
 
-### esempio pred = 5
-# query = 100
-# database = tot
-# continua....
+    correct_bool_mat = np.zeros((test_ds.queries_num, max_recall_value), dtype=np.int)
+    for query_index in range(test_ds.queries_num):
+        positives = set(ground_truths[query_index].tolist())
+        for pred_index in range(max_recall_value):
+            pred = predictions[query_index, pred_index]
+            if pred in positives:
+                correct_bool_mat[query_index, pred_index] = 1
+                
+    return recalls, recalls_str, predictions, correct_bool_mat, distances
