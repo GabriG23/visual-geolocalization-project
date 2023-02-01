@@ -95,18 +95,11 @@ class ViTLite(nn.Module):
         )
     
     def forward(self, x):
-        # il nostro input: B C H W -> da cambiare in H W C
-        # input: immagine H W C
-        print(x.shape)
-        # x = torch.transpose(x, 1, 2)
-        # x = torch.transpose(x, 2, 3)
-        # print(x.shape)
+        # input x = 32, 3, 512, 512   B C H W
         x = self.tokenizer(x)  
-        print(x.shape)
+        # output x = 32, 16364, 128
         x = self.classifier(x) # transformers
         print(x.shape)
-        x = torch.transpose(x, 3, 2)
-        x = torch.transpose(x, 2, 1)
         return x
 
 # tokener: data una immagine x di dimensione H W C

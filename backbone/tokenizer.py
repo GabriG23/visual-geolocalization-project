@@ -41,39 +41,14 @@ class Tokenizer(nn.Module):
         return self.forward(torch.zeros((1, n_channels, height, width))).shape[1] # ritorna i canali, 3
 
     def forward(self, x):
-        print(x.shape)
-        x = self.conv_layers(x)
-        print(x.shape)
-        x = self.flattener(x)
-        print(x.shape)
-        x = x.transpose(-2, -1)
-        print(x.shape)
-        return x
-        # return self.flattener(self.conv_layers(x)).transpose(-2, -1)  # fa flatten unisce terza e quarta dimensione, traspose cambia la seconda dimensione con la terza
+        return self.flattener(self.conv_layers(x)).transpose(-2, -1)  # fa flatten unisce terza e quarta dimensione, traspose cambia la seconda dimensione con la terza
 
     @staticmethod
     def init_weight(m):
         if isinstance(m, nn.Conv2d):
             nn.init.kaiming_normal_(m.weight)
 
-# passi:
-# x = x = torch.zeros(32, 3, 512, 512)    # B, C, H, W
-#          input        output 
-# conv2d   B Ci H W -> B Co Ho Wo
-# identity B C H W  -> B C  H  W
-# max pool B C H W  -> B C  Ho Wo
-#
-#
-# flattener = nn.Flatten(2, 3)  # unisce terza e quarta dimensione 
-# x = flattener(x)  -> shape 32, 3, 262144
-# x = traspose(-2, -1) -> shape 32, 262144, 3
-#
-# output B HxW C da 4 a 3 dimensioni
-#
-#
-#
-#
-#
-#
-#
-#
+#                        input             output
+# self.conv_layers(x) -> 32 3 512 512  ->  32 128 128 128
+# self.flattener(x)   -> 32 128 128 128 -> 32 128 16384
+# x.transpose         -> 32 128 16384   -> 32 16384 128

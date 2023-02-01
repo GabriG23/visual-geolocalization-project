@@ -121,15 +121,23 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
         self.apply(self.init_weight)
 
     def forward(self, x):     # x è quello che esce dal tokenizer
+        print(x.shape)
         if self.positional_emb is None and x.size(1) < self.sequence_length:                    # entra subito dopo l'init di self.positional
             x = F.pad(x, (0, 0, 0, self.n_channels - x.size(1)), mode='constant', value=0)
+            print(x.shape)
+            print("1")
 
         if not self.seq_pool:
             cls_token = self.class_emb.expand(x.shape[0], -1, -1)
             x = torch.cat((cls_token, x), dim=1)
+            print(x.shape)
+            print("2")
 
         if self.positional_emb is not None:         # entra se non è 0, all'init sono tutti 0   # PROBLEMA QUI
+            print(self.positional_emb.shape)
             x += self.positional_emb
+            print(x.shape)
+            print("3")
 
         x = self.dropout(x)                                                             # Dropout
 
