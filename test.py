@@ -202,8 +202,7 @@ def test_reranked(args, model, predictions, test_dataset, num_reranked_predictio
     return recalls, recalls_str
 
 # computer_features per GeoWarp
-def compute_features(test_ds, model, global_features_dim, num_workers=4,                  # calcola le feature di tutte le immagini
-                     eval_batch_size=32, recall_values=[1, 5, 10, 20]):
+def compute_features(test_ds, model, global_features_dim, num_workers=2, eval_batch_size=32):
     """Compute the features of all images within the geoloc_dataset.
     
     Parameters
@@ -213,24 +212,21 @@ def compute_features(test_ds, model, global_features_dim, num_workers=4,        
     global_features_dim : int, dimension of the features (e.g. 256 for AlexNet with GeM).
     num_workers : int.
     eval_batch_size : int.
-    recall_values : list of int, recalls to compute (e.g. R@1, R@5...).
     
     Returns
     -------
     recalls : np.array of int, containing R@1, R@5, r@10, r@20.
     recalls_pretty_str : str, pretty-printed recalls.
     predictions : np.array of int, containing the first 20 predictions for each query, with shape [queries_num, 20].
-    correct_bool_mat : np.array of int, with same dimension of predictions,
-        indicates of the prediction is correct or wrong. Its values are only [0, 1].
+    correct_bool_mat : np.array of int, with same dimension of predictions, indicates of the prediction is correct or wrong. Its values are only [0, 1].
     distances : np.array of float, with same dimension of predictions, indicates the distance in features space from the query to its prediction.
     ground_truths : list of lists of int, containing for each query the list of its positives.  It's a list of lists because each query has different amount of positives.
     """
-    test_dataloader = DataLoader(dataset=test_ds, num_workers=num_workers,            # prende le immagini
-                                 batch_size=eval_batch_size, pin_memory=True)
+    test_dataloader = DataLoader(dataset=test_ds, num_workers=num_workers, batch_size=eval_batch_size, pin_memory=True)
     model = model.eval()                                                                     # modello in evaluation
     with torch.no_grad(): # no gradient
         database_features = np.empty((len(test_ds), global_features_dim), dtype="float32")        #prende le features della gallery
-        for inputs, indices in tqdm(test_dataloader, desc=f"Comp feats {test_ds}", ncols=120):   # 120 lunghezza della barra
+        for inputs, indices in tqdm(test_dataloader, desc=f"Comp feats {test_ds}", ncols=100):   # 100 lunghezza della barra
             B, C, H, W = inputs.shape                                                        # mette in B C H W le dimensioni di inputs
             inputs = inputs.cuda()
             # Compute outputs using global features (e.g. GeM, NetVLAD...)
