@@ -64,9 +64,10 @@ logging.info(f"Test set: {test_ds}")
 
 ##### LOSS & OPTIMIZER #####
 criterion = torch.nn.CrossEntropyLoss()  # criterio usato per CosPlace. Abbiamo un problema di Classificazione
-mse = torch.nn.MSELoss()  # criterio usato da GeoWarp. MSE misura the mean squared error tra gli elementi in input x e il target y. Qui abbiamo un problema di Regressione
+criterion_mse = torch.nn.MSELoss()  # criterio usato da GeoWarp. MSE misura the mean squared error tra gli elementi in input x e il target y. Qui abbiamo un problema di Regressione
 
 model_optimizer = torch.optim.Adam(features_extractor.parameters(), lr=args.lr)  # utilizza l'algoritmo Adam per l'ottimizzazione
+homography_optimizer = torch.optim.Adam(homography_regression.parameters(), lr=args.lr)  # utilizza l'algoritmo Adam per l'ottimizzazione
 
 classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]   # il classifier è dato dalla loss(dimensione descrittore, numero di classi nel gruppo) 
 classifiers_optimizers = [torch.optim.Adam(classifier.parameters(), lr=args.classifiers_lr) for classifier in classifiers] # rispettivo optimizer
@@ -154,10 +155,10 @@ for epoch_num in range(start_epoch_num, args.epochs_num):      #### Train
             if args.ss_w != 0:  # ss_loss  # self supervised loss    guides the network to learn to estimate the points 
                 pred_warped_intersection_points_1 = model("regression", similarity_matrix_1to2)
                 pred_warped_intersection_points_2 = model("regression", similarity_matrix_2to1)
-                ss_loss = (mse(pred_warped_intersection_points_1[:, :4].float(), warped_intersection_points_1.float())+
-                        mse(pred_warped_intersection_points_1[:, 4:].float(), warped_intersection_points_2.float()) +
-                        mse(pred_warped_intersection_points_2[:, :4].float(), warped_intersection_points_2.float()) +
-                        mse(pred_warped_intersection_points_2[:, 4:].float(), warped_intersection_points_1.float()))
+                ss_loss = (criterion_mse(pred_warped_intersection_points_1[:, :4].float(), warped_intersection_points_1.float())+
+                        criterion_mse(pred_warped_intersection_points_1[:, 4:].float(), warped_intersection_points_2.float()) +
+                        criterion_mse(pred_warped_intersection_points_2[:, :4].float(), warped_intersection_points_2.float()) +
+                        criterion_mse(pred_warped_intersection_points_2[:, 4:].float(), warped_intersection_points_1.float()))
                 ss_loss.backward()
                 ss_loss = ss_loss.item()
                 del pred_warped_intersection_points_1, pred_warped_intersection_points_2

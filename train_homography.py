@@ -46,6 +46,7 @@ if args.resume_fe is not None:                                                  
 homography_regression = network.HomographyRegression(kernel_sizes=args.kernel_sizes, channels=args.channels, padding=1) # inizializza il layer homography
 
 model = network.GeoWarp(features_extractor, homography_regression)
+model = model.to(args.device).eval()      # sposta il modello sulla GPU e lo mette in modalità training (alcuni layer si comporteranno di conseguenza)
 
 ##### MODEL #####
 
