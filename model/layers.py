@@ -77,10 +77,10 @@ class Attention(nn.Module):
         # L2-normalize the featuremap before pooling.
         rec_feature_map_norm = F.normalize(rec_feature_map, p=2, dim=1) 
         att = torch.mul(rec_feature_map_norm, prob)         # ([32, 256, 32, 32])  -> o comunque la dimensione di quella con più canali
-        print(f"att:{att.shape}")
+        # print(f"att:{att.shape}")
         feat = torch.mean(att, [2, 3])                      # ([32, 256]) 
         # feat = tf.reduce_mean(tf.multiply(targets, prob), [1, 2], keepdims=False)         variante in tensorflow                          
-        print(f"att:{feat.shape}")
+        # print(f"att:{feat.shape}")
         return feat, prob, att                              # passa anche lo score ma nel model non lo usa
     
 class Autoencoder(nn.Module):
