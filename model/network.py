@@ -165,7 +165,6 @@ class GeoWarp(nn.Module):
         
         elif operation == "similarity":                                         # controlla se devo calcolare la similarity
             tensor_img_1, tensor_img_2 = args                                   # prendo i due tensori
-            print(tensor_img_1.shape)
             return self.similarity(tensor_img_1, tensor_img_2)                  # ritorno la matrice similarity
         
         elif operation == "regression":                                         # controlla se devo effettuare la regression
@@ -178,9 +177,8 @@ class GeoWarp(nn.Module):
             return self.regression(similarity_matrix_1to2), self.regression(similarity_matrix_2to1)
     
     def similarity(self, tensor_img_1, tensor_img_2):
-        features_1 = self.features_extractor(tensor_img_1.cuda())               # prende ler feature del primo tensore
-        features_2 = self.features_extractor(tensor_img_2.cuda())               # prende le feature del secondo tensore
-        print(features_1.shape)
+        features_1 = self.features_extractor(tensor_img_1.cuda(), "local")               # prende ler feature del primo tensore
+        features_2 = self.features_extractor(tensor_img_2.cuda(), "local")               # prende le feature del secondo tensore
         similarity_matrix_1to2 = compute_similarity(features_1, features_2)     # la similarity ritorna due matrici, sarà poi compito del regression module W effettuare la misura di similarity
         similarity_matrix_2to1 = compute_similarity(features_2, features_1)
         return similarity_matrix_1to2, similarity_matrix_2to1
