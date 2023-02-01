@@ -54,7 +54,7 @@ def _vit_lite(num_layers, num_heads, mlp_ratio, embedding_dim, kernel_size=4):  
 
 class ViTLite(nn.Module):
     def __init__(self,
-                 img_size=512,                               # dim immagini, era 224
+                 img_size=224,                               # dim immagini, era 224
                  embedding_dim=768,                          # dim - passata da parametro -> 128 128 256 256 256 
                  n_input_channels=3,                         # input channel
                  kernel_size=16,                             # kernel, dovrebbe essere la patch, 16

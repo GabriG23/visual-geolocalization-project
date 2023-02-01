@@ -18,13 +18,25 @@ class Attention(Module): # MHSA layer Multi-Headed Self-Attention
         self.attn_drop = Dropout(attention_dropout)         # butta fuori l'attention dropout
         self.proj = Linear(dim, dim)
         self.proj_drop = Dropout(projection_dropout)
+# B = 32, N = 16385 C = 128, heads = 2, embedding 128
+# qkv = Linear(dim, dim*3, bias, False) # 128* 3 = 384
+# x input = 32 16385 128
+# x = self.qkv(x)                                         -> 32 16385 384
+# x.reshape(B, N, 3, self.num_heads, C // self.num_heads) -> 32 16385 3 2 64
+# x. permute(2, 0, 3, 1, 4)                               -> 3 32 2 16385 64
+# q, k, v = qkv[0], qkv[1], qkv[2]
+# q = qkv[0] = 32 2 16385 64
+# k = qkv[1] = 32 2 16385 64
+# v = qkv[2] ) 32 2 16385 64
 
+# k.transpose(-2, -1) -> 32 2 64 16385
+# q @ k prodotto matriciale, da errore qui
     def forward(self, x):
-        B, N, C = x.shape           # B batch N ? C ?
+        B, N, C = x.shape           # B N C = 32 16385 128
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]
 
-        attn = (q @ k.transpose(-2, -1)) * self.scale
+        attn = (q @ k.transpose(-2, -1)) * self.scale     # non riesce a fare questo prodotto matriciale, la dim di 512 è troppo grande, per questo metteva 224
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
 
@@ -37,7 +49,7 @@ class TransformerEncoderLayer(Module):
     """
     Inspired by torch.nn.TransformerEncoderLayer and timm.
     """
-
+                       # 128      2
     def __init__(self, d_model, nhead, dim_feedforward=2048, dropout=0.1,
                  attention_dropout=0.1, drop_path_rate=0.1):
         super(TransformerEncoderLayer, self).__init__()
@@ -130,24 +142,23 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
             # x = 32 16385 128  #aggiunge un token
 
         if self.positional_emb is not None:         # entra se non è 0, all'init sono tutti 0   # PROBLEMA QUI
-            # shape of self.positional_ emb = 1 3137 128
-            x += self.positional_emb
-            print(x.shape)
-            print("3")
+            # shape of self.positional_ emb = 1 16385 128
+            x += self.positional_emb # 
 
-        x = self.dropout(x)                                                             # Dropout
-        print(x.shape)
+        x = self.dropout(x)       # 32 16385 128                                                      # Dropout
+
         for blk in self.blocks:
             x = blk(x)
-        x = self.norm(x)                                                                # Layer Normalization
-        print(x.shape)
+        x = self.norm(x)
+                                                                        # Layer Normalization
+        # print(x.shape)
         if self.seq_pool:
             x = torch.matmul(F.softmax(self.attention_pool(x), dim=1).transpose(-1, -2), x).squeeze(-2)                         # softmax
         else:
             x = x[:, 0]
 
         x = self.fc(x)
-        print(x.shape)
+        # print(x.shape)
         return x
 
     @staticmethod

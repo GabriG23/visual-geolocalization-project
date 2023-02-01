@@ -63,15 +63,25 @@ class TrainDataset(torch.utils.data.Dataset):           # ogni dataset fa riferi
                              f"'--groups_num {current_group}'")
         self.classes_ids = classes_per_group[current_group]
         
+        # if self.augmentation_device == "cpu":  # originale
+        #     self.transform = T.Compose([
+        #             T.ColorJitter(brightness=args.brightness,
+        #                           contrast=args.contrast,
+        #                           saturation=args.saturation,
+        #                           hue=args.hue),
+        #             T.RandomResizedCrop([512, 512], scale=[1-args.random_resized_crop, 1]),
+        #             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        #         ])
         if self.augmentation_device == "cpu":
             self.transform = T.Compose([
                     T.ColorJitter(brightness=args.brightness,
                                   contrast=args.contrast,
                                   saturation=args.saturation,
                                   hue=args.hue),
-                    T.RandomResizedCrop([512, 512], scale=[1-args.random_resized_crop, 1]),
+                    T.RandomResizedCrop([224, 224], scale=[1-args.random_resized_crop, 1]),
                     T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
                 ])
+    
     
     def __getitem__(self, class_num):
         # This function takes as input the class_num instead of the index of
@@ -89,7 +99,8 @@ class TrainDataset(torch.utils.data.Dataset):           # ogni dataset fa riferi
             raise e
         
         tensor_image = T.functional.to_tensor(pil_image)                # trasforma l'immagine in un tensore
-        assert tensor_image.shape == torch.Size([3, 512, 512]), \
+        # assert tensor_image.shape == torch.Size([3, 512, 512]), \
+        assert tensor_image.shape == torch.Size([3, 224, 224]), \
             f"Image {image_path} should have shape [3, 512, 512] but has {tensor_image.shape}."     # si assicura abbia la dimensione corretta
         
         if self.augmentation_device == "cpu":
