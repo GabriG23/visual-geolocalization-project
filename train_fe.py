@@ -35,13 +35,6 @@ logging.info(f"The outputs are being saved in {output_folder}")
 
 ##### MODEL #####
 model = network.FeatureExtractor(args.backbone, args.fc_output_dim)     # arch alexnet, vgg16 o resnet50, pooling netvlad o gem, args.arch, args.pooling
-global_features_dim = commons.get_output_dim(model, "gem")              # dimensione dei descrittori = 512 con resnet18
-
-logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")  # conta GPUs e CPUs
-if args.resume_fe is not None:                                                    # se c'è un modello pre-salvato da caricare
-    logging.debug(f"Loading model from {args.resume_fe}")
-    model_state_dict = torch.load(args.resume_fe)                                 # carica un oggetto salvato con torch.save(). Serve per deserializzare l'oggetto
-    model.load_state_dict(model_state_dict)                            # copia parametri e buffer dallo state_dict all'interno del modello e nei suoi discendenti
 
 features_extractor = model.to(args.device).train()      # sposta il modello sulla GPU e lo mette in modalità training (alcuni layer si comporteranno di conseguenza)
 
