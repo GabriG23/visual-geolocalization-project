@@ -42,9 +42,6 @@ if args.resume_model is not None:                              # se c'è un mode
     model_state_dict = torch.load(args.resume_model)           # carica un oggetto salvato con torch.save(). Serve per deserializzare l'oggetto
     model.load_state_dict(model_state_dict)                    # copia parametri e buffer dallo state_dict all'interno del modello e nei suoi discendenti
 
-                        # A state_dict is simply a Python dictionary object that maps each layer to its parameter tensor
-                        # solo i layer con parametri hanno delle entry dentro al dizionario 
-
 model = model.to(args.device).train()      # sposta il modello sulla GPU e lo mette in modalità training (alcuni layer si comporteranno di conseguenza)
 
 #### Optimizer
@@ -52,31 +49,9 @@ criterion = torch.nn.CrossEntropyLoss()
 model_optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)  # utilizza l'algoritmo Adam per l'ottimizzazione
 
 #### Datasets
-groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,
-                       current_group=n, min_images_per_class=args.min_images_per_class) for n in range(args.groups_num)]
+groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,  current_group=n, min_images_per_class=args.min_images_per_class) for n in range(args.groups_num)]
 
-# Each group has its own classifier, which depends on the number of classes in the group (più gruppi ci sono, più classificatori sono usati con rispettivi optimizer)
-# Noi abbiamo un solo gruppo perciò avremo un solo classifier
-
-# Each group has its own classifier, which depends on the number of classes in the group
-    # """Implement of large margin cosine distance:
-    # Args:
-    #     in_features: size of each input sample
-    #     out_features: size of each output sample
-    #     s: norm of input feature
-    #     m: margin
-    # """
-
-logging.info(f"Using {args.loss_function} function") # dentro args.loss ho la mia loss: per settarla scrivere negli args --loss_function name quando fate partire il train
-if args.loss_function== "cosface":
-        classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]   # il classifier è dato dalla loss(dimensione descrittore, numero di classi nel gruppo) 
-elif args.loss_function == "arcface": 
-        classifiers = [arcface_loss.ArcFace(args.fc_output_dim, len(group)) for group in groups]
-elif args.loss_function == "sphereface":
-        classifiers = [sphereface_loss.SphereFace(args.fc_output_dim, len(group)) for group in groups]
-else:
-    raise ValueError()
-
+classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]   # il classifier è dato dalla loss(dimensione descrittore, numero di classi nel gruppo) 
 classifiers_optimizers = [torch.optim.Adam(classifier.parameters(), lr=args.classifiers_lr) for classifier in classifiers] # rispettivo optimizer
 
 logging.info(f"Using {len(groups)} groups")                                                                                        # numero di gruppi
@@ -86,8 +61,7 @@ logging.info(f"The {len(groups)} groups have respectively the following number o
 # per capire gli output su, bisogna capire come sono state implementate le classi dei dataset
 
 val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold) 
-test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
-                      positive_dist_threshold=args.positive_dist_threshold)
+test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1", positive_dist_threshold=args.positive_dist_threshold)
 logging.info(f"Validation set: {val_ds}")
 logging.info(f"Test set: {test_ds}")
 
@@ -107,7 +81,6 @@ logging.info(f"There are {len(groups[0])} classes for the first group, " +
              f"each epoch has {args.iterations_per_epoch} iterations " +
              f"with batch_size {args.batch_size}, therefore the model sees each class (on average) " +
              f"{args.iterations_per_epoch * args.batch_size / len(groups[0]):.1f} times per epoch")
-
 
 if args.augmentation_device == "cuda":           # data augmentation. Da cpu a gpu cambia solo il tipo di crop
     gpu_augmentation = T.Compose([

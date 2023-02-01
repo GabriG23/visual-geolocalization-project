@@ -1,7 +1,9 @@
 import torch.nn as nn
 from .transformers import TransformerClassifier
 from .tokenizer import Tokenizer
-
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 def vision_transformer_lite(type):
     if type == 2:
@@ -91,11 +93,17 @@ class ViTLite(nn.Module):
             num_classes=num_classes,
             positional_embedding=positional_embedding
         )
-
+    
     def forward(self, x):
-        x = self.tokenizer(x)          
+        # il nostro input: C H W -> da cambiare in H W C
+        # input: immagine H W C
+        x = torch.transpose(x, 0, 1)
+        x = torch.transpose(x, 1, 2)
+        x = self.tokenizer(x)  
         x = self.classifier(x) # transformers
         return x
+
+# tokener: data una immagine x di dimensione H W C
 
 # classifier consists of transformer block, each including an MSHA layer e un MPL block
 # applica una layer normalization, gelu activation e un dropout.
