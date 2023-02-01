@@ -70,7 +70,7 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
     recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, recalls)])     # valori di recall in stringa
     return recalls, recalls_str
 
-
+# la differenza è c he questo test torna anche le predictions
 # test usato per calcolare recall e recall_str è uguale a quello sopra, solo che la rete è diversa quindi devo chiamre il model diversamente
 def test_geowarp(args: Namespace, eval_ds: Dataset, model: torch.nn.Module):
     """Compute descriptors of the given dataset and compute the recalls."""

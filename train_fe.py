@@ -185,7 +185,7 @@ model.load_state_dict(best_model_state_dict)
 logging.info(f"Now testing on the test set: {test_ds}")
 
 logging.info(f"Start testing")
-recalls, recalls_str, _ = test.test(args, test_ds, model)                   # prova il modello migliore sul dataset di test (queries v1)
+recalls, recalls_str = test.test(args, test_ds, model)                   # prova il modello migliore sul dataset di test (queries v1)
 
 logging.info(f"Test without warping: {test_ds}: {recalls_str}")
 
