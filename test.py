@@ -202,7 +202,7 @@ def test_reranked(args, model, predictions, test_dataset, num_reranked_predictio
     return recalls, recalls_str
 
 # computer_features per GeoWarp
-def compute_features(test_ds, model, global_features_dim, num_workers=2, eval_batch_size=32):
+def compute_features(args: Namespace, test_ds: Dataset, model: torch.nn.Module, global_features_dim, num_workers=2, eval_batch_size=32):
     """Compute the features of all images within the geoloc_dataset.
     
     Parameters
@@ -222,24 +222,38 @@ def compute_features(test_ds, model, global_features_dim, num_workers=2, eval_ba
     distances : np.array of float, with same dimension of predictions, indicates the distance in features space from the query to its prediction.
     ground_truths : list of lists of int, containing for each query the list of its positives.  It's a list of lists because each query has different amount of positives.
     """
-    test_dataloader = DataLoader(dataset=test_ds, num_workers=num_workers, batch_size=eval_batch_size, pin_memory=True)
-    model = model.eval()                                                                     # modello in evaluation
+    model = model.eval()  
     with torch.no_grad(): # no gradient
-        database_features = np.empty((len(test_ds), global_features_dim), dtype="float32")        #prende le features della gallery
-        for inputs, indices in tqdm(test_dataloader, desc=f"Comp feats {test_ds}", ncols=100):   # 100 lunghezza della barra
-            B, C, H, W = inputs.shape                                                        # mette in B C H W le dimensioni di inputs
-            inputs = inputs.cuda()
+        database_subset_ds = Subset(test_ds, list(range(test_ds.database_num)))    
+        database_dataloader = DataLoader(dataset=database_subset_ds, num_workers=num_workers, batch_size=args.infer_batch_size, pin_memory=(args.device == "cuda"))
+        all_descriptors = np.empty((len(test_ds), global_features_dim), dtype="float32")   
+        
+        for images, indices in tqdm(database_dataloader, ncols=100):   # 100 lunghezza della barra
+            images = images.to(args.device)
             # Compute outputs using global features (e.g. GeM, NetVLAD...)
-            output = model("features_extractor", [inputs, "global"])
-            output = output.reshape(B, global_features_dim)
-            database_features[indices.detach().numpy(), :] = output.detach().cpu().numpy()
-    query_features = database_features[test_ds.database_num:]  # features della query
-    database_features = database_features[:test_ds.database_num]  # features del database
+            output = model("features_extractor", [images, "global"])
+            output = output.cpu().numpy()  
+            # output = output.reshape(B, global_features_dim)
+            all_descriptors[indices.numpy(), :] = output
+            
+        queries_infer_batch_size = 1                                                                              # sembra che venga valutata un'immagine per volta
+        queries_subset_ds = Subset(test_ds, list(range(test_ds.database_num, test_ds.database_num+test_ds.queries_num)))    # in questo caso, crea un subset con sole query
+        queries_dataloader = DataLoader(dataset=queries_subset_ds, num_workers=args.num_workers, batch_size=queries_infer_batch_size, pin_memory=(args.device == "cuda"))            # crea il dataloader associato a questo secondo subset
+        for images, indices in tqdm(queries_dataloader, ncols=100):                            
+            images = images.to(args.device)
+            descriptors = model("features_extractor", [images, "global"])                         # fa lo stesso lavoro precedente, calcolando per ogni immagine di query il descrittore
+            descriptors = descriptors.cpu().numpy()
+            all_descriptors[indices.numpy(), :] = descriptors     
+
+    queries_descriptors = all_descriptors[test_ds.database_num:]  # features della query
+    database_descriptors = all_descriptors[:test_ds.database_num]  # features del database
+
     faiss_index = faiss.IndexFlatL2(global_features_dim) # Faiss is a library for efficient similarity search and clustering of dense vectors
-    faiss_index.add(database_features) # aggiunge le features del database
+    faiss_index.add(database_descriptors) # aggiunge le features del database
+    del database_descriptors, all_descriptors                # elimina roba non piiù utile
     
     max_recall_value = max(RECALL_VALUES)  # Usually it's 20, valore massimo di recall, di solito è 20
-    distances, predictions = faiss_index.search(query_features, max_recall_value) # cerca in faiss le distanze e le predictions
+    distances, predictions = faiss_index.search(queries_descriptors, max_recall_value) # cerca in faiss le distanze e le predictions
     ground_truths = test_ds.get_positives()  
     
     recalls = np.zeros(len(RECALL_VALUES))              # calcolo recalls e recalls_str

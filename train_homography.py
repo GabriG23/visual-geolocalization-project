@@ -161,9 +161,9 @@ best_model_state_dict = torch.load(f"{output_folder}/best_model.pth")    # caric
 model.load_state_dict(best_model_state_dict)
 
 recalls, recalls_str, predictions, _, _ = \
-    test.compute_features(test_ds, model, global_features_dim)
+    test.compute_features(args, test_ds, model, global_features_dim)
 
-_, reranked_recalls_str = test.test_reranked(model, predictions, test_ds, num_reranked_predictions=args.num_reranked_preds)
+_, reranked_recalls_str = test.test_reranked(args, model, predictions, test_ds, num_reranked_predictions=args.num_reranked_preds)
 
 logging.info(f"Test without warping: {test_ds}: {recalls_str}")
 logging.info(f"  Test after warping: {test_ds}: {reranked_recalls_str}") # stampa le recall warpate
