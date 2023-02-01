@@ -30,7 +30,8 @@ class Attention(Module): # MHSA layer Multi-Headed Self-Attention
 # v = qkv[2] ) 32 2 16385 64
 
 # k.transpose(-2, -1) -> 32 2 64 16385
-# q @ k prodotto matriciale, da errore qui
+# q @ k prodotto matriciale tra 32 2 64 16385 e 32 2 16385 64 -> 32 2 16385 16385, va in segmentation
+
     def forward(self, x):
         B, N, C = x.shape           # B N C = 32 16385 128
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
