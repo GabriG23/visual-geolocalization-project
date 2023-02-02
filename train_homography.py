@@ -63,7 +63,7 @@ logging.info(f"Test set: {test_ds}")
 ##### LOSS & OPTIMIZER #####
 criterion_mse = torch.nn.MSELoss()  # criterio usato da GeoWarp. MSE misura the mean squared error tra gli elementi in input x e il target y. Qui abbiamo un problema di Regressione
 
-model_optimizer = torch.optim.Adam(features_extractor.parameters(), lr=args.lr)  # utilizza l'algoritmo Adam per l'ottimizzazione
+model_optimizer = torch.optim.Adam(homography_regression.parameters(), lr=args.lr)  # utilizza l'algoritmo Adam per l'ottimizzazione
 
 logging.info(f"Using {len(groups)} groups")                                                                                        # numero di gruppi
 logging.info(f"The {len(groups)} groups have respectively the following number of classes {[len(g) for g in groups]}")             # numero di classi nei gruppi
