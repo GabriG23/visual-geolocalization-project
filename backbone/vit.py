@@ -64,7 +64,7 @@ class ViTLite(nn.Module):
                  num_layers=14,                              # numero di layers - passata da parametro  2 4 6 7 8
                  num_heads=6,                                # numero di head   - passata da parametro  2 2 4 4 4
                  mlp_ratio=4.0,                              # mlp ratio        - passata da parametro  1 1 2 2 2
-                 num_classes=1000,                           # classi di cosplace
+                 num_classes=224,                           # classi di cosplace
                  positional_embedding='learnable'            # learnable
                 ):
         super(ViTLite, self).__init__()
@@ -99,8 +99,7 @@ class ViTLite(nn.Module):
         # input x = 32, 3, 512, 512   B C H W
         x = self.tokenizer(x)  
         # output x = 32, 16364, 128
-        x = self.classifier(x) # transformers con img 224 224 esce 32 5965
-        print(x.shape)
+        x = self.classifier(x) # transformers con img 224 224 esce 32 5965  32 num classi
         return x
 
 # classifier consists of transformer block, each including an MSHA layer e un MPL block
