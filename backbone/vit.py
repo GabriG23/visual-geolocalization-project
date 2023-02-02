@@ -103,8 +103,6 @@ class ViTLite(nn.Module):
         print(x.shape)
         return x
 
-# tokener: data una immagine x di dimensione H W C
-
 # classifier consists of transformer block, each including an MSHA layer e un MPL block
 # applica una layer normalization, gelu activation e un dropout.
 # positional embeddings can be learnable or sinusoidal.

@@ -81,6 +81,11 @@ class TrainDataset(torch.utils.data.Dataset):           # ogni dataset fa riferi
                     T.RandomResizedCrop([224, 224], scale=[1-args.random_resized_crop, 1]),
                     T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
                 ])
+        self.base_transform = T.Compose([
+            T.ToTensor(),
+            T.Resize(224, 224),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),    # stessa mean e std del train
+        ])
     
     
     def __getitem__(self, class_num):
@@ -98,10 +103,13 @@ class TrainDataset(torch.utils.data.Dataset):           # ogni dataset fa riferi
             logging.info(f"ERROR image {image_path} couldn't be opened, it might be corrupted.")
             raise e
         
-        tensor_image = T.functional.to_tensor(pil_image)                # trasforma l'immagine in un tensore
+        # tensor_image = T.functional.to_tensor(pil_image)                # trasforma l'immagine in un tensore
         # assert tensor_image.shape == torch.Size([3, 512, 512]), \
-        assert tensor_image.shape == torch.Size([3, 512, 512]), \
-            f"Image {image_path} should have shape [3, 512, 512] but has {tensor_image.shape}."     # si assicura abbia la dimensione corretta
+
+        tensor_image = self.base_transform(pil_image)       # gli applica la trasformazione definita prima
+
+        assert tensor_image.shape == torch.Size([3, 224, 224]), \
+            f"Image {image_path} should have shape [3, 224, 224] but has {tensor_image.shape}."     # si assicura abbia la dimensione corretta
         
         if self.augmentation_device == "cpu":
             tensor_image = self.transform(tensor_image)       # gli applica la trasformazione definita prima
