@@ -95,10 +95,11 @@ class ViTLite(nn.Module):
         )
     
     def forward(self, x):
-        # input x = 32, 3, 224, 224   B C H W
+        # input immagine x = 32, 3, 224, 224   B C H W
         x = self.tokenizer(x)  
         # output x = 32, 3196, 56
-        x = self.classifier(x) # transformers con img 224 224 esce 32 5965  32 num classi
+        x = self.classifier(x)
+        # uscita: tensor 2D 32 5965 -> 5965 sono le classi, quindi per ogni classe avrà calcolato qualche valore data l'immagine
         return x
 
 # classifier consists of transformer block, each including an MSHA layer e un MPL block
