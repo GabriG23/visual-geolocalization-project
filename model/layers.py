@@ -86,12 +86,12 @@ class Attention(nn.Module):
 class Autoencoder(nn.Module):
     def __init__(self, input_features, output_features):    # in_c mi sembra siano 256
         super().__init__()
-        self.conv1 = nn.Conv2d(input_features, output_features, 1, 1)    # stiamo usando un autoencoder che riduce da 128 a 32 (per mantenere più o meno la proporzione del paper)
-        self.conv2 = nn.Conv2d(output_features, input_features, 1, 1)    # filter è 1 come nel paper; 128 sono quelli che lui riceve
+        self.conv1 = nn.Conv2d(input_features, output_features, 1, 1)    # stiamo usando un autoencoder che riduce da 256 a 64 (per mantenere più o meno la proporzione del paper)
+        self.conv2 = nn.Conv2d(output_features, input_features, 1, 1)    # filter è 1 come nel paper; 256 sono quelli che lui riceve
         self.relu = nn.ReLU()                               # nel paper è scritto "followed by ReLU"
 
     def forward(self, x):                                  
-        reduced_dim = self.conv1(x)                         # ([32, 32, 32, 32])
+        reduced_dim = self.conv1(x)                         # ([32, 128, 32, 32])
         x = self.conv2(reduced_dim)                         # ([32, 256, 32, 32])
         expanded_dim = self.relu(x)           
         # print(expanded_dim.shape)

@@ -34,7 +34,7 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
         self.attention = Attention(256)                     # 256 sono i canali di feature map (B, 256, 32, 32)
         self.dim_reduction = dim_reduction
         if self.dim_reduction:
-            self.autoencoder = Autoencoder(256, 64)         # entrano che sono 256, quella ridotta mettiamo a 32 cosi da mantenere lo stesso rapporto del paper (8)
+            self.autoencoder = Autoencoder(256, 128)         # entrano che sono 256, quella ridotta mettiamo a 32 cosi da mantenere lo stesso rapporto del paper (8)
                                                             # EVENTUALMENTE DA PROVARE SENZA AUTOENCODER QUINDI SENZA RIDURRE LE FEATURES
         self.attn_classifier = nn.Linear(256, num_classes)  # è il numero di descrottori locali
 
