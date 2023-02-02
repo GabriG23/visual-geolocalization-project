@@ -55,7 +55,7 @@ def _vit_lite(num_layers, num_heads, mlp_ratio, embedding_dim, kernel_size=4):  
 class ViTLite(nn.Module):
     def __init__(self,
                  img_size=224,                               # dim immagini, era 224
-                 embedding_dim=768,                          # dim - passata da parametro -> 128 128 256 256 256 
+                 embedding_dim=768,                          # dim - passata da parametro -> 128 128 256 256 256, questo è la nostra hidden size
                  n_input_channels=3,                         # input channel
                  kernel_size=16,                             # kernel, dovrebbe essere la patch, 16
                  dropout=0.,                                 # dropout del classifier
@@ -64,7 +64,7 @@ class ViTLite(nn.Module):
                  num_layers=14,                              # numero di layers - passata da parametro  2 4 6 7 8
                  num_heads=6,                                # numero di head   - passata da parametro  2 2 4 4 4
                  mlp_ratio=4.0,                              # mlp ratio        - passata da parametro  1 1 2 2 2
-                 num_classes=5965,                           # classi di cosplace
+                 num_classes=1000,                           # classi di cosplace
                  positional_embedding='learnable'            # learnable
                 ):
         super(ViTLite, self).__init__()
@@ -100,6 +100,7 @@ class ViTLite(nn.Module):
         x = self.tokenizer(x)  
         # output x = 32, 16364, 128
         x = self.classifier(x) # transformers con img 224 224 esce 32 5965
+        print(x.shape)
         return x
 
 # classifier consists of transformer block, each including an MSHA layer e un MPL block

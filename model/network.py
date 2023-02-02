@@ -32,8 +32,10 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
             )                                               # random dalle features in ingresso
     
     def forward(self, x):
-        x = self.backbone(x)  # da qui esce torch.Size([32, 512, 7, 7]) con resnet18
-        x = self.aggregation(x)                             # e dopo entra nel container sequenziale
+        x = self.backbone(x)    # con resnet18 esce [32, 512, 7, 7] 
+        print(x.shape)
+        x = self.aggregation(x) # con resnet18 esce [32, 512]                            # e dopo entra nel container sequenziale
+        print(x.shape)
         return x
 
 

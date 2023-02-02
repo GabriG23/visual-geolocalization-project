@@ -83,7 +83,7 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
                  num_layers=12,                                                     # layers
                  num_heads=12,                                                      # head
                  mlp_ratio=4.0,                                                     # niente di nuovo
-                 num_classes=5965,
+                 num_classes=1000,
                  dropout=0.1,
                  attention_dropout=0.1,
                  stochastic_depth=0.1,
