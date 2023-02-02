@@ -14,7 +14,7 @@ def cosine_sim(x1: torch.Tensor, x2: torch.Tensor, dim: int = 1, eps: float = 1e
     ip = torch.mm(x1, x2)   #ho tolto una transpose                     # prodotto matriciale tra feature e weight, in questo caso i weight vengono trasposti (perché non hanno la stessa dimensione?)
     w1 = torch.norm(x1, 2, dim)                      # normalizza il vettore feature, 2 = L2 norm. Ritorna una matrice norm o un vettore norm di un tensore
                                                      #  dim serve per specificare quale dimensione/i del tensor di input calcolare (in questo caso dim = 1)
-    w2 = torch.norm(x2.t, 2, dim)                      # normalizza il vettore weight
+    w2 = torch.norm(x2, 2, dim)                      # normalizza il vettore weight
     return ip / torch.ger(w1, w2).clamp(min=eps)  # nel clamp metto solo il valore minimo 1e-8
 
 # mm: esegue un prodotto matriciale torch.mm(input, mat2,*, out=None)
