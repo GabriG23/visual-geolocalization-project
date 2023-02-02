@@ -97,6 +97,7 @@ class ViTLite(nn.Module):
     
     def forward(self, x):
         # input x = 32, 3, 512, 512   B C H W
+        print(x.shape)
         x = self.tokenizer(x)  
         # output x = 32, 16364, 128
         x = self.classifier(x) # transformers
