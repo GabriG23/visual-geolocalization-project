@@ -33,11 +33,18 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
                 nn.Linear(features_dim, fc_output_dim),     # applica la trasformazione y = x @ A.T + b dove A sono i parametri della rete in quel punto 
                 L2Norm()                                    # e b è il bias aggiunto se è passato bias=True al modello. I pesi e il bias sono inizializzati
             )                                               # random dalle features in ingresso
+        self.linear = nn.Linear(features_dim, fc_output_dim)
+        self.l2norm = L2Norm()
         self.backbone_name = backbone
     
     def forward(self, x):
         if self.backbone_name in ["vit224", "vit384", "cvt224", "cvt384", "cct224", "cct384"]:
             x = self.backbone(x)    # con transformers ritorna feature di dim [32, num_classes]
+            print(x.shape)
+            x = self.linear(x)
+            print(x.shape)
+            x = self.l2norm(x)
+            print(x.shape)
         else:
             x = self.backbone(x)    # con resnet18 esce [32, 512, 7, 7]
             x = self.aggregation(x) # con resnet18 esce [32, 512]
