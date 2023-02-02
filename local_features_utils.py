@@ -14,10 +14,6 @@ def CalculateKeypointCenters(boxes):
     # print(y)
     return torch.divide(torch.add(boxes[:, :2], boxes[:, 2:]),2.0)
 
-
-
-
-
 def CalculateReceptiveBoxes(height, width, rf, stride, padding):
     x, y = torch.meshgrid(torch.arange(width), torch.arange(height))
     coordinates = torch.reshape(torch.stack([x, y], axis=2), [-1, 2])               #  ho girato x e y rispetto alla repo per fare uscire gli stessi valori
