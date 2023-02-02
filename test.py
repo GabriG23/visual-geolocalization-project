@@ -8,7 +8,7 @@ from typing import Tuple
 from argparse import Namespace
 from torch.utils.data.dataset import Subset
 from torch.utils.data import DataLoader, Dataset
-
+from local_features_utils import retrieve_locations_descriptors, match_features
 
 # Compute R@1, R@5, R@10, R@20
 RECALL_VALUES = [1, 5, 10, 20]
@@ -52,7 +52,7 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
     del database_descriptors, all_descriptors               # elimina roba non più utile
     
     logging.debug("Calculating recalls")
-    _, predictions = faiss_index.search(queries_descriptors, max(RECALL_VALUES))    # effettua la ricerca con i descrittori delle query con i valori di recall specificati
+    distances, predictions = faiss_index.search(queries_descriptors, max(RECALL_VALUES))    # effettua la ricerca con i descrittori delle query con i valori di recall specificati
                                                             # questa parte quindi è svolta unicamente da questa libreria, che calcola la distanza euclidea (quindi la vicinanza)
                                                             # per ogni k (preso da RECALL_VALUES) immagini con le immagini di query. Più k è alto è più ho possibilità di prendere la 
                                                             # più vicina (lo si vede dopo)
@@ -73,3 +73,62 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
     return recalls, recalls_str
 
 
+# predictions sono indici in ordine di predizione e restituisce anche le distanze che possiamo usare come score
+# usare il meno per ordinarli come mi serve
+
+
+# occhio che le immagini di query hanno una dimensione diversa e questo può dare fastidio
+# perciò va fatto quando si fa inferenza
+
+images_matched = []
+for i in predictions:
+    images_matched.append(database_subset_ds[i])
+
+def RerankByGeometricVerification(predictions, distances, all_query_descriptors, all_query_attention_prob, 
+                        all_images_local_descriptors, all_images_attention_prob):
+    # ranks_before_gv[i] = np.argsort(-similarities)      # tieni conto di questo!!!
+    ransac_seed = 0
+    descriptor_matching_threshold = 1.0
+    ransac_residual_threshold = 20.0
+    use_ratio_test = False
+
+
+    # num_to_rerank = 100
+    for query_index, preds in enumerate(predictions):
+        print(f"Re-ranking: with query {query_index} out of {len(predictions)}")
+
+        num_matched_images = len(preds)
+
+        inliers_and_initial_scores = []                # in 0 avrà gli outliers, in 1 avrà gli scores (già calcolati)
+        for i in range(num_matched_images):
+            inliers_and_initial_scores.append([0, distances[query_index][i]])
+        for i in range(num_matched_images):
+            if i > 0 and i % 10 == 0:
+                print(f"/tRe-ranking: {i} out of {num_matched_images}")
+            
+            database_image_index = preds[i]
+
+            # Load index image features.
+            query_locations, query_descriptors = retrieve_locations_descriptors(all_query_descriptors[query_index], 
+                                                                        all_query_attention_prob[query_index])
+            
+            database_image_locations, database_image_descriptors = retrieve_locations_descriptors(all_query_descriptors[database_image_index], 
+                                                                        all_query_attention_prob[database_image_index])
+
+            inliers_and_initial_scores[database_image_index][0], _ = match_features(
+                query_locations,
+                query_descriptors,
+                database_image_locations,
+                database_image_descriptors,
+                ransac_seed=ransac_seed,
+                descriptor_matching_threshold=descriptor_matching_threshold,
+                ransac_residual_threshold=ransac_residual_threshold,
+                use_ratio_test=use_ratio_test)
+
+            inliers_and_initial_scores = sorted(range(inliers_and_initial_scores), key=lambda x : (inliers_and_initial_scores[x][0], inliers_and_initial_scores[x][1]), reverse=True)
+
+            # parte di ricalcolo della recall una volta ottenuti gli inliers
+
+
+
+    # return output_reranks

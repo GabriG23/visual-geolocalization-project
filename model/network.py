@@ -49,7 +49,7 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
         # feature_map.requires_grad = False                 # è la stessa cosa? Evita al gradiente di non tornare indietro?
         
         if self.dim_reduction:
-            reduced_dim, rec_feature_map = self.autoencoder(feature_map)                    # non so a cosa serva il primo
+            reduced_dim, rec_feature_map = self.autoencoder(feature_map)                 
         attn_prelogits, attn_scores, att = self.attention(feature_map, rec_feature_map)
         
         attn_logits = self.attn_classifier(attn_prelogits)
