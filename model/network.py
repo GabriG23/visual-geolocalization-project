@@ -125,7 +125,7 @@ class HomographyRegression(nn.Module):
         x = x.contiguous().view(x.size(0), -1)
         x = self.linear(x)
         x = x.reshape(B, 8, 2)
-        return x.reshape(B, 8, 2)
+        return x
 
 ##### MODULE GEOWARP
 class GeoWarp(nn.Module):
@@ -187,10 +187,10 @@ class GeoWarp(nn.Module):
         return self.homography_regression(similarity_matrix)
 
 def compute_similarity(features_a, features_b):                                  # calcola la similarity dalle immagini warpaed
-    b, c, h, w = features_a.shape                                                # prende le shape Batch, Channel, Height, Weight
+    b, c, h, w = features_a.shape                                                # prende le dimensioni
     features_a = features_a.transpose(2, 3).contiguous().view(b, c, h*w)         # fa una traspose, le s alva in memoria in modo contiguo e fa view
     features_b = features_b.view(b, c, h*w).transpose(1, 2)
-    features_mul = torch.bmm(features_b, features_a)                             # moltiplica le due feature
+    features_mul = torch.bmm(features_b, features_a)
     correlation_tensor = features_mul.view(b, h, w, h*w).transpose(2, 3).transpose(1, 2)
     correlation_tensor = feature_L2_norm(F.relu(correlation_tensor))
     return correlation_tensor
