@@ -88,7 +88,7 @@ if args.augmentation_device == "cuda":           # data augmentation. Da cpu a g
                                                     contrast=args.contrast,
                                                     saturation=args.saturation,
                                                     hue=args.hue),
-            augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
+            augmentations.DeviceAgnosticRandomResizedCrop([224, 224],
                                                           scale=[1-args.random_resized_crop, 1]),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
@@ -115,7 +115,6 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
     epoch_losses = np.zeros((0, 1), dtype=np.float32)                      # 0 righe, 1 colonna -> l'array è vuoto
     for iteration in tqdm(range(args.iterations_per_epoch), ncols=100):    # ncols è la grandezza della barra, 10k iterazioni per gruppo
         images, targets, _ = next(dataloader_iterator)                     # ritorna il batch di immagini e le rispettive classi
-        print(images.shape)
         images, targets = images.to(args.device), targets.to(args.device)  # mette tutto su device
 
         if args.augmentation_device == "cuda":
