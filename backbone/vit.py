@@ -97,11 +97,9 @@ class ViTLite(nn.Module):
     
     def forward(self, x):
         # input x = 32, 3, 512, 512   B C H W
-        print(x.shape)
         x = self.tokenizer(x)  
         # output x = 32, 16364, 128
-        x = self.classifier(x) # transformers
-        print(x.shape)
+        x = self.classifier(x) # transformers con img 224 224 esce 32 5965
         return x
 
 # classifier consists of transformer block, each including an MSHA layer e un MPL block

@@ -33,6 +33,7 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
     
     def forward(self, x):
         x = self.backbone(x)                                # prima entra nella backbone
+        print(x.shape)
         x = self.aggregation(x)                             # e dopo entra nel container sequenziale
         return x
 
