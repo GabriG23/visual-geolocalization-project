@@ -127,9 +127,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
         classifiers_optimizers[current_group_num].zero_grad()              # fa la stessa cosa con l'ottimizzatore
         
         if not args.use_amp16:
-            print(images.shape)
             descriptors = model(images)                                     # inserisce il batch di immagini e restituisce il descrittore
-            print(descriptors.shape)
             output = classifiers[current_group_num](descriptors, targets)   # riporta l'output del classifier (applica quindi la loss ai batches). Però passa sia descrittore cha label
             loss = criterion(output, targets)                               # calcola la loss (in funzione di output e target)
             loss.backward()                                                 # calcola il gradiente per ogni parametro che ha il grad settato a True
