@@ -78,14 +78,16 @@ class TrainDataset(torch.utils.data.Dataset):           # ogni dataset fa riferi
                                   contrast=args.contrast,
                                   saturation=args.saturation,
                                   hue=args.hue),
-                    T.RandomResizedCrop([224, 224], scale=[1-args.random_resized_crop, 1]),
+                    T.RandomResizedCrop([args.fc_output_dim, args.fc_output_dim], scale=[1-args.random_resized_crop, 1]),
                     T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
                 ])
         self.base_transform = T.Compose([
             T.ToTensor(),
-            T.Resize(size=[224, 224]),
+            T.Resize(size=[args.fc_output_dim, args.fc_output_dim]),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),    # stessa mean e std del train
         ])
+
+        self.img_size = args.fc_output_dim
     
     
     def __getitem__(self, class_num):
@@ -108,8 +110,8 @@ class TrainDataset(torch.utils.data.Dataset):           # ogni dataset fa riferi
 
         tensor_image = self.base_transform(pil_image)       # gli applica la trasformazione definita prima
 
-        assert tensor_image.shape == torch.Size([3, 224, 224]), \
-            f"Image {image_path} should have shape [3, 224, 224] but has {tensor_image.shape}."     # si assicura abbia la dimensione corretta
+        assert tensor_image.shape == torch.Size([3, self.img_size, self.img_size]), \
+            f"Image {image_path} should have shape [3, 224, 224] or [3, 384, 384] or [3, 512, 512] but has {tensor_image.shape}."     # si assicura abbia la dimensione corretta
         
         if self.augmentation_device == "cpu":
             tensor_image = self.transform(tensor_image)       # gli applica la trasformazione definita prima

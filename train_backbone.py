@@ -33,6 +33,7 @@ logging.info(f"Arguments: {args}")                          # questi sono gli ar
 logging.info(f"The outputs are being saved in {output_folder}")
 
 #### Model
+# fc_output_dim: dimensione dell'ultimo fully connected layer
 model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim, args.layers_number)      # istanzia il modello con backbone e dimensione del descrittore
                                                                            # passati da linea di comando
 logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")  # conta GPUs e CPUs
@@ -88,7 +89,7 @@ if args.augmentation_device == "cuda":           # data augmentation. Da cpu a g
                                                     contrast=args.contrast,
                                                     saturation=args.saturation,
                                                     hue=args.hue),
-            augmentations.DeviceAgnosticRandomResizedCrop([224, 224],
+            augmentations.DeviceAgnosticRandomResizedCrop([args.fc_output_dim, args.fc_output_dim],
                                                           scale=[1-args.random_resized_crop, 1]),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
@@ -126,7 +127,9 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
         classifiers_optimizers[current_group_num].zero_grad()              # fa la stessa cosa con l'ottimizzatore
         
         if not args.use_amp16:
+            print(images.shape)
             descriptors = model(images)                                     # inserisce il batch di immagini e restituisce il descrittore
+            print(descriptors.shape)
             output = classifiers[current_group_num](descriptors, targets)   # riporta l'output del classifier (applica quindi la loss ai batches). Però passa sia descrittore cha label
             loss = criterion(output, targets)                               # calcola la loss (in funzione di output e target)
             loss.backward()                                                 # calcola il gradiente per ogni parametro che ha il grad settato a True

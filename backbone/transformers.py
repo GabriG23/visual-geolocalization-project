@@ -83,7 +83,7 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
                  num_layers=12,                                                     # layers
                  num_heads=12,                                                      # head
                  mlp_ratio=4.0,                                                     # niente di nuovo
-                 num_classes=1000,
+                 num_classes=5965,
                  dropout=0.1,
                  attention_dropout=0.1,
                  stochastic_depth=0.1,
@@ -94,9 +94,9 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
         positional_embedding = positional_embedding if \
             positional_embedding in ['sine', 'learnable', 'none'] else 'sine'
         
-        dim_feedforward = int(embedding_dim * mlp_ratio)                        # int 128 * 0.1 = 12.8
+        dim_feedforward = int(embedding_dim * mlp_ratio)                        # int 128 * 1 o 2 = 128 o 256
         self.embedding_dim = embedding_dim                                      # dim 128
-        self.sequence_length = sequence_length                                  # 3
+        self.sequence_length = sequence_length                                  # 3136
         self.seq_pool = seq_pool
         self.num_tokens = 0
 
@@ -148,16 +148,16 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
 
         x = self.dropout(x)       # 32 16385 128                                                      # Dropout
 
-        for blk in self.blocks:
+        for blk in self.blocks:   # per ogni blocco (layer) esegue il TranformerEncoder
             x = blk(x)
-        x = self.norm(x)
-                                                                        # Layer Normalization
+        x = self.norm(x)    # Layer Normalization
+                                                                        
         if self.seq_pool:
             x = torch.matmul(F.softmax(self.attention_pool(x), dim=1).transpose(-1, -2), x).squeeze(-2)                         # softmax
         else:
             x = x[:, 0]
 
-        x = self.fc(x)
+        x = self.fc(x)      # Linear -> embedding, num_classes?
         return x
 
     @staticmethod
