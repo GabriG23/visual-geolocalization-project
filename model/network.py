@@ -38,10 +38,10 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
     def forward(self, x):
         if self.backbone_name in ["vit224", "vit384", "cvt224", "cvt384", "cct224", "cct384"]:
             x = self.backbone(x)    # con transformers ritorna feature di dim [32, num_classes]
-            print(x.shape)
         else:
             x = self.backbone(x)    # con resnet18 esce [32, 512, 7, 7]
             x = self.aggregation(x) # con resnet18 esce [32, 512]
+        print(x.shape)
         return x
 
 
