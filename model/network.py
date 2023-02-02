@@ -33,7 +33,7 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
     
     def forward(self, x):
         x = self.backbone(x)  # da qui esce torch.Size([32, 512, 7, 7]) con resnet18
-        #x = self.aggregation(x)                             # e dopo entra nel container sequenziale
+        x = self.aggregation(x)                             # e dopo entra nel container sequenziale
         return x
 
 
