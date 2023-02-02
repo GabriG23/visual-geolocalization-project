@@ -34,7 +34,7 @@ class MarginCosineProduct(nn.Module): # CosFace
         self.in_features = in_features  # 512, 224 o 384
         self.out_features = out_features # numero classi
         self.s = s
-        self.m = m   # valore del margine
+        self.m = m   # valore del margine, tensore di 5965 224
         self.weight = Parameter(torch.Tensor(out_features, in_features))  # Il parameter è una sotto classe del tensore, quindi qui crea due sottoclassi con le out_features e le in_feature
         nn.init.xavier_uniform_(self.weight) # riempie il tensor con valori in base al tipo di distribuzione, in questo caso Xavier_uniform
     
@@ -45,6 +45,8 @@ class MarginCosineProduct(nn.Module): # CosFace
 
     def forward(self, inputs: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
                                                       # in input ho il feature vector
+        print(inputs.shape)
+        print(self.weight.shape)
         cosine = cosine_sim(inputs, self.weight)      # calcola la cosine similarity, cos(theta), vedi sopra
         one_hot = torch.zeros_like(cosine)            # crea un tensore di 0 della stessa dimensione di cosine
         one_hot.scatter_(1, label.view(-1, 1), 1.0)
