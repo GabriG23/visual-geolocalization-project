@@ -8,31 +8,31 @@ import logging
 
 def vision_transformer_lite(layers = 2, img_size = 224):
     if layers == 2:
-        return vit_2(layers, img_size)     # num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128
+        return vit_2(img_size)     # num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128
     elif layers == 4:
-        return vit_4(layers, img_size)     # num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128
+        return vit_4(img_size)     # num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128
     elif layers == 6:
-        return vit_6(layers, img_size)     # num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256 
+        return vit_6(img_size)     # num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256 
     elif layers == 7:
-        return vit_7(layers, img_size)     # num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256
+        return vit_7(img_size)     # num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256
     else:
         logging.info(f"ERROR number of layers. Layers cannot be equals to {layers}")
 
 
-def vit_2():
-    return _vit_lite(num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128, img_size = 224)   # layers, attention head, Multi layer perceptron ratio, dimensione descrittori
+def vit_2(img_size):
+    return _vit_lite(num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128, img_size = img_size)   # layers, attention head, Multi layer perceptron ratio, dimensione descrittori
 
 
-def vit_4():
-    return _vit_lite(num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128, img_size = 224)
+def vit_4(img_size):
+    return _vit_lite(num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128, img_size = img_size)
 
 
-def vit_6():
-    return _vit_lite(num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256, img_size = 224)
+def vit_6(img_size):
+    return _vit_lite(num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256, img_size = img_size)
 
 
-def vit_7():
-    return _vit_lite(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256, img_size = 224)
+def vit_7(img_size):
+    return _vit_lite(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256, img_size = img_size)
 
 
 def _vit_lite(num_layers, num_heads, mlp_ratio, embedding_dim, img_size, kernel_size=4):      # dimensione del kernel
