@@ -48,7 +48,6 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
         else:
             x = self.backbone(x)    # con resnet18 esce [32, 512, 7, 7]
             x = self.aggregation(x) # con resnet18 esce [32, 512]
-        print(x.shape)
         return x
 
 
