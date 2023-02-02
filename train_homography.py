@@ -130,6 +130,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):      #### Train
                     criterion_mse(pred_warped_intersection_points_1[:, 4:], warped_intersection_points_2) +
                     criterion_mse(pred_warped_intersection_points_2[:, :4], warped_intersection_points_2) +
                     criterion_mse(pred_warped_intersection_points_2[:, 4:], warped_intersection_points_1))
+            ss_loss *= args.ss_w
             ss_loss.backward()
             epoch_losses = np.append(epoch_losses, ss_loss.item()) 
             del ss_loss, pred_warped_intersection_points_1, pred_warped_intersection_points_2
