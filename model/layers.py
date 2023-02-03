@@ -94,7 +94,6 @@ class Autoencoder(nn.Module):
         reduced_dim = self.conv1(x)                         # ([32, 128, 32, 32])
         x = self.conv2(reduced_dim)                         # ([32, 256, 32, 32])
         expanded_dim = self.relu(x)           
-        # print(expanded_dim.shape)
         return reduced_dim, expanded_dim
 
 

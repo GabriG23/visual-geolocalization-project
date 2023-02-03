@@ -30,7 +30,7 @@ def CalculateReceptiveBoxes(height, width, rf, stride, padding):
     # Each box is represented by [ymin, xmin, ymax, xmax].
 
 def retrieve_locations_descriptors(feature_map, attention_prob):
-    # extracted_local_features = {
+    # extracted_local_features = {                  # utile se si vogliono usare più scale
     # 'local_features': {
     #     'locations': np.array([]),
     #     'descriptors': np.array([]),
@@ -45,8 +45,8 @@ def retrieve_locations_descriptors(feature_map, attention_prob):
     # attention_prob = torch.rand([1, 1, 32, 32])
 
     #eventuale scaling dell'immagine
-    # attention_prob = attention_prob.squeeze(0)         
-    # feature_map = feature_map.squeeze(0)
+    attention_prob = attention_prob.squeeze(0)         
+    feature_map = feature_map.squeeze(0)
 
     rf_boxes = CalculateReceptiveBoxes(feature_map.shape[1], feature_map.shape[2], rf, stride, padding)
 
@@ -81,7 +81,6 @@ def retrieve_locations_descriptors(feature_map, attention_prob):
     # a questo punto occorerebbe calcolare i keypoints seguendo la pipeline
 
     locations = CalculateKeypointCenters(selected_boxes)
-    print(locations)
     return locations, selected_features
 
 
@@ -103,7 +102,7 @@ def match_features(query_locations,
 
 
     NUM_TO_RERANK = 100                                         # numero massimo di immagini di cui fare il re-rank
-    _NUM_RANSAC_TRIALS = 1000
+    _NUM_RANSAC_TRIALS = 500
     _MIN_RANSAC_SAMPLES = 3
 
     num_features_query = query_locations.shape[0]               # numero di query features (saranno 1024)
@@ -146,7 +145,7 @@ def match_features(query_locations,
 
     # If there are not enough putative matches, early return 0.
     if query_locations_to_use.shape[0] <= _MIN_RANSAC_SAMPLES:
-        print(f"There are no enough putative matches")
+        return 0
 
     # Perform geometric verification using RANSAC.
     _, inliers = measure.ransac(
@@ -165,21 +164,21 @@ def match_features(query_locations,
             query_im_scale_factors = [1.0, 1.0]
         if index_im_scale_factors is None:
             index_im_scale_factors = [1.0, 1.0]
-    inlier_idxs = np.nonzero(inliers)[0]
-    _, ax = plt.subplots()
-    ax.axis('off')
-    ax.xaxis.set_major_locator(plt.NullLocator())
-    ax.yaxis.set_major_locator(plt.NullLocator())
-    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
-    plt.margins(0, 0)
-    feature.plot_matches(
-        ax,
-        query_im_array,
-        index_im_array,
-        query_locations_to_use * query_im_scale_factors,
-        database_image_locations_to_use * index_im_scale_factors,
-        np.column_stack((inlier_idxs, inlier_idxs)),
-        only_matches=True)
+            inlier_idxs = np.nonzero(inliers)[0]
+        _, ax = plt.subplots()
+        ax.axis('off')
+        ax.xaxis.set_major_locator(plt.NullLocator())
+        ax.yaxis.set_major_locator(plt.NullLocator())
+        plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+        plt.margins(0, 0)
+        feature.plot_matches(
+            ax,
+            query_im_array,
+            index_im_array,
+            query_locations_to_use * query_im_scale_factors,
+            database_image_locations_to_use * index_im_scale_factors,
+            np.column_stack((inlier_idxs, inlier_idxs)),
+            only_matches=True)
 
     # match_viz_io = io.BytesIO()
     # plt.savefig(match_viz_io, format='jpeg', bbox_inches='tight', pad_inches=0)

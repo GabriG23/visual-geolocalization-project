@@ -32,7 +32,7 @@ logging.info(f"Arguments: {args}")                          # questi sono gli ar
 logging.info(f"The outputs are being saved in {output_folder}")
 
 #### Model
-model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim)       # istanzia il modello con backbone e dimensione del descrittore
+model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim, args.fm_reduction_dim, args.reduction)       # istanzia il modello con backbone e dimensione del descrittore
                                                                             # passati da linea di comando
 
 logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")     # conta GPUs e CPUs
@@ -49,10 +49,12 @@ model = model.to(args.device).train()       # sposta il modello sulla GPU e lo m
 
 #### Optimizer
 criterion = torch.nn.CrossEntropyLoss() 
-criterion_MSE = torch.nn.MSELoss() 
+if args.reduction:
+    criterion_MSE = torch.nn.MSELoss() 
 
 # attention_parameters = [*model.attn_classifier.parameters(), *model.attention.parameters()]
-autoencoder_optimizer = torch.optim.Adam(model.autoencoder.parameters(), lr=args.lr)
+if args.reduction:
+    autoencoder_optimizer = torch.optim.Adam(model.autoencoder.parameters(), lr=args.lr)
 
 backbone_parameters = [*model.backbone_until_3.parameters(), *model.layers_4.parameters(), *model.aggregation.parameters(), *model.attn_classifier.parameters(), *model.attention.parameters()]      
 model_optimizer = torch.optim.Adam(backbone_parameters, lr=args.lr)   
@@ -145,7 +147,8 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
         
         model_optimizer.zero_grad()                                         # setta il gradiente a zero per evitare double counting (passaggio classico dopo ogni iterazione)
         classifiers_optimizers[current_group_num].zero_grad()               # fa la stessa cosa con l'ottimizzatore
-        autoencoder_optimizer.zero_grad()        
+        if args.reduction:
+            autoencoder_optimizer.zero_grad()        
         
         if not args.use_amp16:
             descriptors, attn_logits, feature_map, rec_feature_map, reduced_dim, attn_scores = model(images)   # inserisce il batch di immagini e restituisce il descrittore
@@ -154,14 +157,17 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
             feature_map = feature_map.detach() 
             global_loss = criterion(output, targets)                                           # calcola la loss (in funzione di output e target)
             attn_loss = criterion(attn_logits, targets)
-            rec_loss = criterion_MSE(rec_feature_map, feature_map)
-            
-            loss = global_loss + attn_loss + rec_loss                                 # calcola il gradiente per ogni parametro che ha il grad settato a True
+            if args.reduction:
+                rec_loss = criterion_MSE(rec_feature_map, feature_map)
+                loss = global_loss + attn_loss + rec_loss 
+            else:
+                loss = global_loss + attn_loss                      
     
             loss.backward()
             model_optimizer.step() 
             classifiers_optimizers[current_group_num].step() 
-            autoencoder_optimizer.step()                                                # lasciato separato perché la parte del classifier dovremme modificarsi in base alle classi del gruppo
+            if args.reduction:
+                autoencoder_optimizer.step()                                                # lasciato separato perché la parte del classifier dovremme modificarsi in base alle classi del gruppo
 
             epoch_losses = np.append(epoch_losses, loss.item()) 
             # epoch_global_losses = np.append(epoch_global_losses, global_loss.item())                 

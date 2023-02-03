@@ -16,6 +16,10 @@ def parse_arguments(is_training: bool = True):
                         choices=["vgg16", "resnet18", "resnet50", "resnet101", "resnet152"], help="_")
     parser.add_argument("--fc_output_dim", type=int, default=512,
                         help="Output dimension of final fully connected layer")
+    parser.add_argument("--fm_reduction_dim", type=int, default=128,
+                        help="Depth of the reduced feature map")
+    parser.add_argument("--reduction", action="store_true",
+                        help="use reduction of the feaure maps")
     # Training parameters
     parser.add_argument("--use_amp16", action="store_true",
                         help="use Automatic Mixed Precision")

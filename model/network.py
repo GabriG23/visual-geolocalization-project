@@ -18,8 +18,8 @@ CHANNELS_NUM_IN_LAST_CONV = {           # questi dipendono dall'architettura del
     }
 
 
-class GeoLocalizationNet(nn.Module):                        # questa è la rete principale
-    def __init__(self, backbone, fc_output_dim, num_classes = 5965, dim_reduction=True):            # l'oggetto della classe parent è creato in funzione della backbone scelta
+class GeoLocalizationNet(nn.Module):                 
+    def __init__(self, backbone, fc_output_dim, fm_reduction_dim, reduction, num_classes=5965):            # l'oggetto della classe parent è creato in funzione della backbone scelta
         super().__init__()
         backbone_until_3, layers_4, features_dim = get_backbone(backbone)
         self.backbone_until_3 = backbone_until_3
@@ -32,9 +32,9 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
                 L2Norm()                                    # e b è il bias aggiunto se è passato bias=True al modello. I pesi e il bias sono inizializzati
             )                                               # random dalle features in ingresso
         self.attention = Attention(256)                     # 256 sono i canali di feature map (B, 256, 32, 32)
-        self.dim_reduction = dim_reduction
+        self.dim_reduction = reduction
         if self.dim_reduction:
-            self.autoencoder = Autoencoder(256, 128)         # entrano che sono 256, quella ridotta mettiamo a 32 cosi da mantenere lo stesso rapporto del paper (8)
+            self.autoencoder = Autoencoder(256, fm_reduction_dim)         # entrano che sono 256, quella ridotta mettiamo a 32 cosi da mantenere lo stesso rapporto del paper (8)
                                                             # EVENTUALMENTE DA PROVARE SENZA AUTOENCODER QUINDI SENZA RIDURRE LE FEATURES
         self.attn_classifier = nn.Linear(256, num_classes)  # è il numero di descrottori locali
 
@@ -49,14 +49,17 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
         # feature_map.requires_grad = False                 # è la stessa cosa? Evita al gradiente di non tornare indietro?
         
         if self.dim_reduction:
-            reduced_dim, rec_feature_map = self.autoencoder(feature_map)                 
+            reduced_dim, rec_feature_map = self.autoencoder(feature_map) 
+        else:
+            rec_feature_map = feature_map    
+            reduced_dim = feature_map       
         attn_prelogits, attn_scores, att = self.attention(feature_map, rec_feature_map)
         
         attn_logits = self.attn_classifier(attn_prelogits)
         return global_features, attn_logits, feature_map, rec_feature_map, reduced_dim, attn_scores
 
 
-def get_backbone(backbone_name):                            # backbone_name è uno degli argomenti del programma
+def get_backbone(backbone_name):                         
     if backbone_name.startswith("resnet"):
         if backbone_name == "resnet18":
             backbone = torchvision.models.resnet18(pretrained=True)     # loading del modello già allenato
