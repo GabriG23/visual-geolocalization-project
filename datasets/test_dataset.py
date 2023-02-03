@@ -13,7 +13,7 @@ def open_image(path):
 
 
 class TestDataset(data.Dataset):
-    def __init__(self, dataset_folder, database_folder="database",
+    def __init__(self, dataset_folder, img_size, database_folder="database",
                  queries_folder="queries", positive_dist_threshold=25):         # positive_dist_threshold viene passato come argomento da tastiera
         """Dataset with images from database and queries, used for validation and test.
         Parameters
@@ -40,6 +40,7 @@ class TestDataset(data.Dataset):
         
         self.base_transform = transforms.Compose([
             transforms.ToTensor(),
+            transforms.Resize(size=[img_size, img_size]),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),    # stessa mean e std del train
         ])
         
