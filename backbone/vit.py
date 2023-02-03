@@ -63,7 +63,7 @@ class ViTLite(nn.Module):
                  num_layers=14,                              # numero di layers - passata da parametro  2 4 6 7 8
                  num_heads=6,                                # numero di head   - passata da parametro  2 2 4 4 4
                  mlp_ratio=4.0,                              # mlp ratio        - passata da parametro  1 1 2 2 2
-                 num_classes=5965,                           # classi di cosplace
+                 num_classes=10,                           # classi di cosplace
                  positional_embedding='learnable'            # learnable
                 ):
         super(ViTLite, self).__init__()

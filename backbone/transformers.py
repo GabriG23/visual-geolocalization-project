@@ -83,7 +83,7 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
                  num_layers=12,                                                     # layers
                  num_heads=12,                                                      # head
                  mlp_ratio=4.0,                                                     # niente di nuovo
-                 num_classes=5965,
+                 num_classes=10,
                  dropout=0.1,
                  attention_dropout=0.1,
                  stochastic_depth=0.1,
@@ -129,7 +129,7 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
             for i in range(num_layers)])
         self.norm = LayerNorm(embedding_dim)                                                             # Layer Normalization
 
-        self.fc = Linear(embedding_dim, 224)
+        self.fc = Linear(embedding_dim, num_classes)
         self.apply(self.init_weight)
 
     def forward(self, x):     # x è quello che esce dal tokenizer
