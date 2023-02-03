@@ -99,6 +99,7 @@ class ViTLite(nn.Module):
         x = self.tokenizer(x)  
         # output x = 32, 3196, 56
         x = self.classifier(x)
+        print(x.shape)
         # uscita: tensor 2D 32 5965 -> 5965 sono le classi, quindi per ogni classe avrà calcolato qualche valore data l'immagine
         return x
 
