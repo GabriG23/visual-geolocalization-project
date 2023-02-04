@@ -14,16 +14,19 @@ def CalculateKeypointCenters(boxes):
     # print(y)
     return torch.divide(torch.add(boxes[:, :2], boxes[:, 2:]),2.0)
 
-def CalculateReceptiveBoxes(height, width, rf, stride, padding):
-    x, y = torch.meshgrid(torch.arange(width), torch.arange(height))
-    coordinates = torch.reshape(torch.stack([x, y], axis=2), [-1, 2])               #  ho girato x e y rispetto alla repo per fare uscire gli stessi valori
+def CalculateReceptiveBoxes(height, width):
+
+    rf, stride, padding = [211.0, 16.0, 105.0]                                     # hard coded on the backbone structure
+
+    x, y = torch.meshgrid(torch.arange(0, width), torch.arange(0, height))
+    coordinates = torch.reshape(torch.stack([x, y], dim=2), [-1, 2])               #  ho girato x e y rispetto alla repo per fare uscire gli stessi valori
     # [y,x,y,x]
     point_boxes = torch.tensor(torch.concat([coordinates, coordinates], 1), dtype=torch.float32)        
 
     # point_boxes pare avere tutte le combinazioni possibili di coordinate che prevedono [y, x e y, x]    # anche se noi abbiamo messo x,y
     # ricontrollare in caso di errori
     bias = torch.tensor([-padding, -padding, -padding + rf - 1, -padding + rf - 1])
-    rf_boxes = stride * point_boxes + bias
+    rf_boxes = stride * point_boxes + torch.FloatTensor(bias)
     return rf_boxes             # checked con i valori della repo
 
     # rf_boxes: [N, 4] receptive boxes tensor. Here N equals to height x width.
@@ -39,7 +42,7 @@ def retrieve_locations_descriptors(feature_map, attention_prob):
     #         }
     # }
 
-    rf, stride, padding = [211.0, 16.0, 105.0]                  # hard coded on the backbone structure
+                 
 
     # feature_map = torch.rand([1, 64, 32, 32])
     # attention_prob = torch.rand([1, 1, 32, 32])
@@ -48,7 +51,7 @@ def retrieve_locations_descriptors(feature_map, attention_prob):
     attention_prob = attention_prob.squeeze(0)         
     feature_map = feature_map.squeeze(0)
 
-    rf_boxes = CalculateReceptiveBoxes(feature_map.shape[1], feature_map.shape[2], rf, stride, padding)
+    rf_boxes = CalculateReceptiveBoxes(feature_map.shape[1], feature_map.shape[2])
 
     attention_prob = attention_prob.view(-1)
     feature_map = feature_map.view(-1, feature_map.shape[0])          
@@ -89,8 +92,8 @@ def retrieve_locations_descriptors(feature_map, attention_prob):
     
 def match_features(query_locations,
                   query_descriptors,
-                  index_image_locations,
-                  index_image_descriptors,
+                  database_image_locations,
+                  database_image_descriptors,
                   ransac_seed=None,
                   descriptor_matching_threshold=0.9,
                   ransac_residual_threshold=10.0,
@@ -101,21 +104,21 @@ def match_features(query_locations,
                   use_ratio_test=False):
 
 
-    NUM_TO_RERANK = 100                                         # numero massimo di immagini di cui fare il re-rank
+    # NUM_TO_RERANK = 100                                         # numero massimo di immagini di cui fare il re-rank
     _NUM_RANSAC_TRIALS = 500
     _MIN_RANSAC_SAMPLES = 3
 
     num_features_query = query_locations.shape[0]               # numero di query features (saranno 1024)
-    num_features_database_image = index_image_locations.shape[0]
+    num_features_database_image = database_image_locations.shape[0]
     if not num_features_query or not num_features_database_image:
         print(f"database images and query don't have the same dimension")
 
     local_feature_dim = query_descriptors.shape[1]              # queste dovrebbero essere 64
-    if index_image_descriptors.shape[1] != local_feature_dim:
+    if database_image_descriptors.shape[1] != local_feature_dim:
         print(f"Local feature dimensionality is not consistent for query and database images.")
 
     # Construct KD-tree used to find nearest neighbors.
-    index_image_tree = spatial.cKDTree(index_image_descriptors)
+    index_image_tree = spatial.cKDTree(database_image_descriptors)
 
 #   if use_ratio_test:                                  Se viene usato il ratio test. Possiamo provarlo in seguito
 #     distances, indices = index_image_tree.query(
@@ -131,14 +134,14 @@ def match_features(query_locations,
 #         if distances[i][0] < descriptor_matching_threshold * distances[i][1]
 #     ])
 #   else:
-    _, indices = index_image_tree.query(query_descriptors, distance_upper_bound=descriptor_matching_threshold, n_jobs=-1)
+    _, indices = index_image_tree.query(query_descriptors, distance_upper_bound=descriptor_matching_threshold, workers=-1)
 
     # Select feature locations for putative matches.
     query_locations_to_use = np.array([query_locations[i,] for i in range(num_features_query) if indices[i] != num_features_database_image])
     # prende la locations di tutte le query per cui l'indice i-esimo è diverso dal numero totale di features
     # quindi le prende tutte fino a che non è arrivato a quel numero(ma -1?)
     
-    database_image_locations_to_use = np.array([index_image_locations[indices[i],] for i in range(num_features_query) 
+    database_image_locations_to_use = np.array([database_image_locations[indices[i],] for i in range(num_features_query) 
                                 if indices[i] != num_features_database_image])
     # qua fa più o meno la stessa cosa ma prende specifcatamente alcune localtion (che sono quelle in cui sono presenti i descrittori?)
 
