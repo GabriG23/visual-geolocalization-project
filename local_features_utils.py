@@ -87,9 +87,13 @@ def retrieve_locations_descriptors(feature_map, attention_prob):
     return locations, selected_features
 
 
-# extract_local_features()
 
-    
+# Il KDTree viene utilizzato per accelerare la ricerca dei descrittori più vicini tra immagini diverse, 
+# mentre RANSAC viene utilizzato per eliminare i descrittori che non appartengono a un modello coerente, 
+# come i descrittori errati o outliers. Il modello coerente identificato da RANSAC viene quindi utilizzato 
+# per effettuare la corrispondenza dei descrittori e calcolare la trasformazione tra le immagini. 
+# Questo processo aiuta a migliorare la precisione e la stabilità delle corrispondenze tra le immagini.
+
 def match_features(query_locations,
                   query_descriptors,
                   database_image_locations,
@@ -108,10 +112,10 @@ def match_features(query_locations,
     _NUM_RANSAC_TRIALS = 500
     _MIN_RANSAC_SAMPLES = 3
 
-    num_features_query = query_locations.shape[0]               # numero di query features (saranno 1024)
+    num_features_query = query_locations.shape[0]    
     num_features_database_image = database_image_locations.shape[0]
     if not num_features_query or not num_features_database_image:
-        print(f"database images and query don't have the same dimension")
+        print(f"database images or query image don't have consistent dimension")
 
     local_feature_dim = query_descriptors.shape[1]              # queste dovrebbero essere 64
     if database_image_descriptors.shape[1] != local_feature_dim:
@@ -135,15 +139,28 @@ def match_features(query_locations,
 #     ])
 #   else:
     _, indices = index_image_tree.query(query_descriptors, distance_upper_bound=descriptor_matching_threshold, workers=-1)
-
+    # restituisce gli indice dei descrittori che matchano con la query ha la dimensione delle query location, 
+    # per ogni descrittore delle query, dice quale è il descrittore dell'immagine corrispondente
+       
     # Select feature locations for putative matches.
+
+    # I "putative matches" sono potenziali corrispondenze tra i descrittori visivi in due o più immagini. Il KDTree viene 
+    # utilizzato per velocizzare la ricerca di questi potenziali matches, restringendo il campo di ricerca ai descrittori
+    # più vicini nello spazio multidimensionale. Questi putative matches devono essere successivamente verificati e filtrati 
+    # per eliminare gli outliers e garantire che le corrispondenze siano accurate e affidabili.
+
     query_locations_to_use = np.array([query_locations[i,] for i in range(num_features_query) if indices[i] != num_features_database_image])
-    # prende la locations di tutte le query per cui l'indice i-esimo è diverso dal numero totale di features
-    # quindi le prende tutte fino a che non è arrivato a quel numero(ma -1?)
+    # prende la locations di tutte le query per cui l'indice i-esimo è diverso dal numero totale di features (questo perché, se è uguale, 
+    # vuol dir non è stata trovata corrispondenza. Es: num_features_database_image = 568; se indices[i] = 568 vuol dire che per il descrittore in quella
+    # posizione delle query locations, non è stato trovato alcuni match all'interno della "descriptor_matching_threshold")
     
     database_image_locations_to_use = np.array([database_image_locations[indices[i],] for i in range(num_features_query) 
                                 if indices[i] != num_features_database_image])
-    # qua fa più o meno la stessa cosa ma prende specifcatamente alcune localtion (che sono quelle in cui sono presenti i descrittori?)
+    # qua fa la stessa cosa, prendendo in considerazione i descrittori corretti in funzione dell'indice rilasciato restituito dal cKDTree
+    # (non considera quelli in cui indices[i] != num_features_database_image perché significa che non c'è stato un matching)
+
+    print(f"query_locations_to_use.shape {query_locations_to_use.shape}")
+    print(f"database_image_locations_to_use.shape {database_image_locations_to_use.shape}")
 
 
     # If there are not enough putative matches, early return 0.
@@ -189,3 +206,7 @@ def match_features(query_locations,
 
     # return sum(inliers), match_viz_bytes
     return sum(inliers)
+
+
+
+
