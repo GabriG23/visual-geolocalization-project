@@ -23,7 +23,7 @@ logging.info(f"Arguments: {args}")
 logging.info(f"The outputs are being saved in {output_folder}")
 
 #### Model
-model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim)               # istanzia il modello
+model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim, args.fm_reduction_dim, args.reduction)               # istanzia il modello
 
 logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")
 

@@ -7,8 +7,6 @@ from torch import nn
 from model.layers import Flatten, L2Norm, GeM, Autoencoder, Attention
 # from layers import Flatten, L2Norm, GeM, Autoencoder, Attention
 
-
-
 CHANNELS_NUM_IN_LAST_CONV = {           # questi dipendono dall'architettura della rete
         "resnet18": 512,
         "resnet50": 2048,

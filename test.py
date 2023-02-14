@@ -28,8 +28,6 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
         for images, indices in tqdm(database_dataloader, ncols=100):                        # e un numero di colonne pari alla dimensione di descrittori
             global_descriptors, _, _, _, _, _ = model(images.to(args.device))                                     # mette le immagini su device e ne calcola il risultato del MODELLO -> i descrittori
             global_descriptors = global_descriptors.cpu().numpy()                                         # porta i descrittori su cpu e li traforma da tensori ad array
-            # per quanto riguarda i local descriptors, lui sembra fare una sogliatura, che eventualmente sarà aggiunta successivamente
-            # local_descriptors = local_descriptors.cpu().numpy() 
             all_descriptors[indices.numpy(), :] = global_descriptors                               # riempie l'array mettendo ad ogni indice il descrittore calcolato
         
         logging.debug("Extracting queries descriptors for evaluation/testing using batch size 1")
