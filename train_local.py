@@ -137,7 +137,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
     model = model.train()                                   # mette il modello in modalità training (non l'aveva già fatto?)
     
     epoch_losses = np.zeros((0, 1), dtype=np.float32)
-    # epoch_global_losses = np.zeros((0, 1), dtype=np.float32)                       # 0 righe, 1 colonna -> l'array è vuoto
+    epoch_global_losses = np.zeros((0, 1), dtype=np.float32)                       # 0 righe, 1 colonna -> l'array è vuoto
     # epoch_attn_losses = np.zeros((0, 1), dtype=np.float32)
     # epoch_rec_losses = np.zeros((0, 1), dtype=np.float32)
     for iteration in tqdm(range(args.iterations_per_epoch), ncols=100):     # ncols è la grandezza della barra  
@@ -163,9 +163,9 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
             attn_loss = criterion(attn_logits, targets)
             if args.reduction:
                 rec_loss = criterion_MSE(rec_feature_map, feature_map)
-                loss = global_loss + attn_loss + rec_loss 
+                loss = attn_loss + rec_loss 
             else:
-                loss = global_loss + attn_loss                      
+                loss = attn_loss                      
     
             loss.backward()
             model_optimizer.step() 
@@ -174,7 +174,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
                 autoencoder_optimizer.step()                                                # lasciato separato perché la parte del classifier dovremme modificarsi in base alle classi del gruppo
 
             epoch_losses = np.append(epoch_losses, loss.item()) 
-            # epoch_global_losses = np.append(epoch_global_losses, global_loss.item())                 
+            epoch_global_losses = np.append(epoch_global_losses, global_loss.item())                 
             # epoch_attn_losses = np.append(epoch_attn_losses, attn_loss.item())
             # epoch_rec_losses = np.append(epoch_rec_losses, rec_loss.item())
             
@@ -195,8 +195,8 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
     util.move_to_device(classifiers_optimizers[current_group_num], "cpu")   # passa anche l'optimizer alla cpu
     
     logging.debug(f"Epoch {epoch_num:02d} in {str(datetime.now() - epoch_start_time)[:-7]}, "
-                f"loss = {epoch_losses.mean():.4f}, ")
-                #   f"global_loss = {epoch_global_losses.mean():.4f}, "  
+                f"loss = {epoch_losses.mean():.4f}, "
+                f"global_loss = {epoch_global_losses.mean():.4f}, ") 
                 #   f"attn_loss = {epoch_attn_losses.mean():.4f}, " 
                 #   f"rec_loss = {epoch_rec_losses.mean():.4f}, ")                    
     
