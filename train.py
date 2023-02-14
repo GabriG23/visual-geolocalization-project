@@ -56,6 +56,7 @@ if args.reduction:
 if args.reduction:
     autoencoder_optimizer = torch.optim.Adam(model.autoencoder.parameters(), lr=args.lr)
 
+# trainable_params = [p for p in model.parameters() if p.requires_grad]       # provare a cambiare con questi
 backbone_parameters = [*model.backbone_until_3.parameters(), *model.layers_4.parameters(), *model.aggregation.parameters(), *model.attn_classifier.parameters(), *model.attention.parameters()]      
 model_optimizer = torch.optim.Adam(backbone_parameters, lr=args.lr)   
 
@@ -66,14 +67,13 @@ groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, 
 # Each group has its own classifier, which depends on the number of classes in the group (più gruppi ci sono, più classificatori sono usati con rispettivi optimizer)
 # Noi abbiamo un solo gruppo perciò avremo un solo classifier
 
+
 classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]         # il classifier è dato dalla loss(dimensione descrittore, numero di classi nel gruppo) 
 classifiers_optimizers = [torch.optim.Adam(classifier.parameters(), lr=args.classifiers_lr) for classifier in classifiers]      # rispettivo optimizer
 
 logging.info(f"Using {len(groups)} groups")                                                                                         # numero di gruppi
 logging.info(f"The {len(groups)} groups have respectively the following number of classes {[len(g) for g in groups]}")              # numero di classi nei gruppi
 logging.info(f"The {len(groups)} groups have respectively the following number of images {[g.get_images_num() for g in groups]}")   # numero di immagini nei gruppi
-
-# per capire gli output su, bisogna capire come sono state implementate le classi dei dataset
 
 val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold)
 test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
