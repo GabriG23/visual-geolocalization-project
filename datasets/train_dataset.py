@@ -67,7 +67,7 @@ class TrainDataset(torch.utils.data.Dataset):           # ogni dataset fa riferi
                                   contrast=args.contrast,
                                   saturation=args.saturation,
                                   hue=args.hue),
-                    T.RandomResizedCrop([512, 512], scale=[1-args.random_resized_crop, 1]),
+                    T.RandomResizedCrop([224, 224], scale=[1-args.random_resized_crop, 1]),
                     T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
                 ])
     
@@ -88,8 +88,8 @@ class TrainDataset(torch.utils.data.Dataset):           # ogni dataset fa riferi
         # In PyTorch, images are represented as [channels, height, width], so a color image would be [3, 256, 256].
         # During the training you will get batches of images, so your shape in the forward method will get an additional batch dimension at dim0: [batch_size, channels, height, width].
         tensor_image = T.functional.to_tensor(pil_image)                # trasforma l'immagine in un tensore
-        assert tensor_image.shape == torch.Size([3, 512, 512]), \
-            f"Image {image_path} should have shape [3, 512, 512] but has {tensor_image.shape}."     # si assicura abbia la dimensione corretta
+        assert tensor_image.shape == torch.Size([3, 224, 224]), \
+            f"Image {image_path} should have shape [3, 224, 224] but has {tensor_image.shape}."     # si assicura abbia la dimensione corretta
         
         if self.augmentation_device == "cpu":
             tensor_image = self.transform(tensor_image)       # gli applica la trasformazione definita prima
