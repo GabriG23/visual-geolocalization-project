@@ -87,8 +87,7 @@ logging.info(f"The {len(groups)} groups have respectively the following number o
 # per capire gli output su, bisogna capire come sono state implementate le classi dei dataset
 
 val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold) 
-test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
-                    positive_dist_threshold=args.positive_dist_threshold)
+test_ds = TestDataset(args.test_set_folder, queries_folder="queries",positive_dist_threshold=args.positive_dist_threshold)
 logging.info(f"Validation set: {val_ds}")
 logging.info(f"Test set: {test_ds}")
 
