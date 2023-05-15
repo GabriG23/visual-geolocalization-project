@@ -1,6 +1,7 @@
 ### Students
 - Aiello Davide: s303296
 - Gabriele Greco: s303435
+- Christian Dal Pozzolo: s303406
 # Visual Geolocalization: mapping images to GPS
 
 This is the official repository for the CVPR 2022 paper [Rethinking Visual Geo-localization for Large-Scale Applications](https://arxiv.org/abs/2204.02287).
