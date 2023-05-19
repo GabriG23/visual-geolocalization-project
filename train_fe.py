@@ -44,7 +44,7 @@ features_extractor = model.to(args.device).train()      # sposta il modello sull
 groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L, current_group=n, min_images_per_class=args.min_images_per_class) for n in range(args.groups_num)]  # gruppi cosplace
 
 val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold)                                 # Validation and Test Dataset
-test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1", positive_dist_threshold=args.positive_dist_threshold)
+test_ds = TestDataset(args.test_set_folder, queries_folder="queries", positive_dist_threshold=args.positive_dist_threshold)
 
 logging.info(f"Validation set: {val_ds}")
 logging.info(f"Test set: {test_ds}")
