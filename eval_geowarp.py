@@ -48,7 +48,7 @@ else:
 model = network.GeoWarp(features_extractor, homography_regression)          # mette il modello in evaluation 
 model = model.to(args.device)
 
-test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1", positive_dist_threshold=args.positive_dist_threshold)
+test_ds = TestDataset(args.test_set_folder, queries_folder="queries", positive_dist_threshold=args.positive_dist_threshold)
 
 recalls, recalls_str, predictions, _, _ = \
     test.compute_features(args, test_ds, model)
