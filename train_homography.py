@@ -55,7 +55,7 @@ groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, 
 
 ss_dataset = [HomographyDataset(args, args.train_set_folder, M=args.M, N=args.N, current_group=n, min_images_per_class=args.min_images_per_class, k=args.k) for n in range(args.groups_num)] # k = parameter k, defining the difficulty of ss training data, default = 0.6    
 
-test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1", positive_dist_threshold=args.positive_dist_threshold)
+test_ds = TestDataset(args.test_set_folder, queries_folder="queries", positive_dist_threshold=args.positive_dist_threshold)
 
 logging.info(f"Test set: {test_ds}")
 ##### DATASETS & DATALOADERS ######
