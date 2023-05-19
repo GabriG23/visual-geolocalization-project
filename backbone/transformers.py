@@ -143,7 +143,7 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
             # x = 32 16385 128  #aggiunge un token
 
         if self.positional_emb is not None:         # entra se non è 0, all'init sono tutti 0   # PROBLEMA QUI
-            # shape of self.positional_ emb = 1 16385 128
+            # shape of self.positional_emb = 1 16385 128
             x += self.positional_emb # 
 
         x = self.dropout(x)       # 32 16385 128                                                      # Dropout

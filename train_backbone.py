@@ -89,7 +89,7 @@ if args.augmentation_device == "cuda":           # data augmentation. Da cpu a g
                                                     contrast=args.contrast,
                                                     saturation=args.saturation,
                                                     hue=args.hue),
-            augmentations.DeviceAgnosticRandomResizedCrop([args.fc_output_dim, args.fc_output_dim],
+            augmentations.DeviceAgnosticRandomResizedCrop([224, 224],
                                                           scale=[1-args.random_resized_crop, 1]),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
