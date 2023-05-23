@@ -62,7 +62,7 @@ logging.info(f"The {len(groups)} groups have respectively the following number o
 # per capire gli output su, bisogna capire come sono state implementate le classi dei dataset
 
 val_ds = TestDataset(args.val_set_folder, args.fc_output_dim, positive_dist_threshold=args.positive_dist_threshold) 
-test_ds = TestDataset(args.test_set_folder, args.fc_output_dim, queries_folder="queries_v1", positive_dist_threshold=args.positive_dist_threshold)
+test_ds = TestDataset(args.test_set_folder, args.fc_output_dim, queries_folder="queries", positive_dist_threshold=args.positive_dist_threshold)
 logging.info(f"Validation set: {val_ds}")
 logging.info(f"Test set: {test_ds}")
 
@@ -181,7 +181,7 @@ best_model_state_dict = torch.load(f"{output_folder}/best_model.pth")    # caric
 model.load_state_dict(best_model_state_dict)
 
 logging.info(f"Now testing on the test set: {test_ds}")
-recalls, recalls_str = test.test(args, test_ds, model)                   # prova il modello migliore sul dataset di test (queries v1)
+recalls, recalls_str = test.test(args, test_ds, model)                   # prova il modello migliore sul dataset di test (queries)
 logging.info(f"{test_ds}: {recalls_str}")
 
 logging.info("Experiment finished (without any errors)")
