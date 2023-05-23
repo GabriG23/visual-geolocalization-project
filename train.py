@@ -105,7 +105,7 @@ if args.augmentation_device == "cuda":      # data augmentation. Da cpu a gpu ca
                                                     contrast=args.contrast,
                                                     saturation=args.saturation,
                                                     hue=args.hue),
-            augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
+            augmentations.DeviceAgnosticRandomResizedCrop([224, 224],
                                                           scale=[1-args.random_resized_crop, 1]),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
@@ -158,7 +158,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
             global_loss = criterion(output, targets)                                           # calcola la loss (in funzione di output e target)
             attn_loss = criterion(attn_logits, targets)
             if args.reduction:
-                rec_loss = criterion_MSE(rec_feature_map, feature_map)
+                rec_loss = criterion_MSE(rec_feature_map, feature_map)  
                 loss = global_loss + attn_loss + rec_loss 
             else:
                 loss = global_loss + attn_loss                      

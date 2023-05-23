@@ -109,7 +109,7 @@ if args.augmentation_device == "cuda":      # data augmentation. Da cpu a gpu ca
                                                     contrast=args.contrast,
                                                     saturation=args.saturation,
                                                     hue=args.hue),
-            augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
+            augmentations.DeviceAgnosticRandomResizedCrop([224, 224],
                                                           scale=[1-args.random_resized_crop, 1]),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
@@ -179,23 +179,23 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
             # epoch_rec_losses = np.append(epoch_rec_losses, rec_loss.item())
             
             del loss, output, images                                                                              
-        else:  # Use AMP 16
-            with torch.cuda.amp.autocast():                                             # funzionamento che sfrutta amp16 per uno speed-up. Non trattato
-                descriptors = model(images)                                             # comunque di base sono gli stessi passaggi ma con qualche differenza  
-                output = classifiers[current_group_num](descriptors, targets)
-                loss = criterion(output, targets)
-            scaler.scale(loss).backward()
-            epoch_losses = np.append(epoch_losses, loss.item())
-            del loss, output, images
-            scaler.step(model_optimizer)
-            scaler.step(classifiers_optimizers[current_group_num])
-            scaler.update()
+        # else:  # Use AMP 16
+        #     with torch.cuda.amp.autocast():                                             # funzionamento che sfrutta amp16 per uno speed-up. Non trattato
+        #         descriptors = model(images)                                             # comunque di base sono gli stessi passaggi ma con qualche differenza  
+        #         output = classifiers[current_group_num](descriptors, targets)
+        #         loss = criterion(output, targets)
+        #     scaler.scale(loss).backward()
+        #     epoch_losses = np.append(epoch_losses, loss.item())
+        #     del loss, output, images
+        #     scaler.step(model_optimizer)
+        #     scaler.step(classifiers_optimizers[current_group_num])
+        #     scaler.update()
     
     classifiers[current_group_num] = classifiers[current_group_num].cpu()   # passsa il classifier alla cpu terminata l'epoca       
     util.move_to_device(classifiers_optimizers[current_group_num], "cpu")   # passa anche l'optimizer alla cpu
     
     logging.debug(f"Epoch {epoch_num:02d} in {str(datetime.now() - epoch_start_time)[:-7]}, "
-                f"loss = {epoch_losses.mean():.4f}, "
+                f"local_loss = {epoch_losses.mean():.4f}, "
                 f"global_loss = {epoch_global_losses.mean():.4f}, ") 
                 #   f"attn_loss = {epoch_attn_losses.mean():.4f}, " 
                 #   f"rec_loss = {epoch_rec_losses.mean():.4f}, ")                    
