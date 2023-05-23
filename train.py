@@ -76,7 +76,7 @@ logging.info(f"The {len(groups)} groups have respectively the following number o
 logging.info(f"The {len(groups)} groups have respectively the following number of images {[g.get_images_num() for g in groups]}")   # numero di immagini nei gruppi
 
 val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold)
-test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
+test_ds = TestDataset(args.test_set_folder, queries_folder="queries",
                       positive_dist_threshold=args.positive_dist_threshold)
 logging.info(f"Validation set: {val_ds}")
 logging.info(f"Test set: {test_ds}")
@@ -154,7 +154,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
             descriptors, attn_logits, feature_map, rec_feature_map, reduced_dim, attn_scores = model(images)   # inserisce il batch di immagini e restituisce il descrittore
             output = classifiers[current_group_num](descriptors, targets)            # riporta l'output del classifier (applica quindi la loss ai batches). Però passa sia descrittore cha label
             
-            feature_map = feature_map.detach() 
+            # feature_map = feature_map.detach() 
             global_loss = criterion(output, targets)                                           # calcola la loss (in funzione di output e target)
             attn_loss = criterion(attn_logits, targets)
             if args.reduction:
@@ -224,7 +224,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
 logging.info(f"Trained for {epoch_num+1:02d} epochs, in total in {str(datetime.now() - start_time)[:-7]}")
 
 #### Test best model on test set v1
-best_model_state_dict = torch.load(f"{output_folder}/best_model.pth")           # carica il best model (salvato da save_checkpoint se is_best è True)
+best_model_state_dict = torch.load(f"{output_folder}/best_model_att_fm.256_reduction_dim_fm{args.fm_reduction_dim}.pth")           # carica il best model (salvato da save_checkpoint se is_best è True)
 model.load_state_dict(best_model_state_dict)
 
 logging.info(f"Now testing on the test set: {test_ds}")                         
