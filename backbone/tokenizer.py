@@ -10,8 +10,8 @@ class Tokenizer(nn.Module):
                  n_input_channels=3,                                                    # canali ingresso
                  n_output_channels=64,                                                  # canali output
                  in_planes=64,                                                          # piani di ingresso
-                 activation=None,                                                       # True solo per CCT
-                 max_pool=True,                                                         # True solo per CCT
+                 activation=None,                                                       # True solo per CCT, 
+                 max_pool=True,                                                         # True solo per CCT, Pooling solo per cct
                  conv_bias=False):                                                      # True per vit e CVT
         super(Tokenizer, self).__init__()
 
@@ -41,6 +41,7 @@ class Tokenizer(nn.Module):
         return self.forward(torch.zeros((1, n_channels, height, width))).shape[1] # ritorna il forward di questo tensore
 
     def forward(self, x):
+        # forward, esegue i conv_layers ed esegue un reshape
         return self.flattener(self.conv_layers(x)).transpose(-2, -1)  # fa flatten unisce terza e quarta dimensione, traspose cambia la seconda dimensione con la terza
 
     @staticmethod

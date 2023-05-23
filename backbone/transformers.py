@@ -129,35 +129,43 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
             for i in range(num_layers)])
         self.norm = LayerNorm(embedding_dim)                                                             # Layer Normalization
 
-        self.fc = Linear(embedding_dim, num_classes)
+        self.linear = Linear(embedding_dim, num_classes)        # passaggio finale, Linear, da fare con tutti e 3 ViT, CVT e CCT
         self.apply(self.init_weight)
 
     def forward(self, x):     # x è quello che esce dal tokenizer
         # input x = 32 16384 128
+
         if self.positional_emb is None and x.size(1) < self.sequence_length:                    # entra subito dopo l'init di self.positional
             x = F.pad(x, (0, 0, 0, self.n_channels - x.size(1)), mode='constant', value=0)
 
-        if not self.seq_pool:
+        # CLASS TOKEN for ViT
+        if not self.seq_pool: 
             cls_token = self.class_emb.expand(x.shape[0], -1, -1)
             x = torch.cat((cls_token, x), dim=1)
             # x = 32 16385 128  #aggiunge un token
 
+        # POSITIONAL EMBEDDING
         if self.positional_emb is not None:         # entra se non è 0, all'init sono tutti 0   # PROBLEMA QUI
             # shape of self.positional_emb = 1 16385 128
             x += self.positional_emb # 
 
         x = self.dropout(x)       # 32 16385 128                                                      # Dropout
 
+
+        ### START Transformer Encoder
         for blk in self.blocks:   # per ogni blocco (layer) esegue il TranformerEncoder
             x = blk(x)
         x = self.norm(x)    # Layer Normalization
-                                                                        
-        if self.seq_pool:
+
+        ### END Transformer Encoder
+
+        if self.seq_pool:   # Sequence pooling, da fare solo con CVT e CCT
             x = torch.matmul(F.softmax(self.attention_pool(x), dim=1).transpose(-1, -2), x).squeeze(-2)                         # softmax
         else:
-            x = x[:, 0]
+            x = x[:, 0]         # slice the array, taking all rows (;) but keeping the first column (1)
 
-        x = self.fc(x)      # Linear -> embedding, num_classes?
+        x = self.linear(x)      # Linear -> embedding, num_classes?
+        
         return x
 
     @staticmethod
