@@ -158,7 +158,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
             descriptors, attn_logits, feature_map, rec_feature_map, reduced_dim, attn_scores = model(images)   # inserisce il batch di immagini e restituisce il descrittore
             output = classifiers[current_group_num](descriptors, targets)            # riporta l'output del classifier (applica quindi la loss ai batches). Però passa sia descrittore cha label
             
-            feature_map = feature_map.detach() 
+            # feature_map = feature_map.detach() 
             global_loss = criterion(output, targets)                                           # calcola la loss (in funzione di output e target)
             attn_loss = criterion(attn_logits, targets)
             if args.reduction:
