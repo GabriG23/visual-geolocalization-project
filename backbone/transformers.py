@@ -130,7 +130,7 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
         self.norm = LayerNorm(feature_dim)                                                             # Layer Normalization
 
         #self.linear = Linear(feature_dim, num_classes)        # passaggio finale, Linear, da fare con tutti e 3 ViT, CVT e CCT
-        self.linear = Linear(feature_dim, 512)
+        self.linear = Linear(feature_dim, 256)
         self.apply(self.init_weight)
 
     def forward(self, x):     # x è quello che esce dal tokenizer
