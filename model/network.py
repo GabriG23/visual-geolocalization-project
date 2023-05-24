@@ -52,8 +52,8 @@ class GeoLocalizationNet(nn.Module):
             rec_feature_map = feature_map    
             reduced_dim = feature_map       
         attn_prelogits, attn_scores, att = self.attention(feature_map, rec_feature_map)
-        
-        attn_logits = self.attn_classifier(attn_prelogits)
+
+        attn_logits = self.attn_classifier(attn_prelogits)  # serve a generare i logit o i punteggi associati alle diverse classi,
         return global_features, attn_logits, feature_map, rec_feature_map, reduced_dim, attn_scores
 
 
@@ -119,9 +119,14 @@ def get_backbone(backbone_name):
 
 # attn_loss = criterion(attn_logits, targets)
 # rec_loss = criterion_MSE(rec_feature_map, feature_map)
-# image = torch.rand([1, 3, 512, 512])
-# model = GeoLocalizationNet('resnet18', 512)
-# t_att = model(image)
+
+
+# image = torch.rand([1, 3, 224, 224])
+# model = GeoLocalizationNet('resnet18', 512, 128, False)
+# global_features, attn_logits, feature_map, rec_feature_map, reduced_dim, attn_scores = model(image)
+
+
+
 # print(model)
 # print(model.layers_4.parameters())
 # print(model.backbone_until_3.parameters())

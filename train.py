@@ -224,7 +224,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
 logging.info(f"Trained for {epoch_num+1:02d} epochs, in total in {str(datetime.now() - start_time)[:-7]}")
 
 #### Test best model on test set v1
-best_model_state_dict = torch.load(f"{output_folder}/best_model_att_fm.256_reduction_dim_fm{args.fm_reduction_dim}.pth")           # carica il best model (salvato da save_checkpoint se is_best è True)
+best_model_state_dict = torch.load(f"{output_folder}/best_model.pth")           # carica il best model (salvato da save_checkpoint se is_best è True)
 model.load_state_dict(best_model_state_dict)
 
 logging.info(f"Now testing on the test set: {test_ds}")                         

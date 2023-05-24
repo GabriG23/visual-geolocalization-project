@@ -12,7 +12,6 @@ def gem(x, p=torch.ones(1)*3, eps: float = 1e-6):
         # size() -> restituisce un oggetto di classe torch.Size con le dimensioni del tensore
         # avg_pool2d() -> applica una average-pooling 2D lungo l'input tensor in base alla dimensione del kernel (singolo numero o tupla)
 
-
 class GeM(nn.Module):
     def __init__(self, p=3, eps=1e-6):
         super().__init__()
@@ -25,7 +24,6 @@ class GeM(nn.Module):
     def __repr__(self):         # metodo speciale usato per rappresentare l'oggetto di una classe come una stringa
         return f"{self.__class__.__name__}(p={self.p.data.tolist()[0]:.4f}, eps={self.eps})"    # serve a stampare l'oggetto GeM
 
-
 class Flatten(nn.Module):       # override della classe flatten
     def __init__(self):
         super().__init__()      # restituisce un oggetto della classe parent, cioè Module
@@ -33,7 +31,6 @@ class Flatten(nn.Module):       # override della classe flatten
     def forward(self, x):
         assert x.shape[2] == x.shape[3] == 1, f"{x.shape[2]} != {x.shape[3]} != 1"  # si assicura che il tensore abbia la terza e quarta dimensione uguale ad 1
         return x[:, :, 0, 0]
-
 
 class L2Norm(nn.Module):            # least square error
     def __init__(self, dim=1):      # sulla colonna
@@ -62,12 +59,12 @@ class Attention(nn.Module):
         #     nn.init.xavier_uniform_(conv.weight)           
 
     def forward(self, x, rec_feature_map=None):   
-        input = x                                           # ([32, 256, 32, 32])
-        x = self.conv1(x)                                   # ([32, 128, 32, 32])
+        input = x                                           # ([32, 256, 14, 14])
+        x = self.conv1(x)                                   # ([32, 128, 14, 14])
         x = self.bn(x)                                         
         x = self.relu(x)                                   
 
-        score = self.conv2(x)                               # ([32, 1, 32, 32])                 
+        score = self.conv2(x)                               # ([32, 1, 14, 14])  -> Mappa di attenzione
         prob = self.softplus(score)                        
 
         # Aggregate inputs if targets is None.
@@ -76,7 +73,7 @@ class Attention(nn.Module):
         
         # L2-normalize the featuremap before pooling.
         rec_feature_map_norm = F.normalize(rec_feature_map, p=2, dim=1) 
-        att = torch.mul(rec_feature_map_norm, prob)         # ([32, 256, 32, 32])  -> o comunque la dimensione di quella con più canali
+        att = torch.mul(rec_feature_map_norm, prob)         # ([32, 256, 14, 14])  -> o comunque la dimensione di quella con più canali
         # print(f"att:{att.shape}")
         feat = torch.mean(att, [2, 3])                      # ([32, 256]) 
         # feat = tf.reduce_mean(tf.multiply(targets, prob), [1, 2], keepdims=False)         variante in tensorflow                          
@@ -91,8 +88,8 @@ class Autoencoder(nn.Module):
         self.relu = nn.ReLU()                               # nel paper è scritto "followed by ReLU"
 
     def forward(self, x):                                  
-        reduced_dim = self.conv1(x)                         # ([32, 128, 32, 32])
-        x = self.conv2(reduced_dim)                         # ([32, 256, 32, 32])
+        reduced_dim = self.conv1(x)                         # ([32, 128, 14, 14])
+        x = self.conv2(reduced_dim)                         # ([32, 256, 14, 14])
         expanded_dim = self.relu(x)           
         return reduced_dim, expanded_dim
 
