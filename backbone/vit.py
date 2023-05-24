@@ -6,36 +6,36 @@ import torch.nn as nn
 import torch.nn.functional as F
 import logging
 
-def vision_transformer_lite(layers = 2, img_size = 224):
+def vision_transformer_lite(fc_output_dim, layers = 2, img_size = 224):
     if layers == 2:
-        return vit_2(img_size)     # num_layers=2, num_heads=2, mlp_ratio=1, feature_dim=128
+        return vit_2(img_size, fc_output_dim)     # num_layers=2, num_heads=2, mlp_ratio=1, feature_dim=128
     elif layers == 4:
-        return vit_4(img_size)     # num_layers=4, num_heads=2, mlp_ratio=1, feature_dim=128
+        return vit_4(img_size, fc_output_dim)     # num_layers=4, num_heads=2, mlp_ratio=1, feature_dim=128
     elif layers == 6:
-        return vit_6(img_size)     # num_layers=6, num_heads=4, mlp_ratio=2, feature_dim=256 
+        return vit_6(img_size, fc_output_dim)     # num_layers=6, num_heads=4, mlp_ratio=2, feature_dim=256 
     elif layers == 7:
-        return vit_7(img_size)     # num_layers=7, num_heads=4, mlp_ratio=2, feature_dim=256
+        return vit_7(img_size, fc_output_dim)     # num_layers=7, num_heads=4, mlp_ratio=2, feature_dim=256
     else:
         logging.info(f"ERROR number of layers. Layers cannot be equals to {layers}")
 
 
-def vit_2(img_size):
-    return _vit_lite(num_layers=2, num_heads=2, mlp_ratio=1, feature_dim=128, img_size = img_size)   # layers, attention head, Multi layer perceptron ratio, dimensione descrittori
+def vit_2(img_size, fc_output_dim):
+    return _vit_lite(num_layers=2, num_heads=2, mlp_ratio=1, feature_dim=128, img_size = img_size, fc_output_dim = fc_output_dim)   # layers, attention head, Multi layer perceptron ratio, dimensione descrittori
 
 
-def vit_4(img_size):
-    return _vit_lite(num_layers=4, num_heads=2, mlp_ratio=1, feature_dim=128, img_size = img_size)
+def vit_4(img_size, fc_output_dim):
+    return _vit_lite(num_layers=4, num_heads=2, mlp_ratio=1, feature_dim=128, img_size = img_size, fc_output_dim = fc_output_dim)
 
 
-def vit_6(img_size):
-    return _vit_lite(num_layers=6, num_heads=4, mlp_ratio=2, feature_dim=256, img_size = img_size)
+def vit_6(img_size, fc_output_dim):
+    return _vit_lite(num_layers=6, num_heads=4, mlp_ratio=2, feature_dim=256, img_size = img_size, fc_output_dim = fc_output_dim)
 
 
-def vit_7(img_size):
-    return _vit_lite(num_layers=7, num_heads=4, mlp_ratio=2, feature_dim=256, img_size = img_size)
+def vit_7(img_size, fc_output_dim):
+    return _vit_lite(num_layers=7, num_heads=4, mlp_ratio=2, feature_dim=256, img_size = img_size, fc_output_dim = fc_output_dim)
 
 
-def _vit_lite(num_layers, num_heads, mlp_ratio, feature_dim, img_size, kernel_size=4):      # dimensione del kernel
+def _vit_lite(num_layers, num_heads, mlp_ratio, feature_dim, img_size, fc_output_dim, kernel_size=4):      # dimensione del kernel
                                     
     model = ViTLite(num_layers=num_layers,                          # numero layer                   2 - 4 - 6 - 7 - 8
                     num_heads=num_heads,                            # numero head                    2 - 2 - 4 - 4 - 4
@@ -43,7 +43,8 @@ def _vit_lite(num_layers, num_heads, mlp_ratio, feature_dim, img_size, kernel_si
                     feature_dim=feature_dim,                    # dim feature                   128 - 128 - 256 - 256 - 256
                     kernel_size=kernel_size,                        # dim kernel
                     positional_embedding='learnable',                # dipende molto dal positional_embedding  
-                    img_size=img_size  
+                    img_size=img_size,
+                    fc_output_dim=fc_output_dim  
                     )
     return model
 
@@ -53,6 +54,7 @@ def _vit_lite(num_layers, num_heads, mlp_ratio, feature_dim, img_size, kernel_si
 
 class ViTLite(nn.Module):
     def __init__(self,
+                 fc_output_dim=512,
                  img_size=224,                               # dim immagini, era 224
                  feature_dim=256,                          # dim - passata da parametro -> 128 128 256 256 256, questo è la nostra hidden size
                  n_input_channels=3,                         # input channel
@@ -91,7 +93,8 @@ class ViTLite(nn.Module):
             num_heads=num_heads,
             mlp_ratio=mlp_ratio,
             num_classes=num_classes,
-            positional_embedding=positional_embedding
+            positional_embedding=positional_embedding,
+            fc_output_dim=fc_output_dim
         )
     
     def forward(self, x):
