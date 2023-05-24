@@ -79,7 +79,7 @@ class TransformerEncoderLayer(Module):
 class TransformerClassifier(Module):  # Multi Layer Perceptron
     def __init__(self,
                  seq_pool=True,                                                     # True per CVT e CCT
-                 feature_dim=512,                                                 # dimensione data in ingresso
+                 feature_dim=256,                                                 # dimensione data in ingresso
                  num_layers=12,                                                     # layers
                  num_heads=12,                                                      # head
                  mlp_ratio=4.0,                                                     # niente di nuovo

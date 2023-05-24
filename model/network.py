@@ -36,6 +36,7 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
     def forward(self, x):
         if self.backbone_name in ["vit", "cvt", "cct"]:
             x = self.backbone(x)        # con transformers ritorna feature di dim [32, num_classes]
+            x = self.l2norm(x)
         else:
             x = self.backbone(x)        # con resnet18 esce [32, 512, 7, 7]
             x = self.aggregation(x)     # con resnet18 esce [32, 512]
