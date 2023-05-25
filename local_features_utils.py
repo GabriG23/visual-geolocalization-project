@@ -45,8 +45,8 @@ def retrieve_locations_descriptors(feature_map, attention_prob):
     # attention_prob = torch.rand([1, 1, 32, 32])
 
     #eventuale scaling dell'immagine
-    attention_prob = attention_prob.squeeze(0)         
-    feature_map = feature_map.squeeze(0)
+    # attention_prob = attention_prob.squeeze(0)         
+    # feature_map = feature_map.squeeze(0)
 
     rf_boxes = CalculateReceptiveBoxes(feature_map.shape[1], feature_map.shape[2])
 

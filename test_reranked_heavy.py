@@ -98,13 +98,10 @@ def RerankByGeometricVerification(query_predictions, distances, query_descriptor
     ransac_residual_threshold = 20.0
     use_ratio_test = False
 
-
-    # num_to_rerank = 100
     for i in range(20):
       print(f"[{query_predictions[i]}, -, {distances[i]}]")
     query_locations, query_descriptors = retrieve_locations_descriptors(torch.from_numpy(query_descriptors), torch.from_numpy(query_attention_prob))
 
-    # num_to_rerank = 100
     inliers_and_initial_scores = []                   # in 0 avrà l'indice della predizione, in 1 avrà gli outliers, in 2 avrà gli scores (già calcolati)
     for i, preds in enumerate(query_predictions):
 
