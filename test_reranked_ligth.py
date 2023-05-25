@@ -125,7 +125,7 @@ def RerankByGeometricVerification(query_predictions, distances, query_descriptor
     inliers_and_initial_scores = []                   # in 0 avrà l'indice della predizione, in 1 avrà gli outliers, in 2 avrà gli scores (già calcolati)
     for i, preds in enumerate(query_predictions):
 
-        num_matched_images = preds.size
+
         
         database_image_locations, database_image_descriptors = retrieve_locations_descriptors(images_local_descriptors[i].squeeze(0), 
                                                                     images_attention_prob[i].squeeze(0))

@@ -151,7 +151,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
             autoencoder_optimizer.zero_grad()        
         
         if not args.use_amp16:
-            descriptors, attn_logits, feature_map, rec_feature_map, reduced_dim, attn_scores = model(images)   # inserisce il batch di immagini e restituisce il descrittore
+            descriptors, attn_logits, feature_map, rec_feature_map, _, attn_scores = model(images)   # inserisce il batch di immagini e restituisce il descrittore
             output = classifiers[current_group_num](descriptors, targets)            # riporta l'output del classifier (applica quindi la loss ai batches). Però passa sia descrittore cha label
             
             # feature_map = feature_map.detach() 
@@ -205,15 +205,25 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
     best_val_recall1 = max(recalls[0], best_val_recall1)            # prende il valore massimo tra le due   
 
     # # Save checkpoint, which contains all training parameters
-    util.save_checkpoint({                                          
+    if args.reduction:
+      util.save_checkpoint({                                          
+          "epoch_num": epoch_num + 1,
+          "model_state_dict": model.state_dict(),
+          "autoencoder_optimizer_state_dict": autoencoder_optimizer.state_dict(),
+          "optimizer_state_dict": model_optimizer.state_dict(),
+          "classifiers_state_dict": [c.state_dict() for c in classifiers],
+          "optimizers_state_dict": [c.state_dict() for c in classifiers_optimizers],
+          "best_val_recall1": best_val_recall1
+      }, is_best, output_folder)
+    else:
+      util.save_checkpoint({                                          
         "epoch_num": epoch_num + 1,
         "model_state_dict": model.state_dict(),
-        "autoencoder_optimizer_state_dict": autoencoder_optimizer.state_dict(),
         "optimizer_state_dict": model_optimizer.state_dict(),
         "classifiers_state_dict": [c.state_dict() for c in classifiers],
         "optimizers_state_dict": [c.state_dict() for c in classifiers_optimizers],
         "best_val_recall1": best_val_recall1
-    }, is_best, output_folder)
+      }, is_best, output_folder)
 
 # torch.save(model.state_dict(), f"{output_folder}/best_model.pth")
 # Fa un checkpoint ad ogni epoca salvando il dizionario di su (chiamato state in save_checkpoint) ed inoltre salva anche il modello

@@ -8,15 +8,12 @@ from skimage import transform
 
 def CalculateKeypointCenters(boxes):
    # Helper function to compute feature centers, from RF boxes.
-    # print(boxes)
-    # x = boxes[:, :2]
-    # y = boxes[:, 2:]
-    # print(y)
-    return torch.divide(torch.add(boxes[:, :2], boxes[:, 2:]),2.0)
+    return torch.divide(torch.add(boxes[:, :2], boxes[:, 2:]), 2.0)
 
 def CalculateReceptiveBoxes(height, width):
 
-    rf, stride, padding = [211.0, 16.0, 105.0]                                     # hard coded on the backbone structure
+    # eventualmente provare 59 o 35 come valore di padding
+    rf, stride, padding = [202.0, 7.0, 42.0]                                     # hard coded on the backbone structure
 
     x, y = torch.meshgrid(torch.arange(0, width), torch.arange(0, height))
     coordinates = torch.reshape(torch.stack([x, y], dim=2), [-1, 2])               #  ho girato x e y rispetto alla repo per fare uscire gli stessi valori
@@ -59,11 +56,14 @@ def retrieve_locations_descriptors(feature_map, attention_prob):
     abs_thres = 0.5
 
     indices = (attention_prob >= abs_thres).nonzero().squeeze(1) 
-    scale = 1
+   
 
     selected_boxes = torch.index_select(rf_boxes, 0, indices)
     selected_features = torch.index_select(feature_map, 0, indices)
+    
     selected_scores = torch.index_select(attention_prob, 0, indices)
+
+    scale = 1
     scales = torch.ones_like(selected_scores, dtype=torch.float32) / scale                 # dalla repo. Tensore di 1  riscalati rispetto alla scala
 
     # print(scales)

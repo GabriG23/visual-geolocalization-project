@@ -24,8 +24,8 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
         database_dataloader = DataLoader(dataset=database_subset_ds, num_workers=args.num_workers,
                                          batch_size=args.infer_batch_size, pin_memory=(args.device == "cuda"))  # creazione del dataloader in grado di iterare sul dataset
         all_descriptors = np.empty((len(eval_ds), args.fc_output_dim), dtype="float32")     # ritorna un vettore non inizializzato con una riga per ogni sample da valutare
-        all_local_descriptors = np.empty((len(eval_ds), 128, 32, 32), dtype="float32")
-        all_att_prob = np.empty((len(eval_ds), 1, 32, 32), dtype="float32")
+        all_local_descriptors = np.empty((len(eval_ds), args.fm_reduction_dim, 14, 14), dtype="float32")
+        all_att_prob = np.empty((len(eval_ds), 1, 14, 14), dtype="float32")
         
         
         for images, indices in tqdm(database_dataloader, ncols=100):                        # e un numero di colonne pari alla dimensione di descrittori
@@ -36,8 +36,8 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
             all_descriptors[indices.numpy(), :] = global_descriptors                               # riempie l'array mettendo ad ogni indice il descrittore calcolato
             all_local_descriptors[indices.numpy(), :] = local_descriptors
             all_att_prob[indices.numpy(), :] = attn_scores
-            image = database_dataloader[12]
-            print(image.shape)
+            # image = database_dataloader[12]
+            # print(image.shape)
 
         logging.debug("Extracting queries descriptors for evaluation/testing using batch size 1")
         queries_infer_batch_size = 1                                                        # sembra che venga valutata un'immagine per volta
@@ -63,7 +63,7 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
                                                             
     faiss_index = faiss.IndexFlatL2(args.fc_output_dim)    
     faiss_index.add(database_global_descriptors)                 
-    del database_descriptors, all_descriptors            
+    del all_local_descriptors, all_descriptors, all_att_prob          
     
     logging.debug("Calculating recalls")
     distances, predictions = faiss_index.search(queries_global_descriptors, max(RECALL_VALUES))    # effettua la ricerca con i descrittori delle query con i valori di recall specificati
@@ -75,9 +75,9 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
     positives_per_query = eval_ds.get_positives()           # per ogni query, restituisce le immagini più vicine alla query di 25 mt
     recalls = np.zeros(len(RECALL_VALUES))                  # vettore di recalls iniziaizzato a zero
     for query_index, preds in enumerate(predictions):       # per ogni predizione, prende indice e relativa predizione
-
-        reraked_preds = RerankByGeometricVerification(preds, distances[query_index], queries_local_descriptors[query_index], 
-                                    queries_att_prob[query_index], database_local_descriptors, database_att_prob)
+    # for query_index, preds in tqdm(predictions, ncols=100):
+        reraked_preds = RerankByGeometricVerification(query_index, preds, distances[query_index], queries_local_descriptors[query_index], 
+                                    queries_att_prob[query_index], database_local_descriptors[preds], database_att_prob[preds])
         for i, n in enumerate(RECALL_VALUES):               # per ogni valore delle recall values (sono 5 valori)
             if np.any(np.in1d(reraked_preds[:n], positives_per_query[query_index])):    # controlla che ogni valore nel primo 1Darray (quindi penso descrittore, non immagine) sia contenuto 
                                                                                 # nel secondo. Quindi per ogni n controlla se le predizioni fino ad n (le n più vicine) contengono 
@@ -90,8 +90,8 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
     return recalls, recalls_str
 
 
-def RerankByGeometricVerification(query_predictions, query_distances, query_descriptors, query_attention_prob, 
-                    all_images_local_descriptors, images_attention_prob):
+def RerankByGeometricVerification(query_predictions, distances, query_descriptors, query_attention_prob, 
+                    images_local_descriptors, images_attention_prob):
     # ranks_before_gv[i] = np.argsort(-similarities)      # tieni conto di questo!!!
     ransac_seed = 0
     descriptor_matching_threshold = 1.0
@@ -100,33 +100,43 @@ def RerankByGeometricVerification(query_predictions, query_distances, query_desc
 
 
     # num_to_rerank = 100
+    for i in range(20):
+      print(f"[{query_predictions[i]}, -, {distances[i]}]")
+    query_locations, query_descriptors = retrieve_locations_descriptors(torch.from_numpy(query_descriptors), torch.from_numpy(query_attention_prob))
+
+    # num_to_rerank = 100
     inliers_and_initial_scores = []                   # in 0 avrà l'indice della predizione, in 1 avrà gli outliers, in 2 avrà gli scores (già calcolati)
-    for image_index, preds in enumerate(query_predictions):
+    for i, preds in enumerate(query_predictions):
 
-        num_matched_images = len(preds)
+        database_image_locations, database_image_descriptors = retrieve_locations_descriptors(torch.from_numpy(images_local_descriptors[i]).squeeze(0), 
+                                                                    torch.from_numpy(images_attention_prob[i]).squeeze(0))
 
-        inliers_and_initial_scores.append([preds[image_index], 0, query_distances[image_index]])
- 
-        if image_index > 0 and image_index % 5 == 0:
-            print(f"/tRe-ranking: {image_index} out of {num_matched_images}")
-            
-        database_image_index = preds[image_index]
-        query_locations, query_descriptors = retrieve_locations_descriptors(query_descriptors, query_attention_prob)
-        
-        database_image_locations, database_image_descriptors = retrieve_locations_descriptors(all_images_local_descriptors[database_image_index], 
-                                                                    images_attention_prob[database_image_index])
-
-        inliers_and_initial_scores[database_image_index][1], _ = match_features(
-            query_locations,
-            query_descriptors,
-            database_image_locations,
-            database_image_descriptors,
+        inliers = match_features(
+            query_locations.numpy(),
+            query_descriptors.numpy(),
+            database_image_locations.numpy(),
+            database_image_descriptors.numpy(),
             ransac_seed=ransac_seed,
             descriptor_matching_threshold=descriptor_matching_threshold,
             ransac_residual_threshold=ransac_residual_threshold,
             use_ratio_test=use_ratio_test)
 
-        inliers_and_initial_scores = sorted(range(inliers_and_initial_scores), key=lambda x : (-inliers_and_initial_scores[x][1], inliers_and_initial_scores[x][2]), reverse=True)
+        inliers_and_initial_scores.append([preds, inliers, distances[i]])
+        # print(f"inliers e distance : {inliers_and_initial_scores}")
+
+    inliers_and_initial_scores = sorted(inliers_and_initial_scores, key=lambda x : (x[1], -x[2]), reverse=True)
         # così il ranking è fatto dando la precedenza agli inliers
         # parte di ricalcolo della recall una volta ottenuti gli inliers
-    return inliers_and_initial_scores[0]
+
+    # print(f"inliers e distance : {inliers_and_initial_scores}")
+    for x in inliers_and_initial_scores:
+      print(x)
+
+    change = 0
+    new_rank = [x[0] for x in inliers_and_initial_scores]
+    for i in range(20):
+      if new_rank[i] != query_predictions[i]:
+        change += 1
+    print(change)
+
+    return new_rank
