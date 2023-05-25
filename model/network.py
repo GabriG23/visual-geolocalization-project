@@ -47,14 +47,14 @@ class GeoLocalizationNet(nn.Module):
         # feature_map.requires_grad = False                 # è la stessa cosa? Evita al gradiente di non tornare indietro?
         
         if self.dim_reduction:
-            reduced_dim, rec_feature_map = self.autoencoder(feature_map) 
+            red_feature_map, rec_feature_map = self.autoencoder(feature_map) 
         else:
             rec_feature_map = feature_map    
-            reduced_dim = feature_map       
+            red_feature_map = feature_map       
         attn_prelogits, attn_scores, att = self.attention(feature_map, rec_feature_map)
 
         attn_logits = self.attn_classifier(attn_prelogits)  # serve a generare i logit o i punteggi associati alle diverse classi,
-        return global_features, attn_logits, feature_map, rec_feature_map, reduced_dim, attn_scores
+        return global_features, attn_logits, feature_map, rec_feature_map, red_feature_map, attn_scores
 
 
 def get_backbone(backbone_name):                         
