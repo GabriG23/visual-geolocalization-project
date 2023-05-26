@@ -36,9 +36,8 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
             all_descriptors[indices.numpy(), :] = global_descriptors                               # riempie l'array mettendo ad ogni indice il descrittore calcolato
             all_local_descriptors[indices.numpy(), :] = local_descriptors
             all_att_prob[indices.numpy(), :] = attn_scores
-            # image = database_dataloader[12]
-            # print(image.shape)
 
+            
         logging.debug("Extracting queries descriptors for evaluation/testing using batch size 1")
         queries_infer_batch_size = 1                                                        # sembra che venga valutata un'immagine per volta
         queries_subset_ds = Subset(eval_ds, list(range(eval_ds.database_num, eval_ds.database_num+eval_ds.queries_num)))        # in questo caso, crea un subset con sole query
@@ -93,7 +92,6 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
 def RerankByGeometricVerification(query_predictions, distances, query_descriptors, query_attention_prob, 
                     images_local_descriptors, images_attention_prob):
     # ranks_before_gv[i] = np.argsort(-similarities)      # tieni conto di questo!!!
-    ransac_seed = 0
     use_ratio_test = False
 
     for i in range(20):
@@ -103,15 +101,14 @@ def RerankByGeometricVerification(query_predictions, distances, query_descriptor
     inliers_and_initial_scores = []                   # in 0 avrà l'indice della predizione, in 1 avrà gli outliers, in 2 avrà gli scores (già calcolati)
     for i, preds in enumerate(query_predictions):
 
-        image_locations, image_descriptors = retrieve_locations_descriptors(torch.from_numpy(images_local_descriptors[i]).squeeze(0), 
-                                                                    torch.from_numpy(images_attention_prob[i]).squeeze(0))
+        image_locations, image_descriptors = retrieve_locations_descriptors(torch.from_numpy(images_local_descriptors[i]), 
+                                                                    torch.from_numpy(images_attention_prob[i]))
 
         inliers = match_features(
             query_locations.numpy(),
             query_descriptors.numpy(),
             image_locations.numpy(),
             image_descriptors.numpy(),
-            ransac_seed=ransac_seed,
             use_ratio_test=use_ratio_test)
 
         inliers_and_initial_scores.append([preds, inliers, distances[i]])
@@ -125,11 +122,6 @@ def RerankByGeometricVerification(query_predictions, distances, query_descriptor
     for x in inliers_and_initial_scores:
       print(x)
 
-    change = 0
     new_rank = [x[0] for x in inliers_and_initial_scores]
-    for i in range(20):
-      if new_rank[i] != query_predictions[i]:
-        change += 1
-    print(change)
 
     return new_rank

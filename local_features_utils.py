@@ -15,7 +15,7 @@ def CalculateReceptiveBoxes(height, width):
     # eventualmente provare 59 o 35 come valore di padding
     rf, stride, padding = [202.0, 7.0, 42.0]                                     # hard coded on the backbone structure
 
-    x, y = torch.meshgrid(torch.arange(0, width), torch.arange(0, height))
+    x, y = torch.meshgrid(torch.arange(0, width), torch.arange(0, height), indexing='ij')
     coordinates = torch.reshape(torch.stack([x, y], dim=2), [-1, 2])               #  ho girato x e y rispetto alla repo per fare uscire gli stessi valori
     # [y,x,y,x]
     point_boxes = torch.concat([coordinates, coordinates], 1).to(torch.float32)        
