@@ -57,7 +57,7 @@ if args.reduction:
     autoencoder_optimizer = torch.optim.Adam(model.autoencoder.parameters(), lr=args.lr)
 
 # trainable_params = [p for p in model.parameters() if p.requires_grad]       # provare a cambiare con questi
-backbone_parameters = [*model.backbone_until_3.parameters(), *model.layers_4.parameters(), *model.aggregation.parameters()]  
+backbone_parameters = [*model.backbone_after_3.parameters(), *model.layers_4.parameters(), *model.aggregation.parameters()]  
 for param in backbone_parameters:
     param.requires_grad = False
     
