@@ -37,7 +37,7 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
             all_local_descriptors[indices.numpy(), :] = local_descriptors
             all_att_prob[indices.numpy(), :] = attn_scores
 
-            
+
         logging.debug("Extracting queries descriptors for evaluation/testing using batch size 1")
         queries_infer_batch_size = 1                                                        # sembra che venga valutata un'immagine per volta
         queries_subset_ds = Subset(eval_ds, list(range(eval_ds.database_num, eval_ds.database_num+eval_ds.queries_num)))        # in questo caso, crea un subset con sole query
@@ -118,7 +118,6 @@ def RerankByGeometricVerification(query_predictions, distances, query_descriptor
         # così il ranking è fatto dando la precedenza agli inliers
         # parte di ricalcolo della recall una volta ottenuti gli inliers
 
-    print(f"inliers e distance : {inliers_and_initial_scores}")
     for x in inliers_and_initial_scores:
       print(x)
 

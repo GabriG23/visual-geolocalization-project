@@ -7,7 +7,7 @@ from torch import nn
 from model.layers import Flatten, L2Norm, GeM, Autoencoder, Attention
 # from layers import Flatten, L2Norm, GeM, Autoencoder, Attention
 
-CHANNELS_NUM_IN_LAST_CONV = {           # questi dipendono dall'architettura della rete
+CHANNELS_NUM_IN_LAST_CONV = {          
         "resnet18": 512,
         "resnet50": 2048,
         "resnet101": 2048,
@@ -15,12 +15,17 @@ CHANNELS_NUM_IN_LAST_CONV = {           # questi dipendono dall'architettura del
         "vgg16": 512,
     }
 
+CHANNELS_NUM_AFTER_LAYER_3 = {           
+        "resnet18": 256,
+    }
+
 
 class GeoLocalizationNet(nn.Module):                 
     def __init__(self, backbone, fc_output_dim, fm_reduction_dim, reduction, num_classes=5965):            # l'oggetto della classe parent è creato in funzione della backbone scelta
         super().__init__()
-        backbone_until_3, layers_4, features_dim = get_backbone(backbone)
-        self.backbone_until_3 = backbone_until_3
+        backbone_after_3, layers_4, features_dim, features_map_dim = get_backbone(backbone)
+        # self.reduction = features_map_dim != fm_reduction_dim
+        self.backbone_after_3 = backbone_after_3
         self.layers_4 = layers_4
         self.aggregation = nn.Sequential(                   # container sequenziale di layers, che sono appunto eseguiti in sequenza come una catena
                 L2Norm(),                                   # questi sono le classi definite in layers
@@ -29,15 +34,15 @@ class GeoLocalizationNet(nn.Module):
                 nn.Linear(features_dim, fc_output_dim),     # applica la trasformazione y = x @ A.T + b dove A sono i parametri della rete in quel punto 
                 L2Norm()                                    # e b è il bias aggiunto se è passato bias=True al modello. I pesi e il bias sono inizializzati
             )                                               # random dalle features in ingresso
-        self.attention = Attention(256)                     # 256 sono i canali di feature map (B, 256, 32, 32)
+        self.attention = Attention(features_map_dim)                     # 256 sono i canali di feature map (B, 256, 32, 32)
         self.dim_reduction = reduction
         if self.dim_reduction:
-            self.autoencoder = Autoencoder(256, fm_reduction_dim)         # entrano che sono 256, quella ridotta mettiamo a 32 cosi da mantenere lo stesso rapporto del paper (8)
+            self.autoencoder = Autoencoder(features_map_dim, fm_reduction_dim)         # entrano che sono 256, quella ridotta mettiamo a 32 cosi da mantenere lo stesso rapporto del paper (8)
                                                             # EVENTUALMENTE DA PROVARE SENZA AUTOENCODER QUINDI SENZA RIDURRE LE FEATURES
-        self.attn_classifier = nn.Linear(256, num_classes)  # è il numero di descrottori locali
+        self.attn_classifier = nn.Linear(features_map_dim, num_classes)  # è il numero di descrottori locali
 
     def forward(self, x):
-        feature_map = self.backbone_until_3(x)              # prima entra nella backbone
+        feature_map = self.backbone_after_3(x)              # prima entra nella backbone
         
         x = self.layers_4(feature_map)
         
@@ -51,7 +56,7 @@ class GeoLocalizationNet(nn.Module):
         else:
             rec_feature_map = feature_map    
             red_feature_map = feature_map       
-        attn_prelogits, attn_scores, att = self.attention(feature_map, rec_feature_map)
+        attn_prelogits, attn_scores, _ = self.attention(feature_map, rec_feature_map)
 
         attn_logits = self.attn_classifier(attn_prelogits)  # serve a generare i logit o i punteggi associati alle diverse classi,
         return global_features, attn_logits, feature_map, rec_feature_map, red_feature_map, attn_scores
@@ -75,7 +80,7 @@ def get_backbone(backbone_name):
             for params in child.parameters():                       # perdere informazioni durante il transfer learning
                 params.requires_grad = False                        # freeza i parametri del modello in modo che questi non cambino durante l'ottimizzazione   
         logging.debug(f"Train only layer3 and layer4 of the {backbone_name}, freeze the previous ones")
-        layers_until_3 = list(backbone.children())[:-3]             # questo non è freezato, ragionare su sta cosa
+        backbone_after_3 = list(backbone.children())[:-3]             # questo non è freezato, ragionare su sta cosa
         layers_4 = list(backbone.children())[-3]                    # rimuove gli utlimi due layers della backbone (avg pooling and FC layer) in modo
                                                                     # da poterci attaccare i successivi del nuovo modello (aggregation)
     
@@ -87,12 +92,13 @@ def get_backbone(backbone_name):
                 p.requires_grad = False
         logging.debug("Train last layers of the VGG-16, freeze the previous ones")
     
-    backbone_until_3 = torch.nn.Sequential(*layers_until_3)         # backbone fino al layer 3, necessaria per recuperare la feature map
+    backbone_after_3 = torch.nn.Sequential(*backbone_after_3)         # backbone fino al layer 3, necessaria per recuperare la feature map
     # backbone = torch.nn.Sequential(*layers)                         # crea una backbone dopo la manipolazione dei layers
     
     features_dim = CHANNELS_NUM_IN_LAST_CONV[backbone_name]         # prende la dimensione corretta dell'utlimo layer in modo da poterla
                                                                     # mettere come dimensione di input per il linear layer successivo
-    return backbone_until_3, layers_4, features_dim
+    features_map_dim = CHANNELS_NUM_AFTER_LAYER_3[backbone_name]
+    return backbone_after_3, layers_4, features_dim, features_map_dim
 
 
 # model = GeoLocalizationNet('resnet18', 512)
@@ -122,8 +128,11 @@ def get_backbone(backbone_name):
 
 
 # image = torch.rand([1, 3, 224, 224])
-# model = GeoLocalizationNet('resnet18', 512, 128, False)
+# model = GeoLocalizationNet('resnet18', 512, 128, True)
 # global_features, attn_logits, feature_map, rec_feature_map, reduced_dim, attn_scores = model(image)
+
+# for name, param in model.named_parameters():
+#     print(name)
 
 
 
