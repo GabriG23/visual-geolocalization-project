@@ -72,8 +72,9 @@ groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, 
 # Noi abbiamo un solo gruppo perciò avremo un solo classifier
 
 
-classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]         # il classifier è dato dalla loss(dimensione descrittore, numero di classi nel gruppo) 
-classifiers_optimizers = [torch.optim.Adam(classifier.parameters(), lr=args.classifiers_lr) for classifier in classifiers]      # rispettivo optimizer
+classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]   
+for param in classifiers:
+    param.requires_grad = False      
 
 logging.info(f"Using {len(groups)} groups")                                                                                         # numero di gruppi
 logging.info(f"The {len(groups)} groups have respectively the following number of classes {[len(g) for g in groups]}")              # numero di classi nei gruppi
@@ -169,7 +170,6 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
     
             loss.backward()
             model_optimizer.step() 
-            classifiers_optimizers[current_group_num].step() 
             if args.reduction:
                 autoencoder_optimizer.step()                                                # lasciato separato perché la parte del classifier dovremme modificarsi in base alle classi del gruppo
 
