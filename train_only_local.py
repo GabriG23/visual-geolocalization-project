@@ -73,6 +73,7 @@ groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, 
 
 
 classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]   
+classifiers_optimizers = [torch.optim.Adam(classifier.parameters(), lr=args.classifiers_lr) for classifier in classifiers] 
 for param in classifiers:
     param.requires_grad = False      
 
@@ -151,7 +152,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):           # inizia il 
                                                                             # direttamente in train_dataset
         
         model_optimizer.zero_grad()                                         # setta il gradiente a zero per evitare double counting (passaggio classico dopo ogni iterazione)
-        classifiers_optimizers[current_group_num].zero_grad()               # fa la stessa cosa con l'ottimizzatore
+        # classifiers_optimizers[current_group_num].zero_grad()               # fa la stessa cosa con l'ottimizzatore
         if args.reduction:
             autoencoder_optimizer.zero_grad()        
         
