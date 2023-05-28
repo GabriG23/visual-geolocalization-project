@@ -17,6 +17,7 @@ CHANNELS_NUM_IN_LAST_CONV = {
 
 CHANNELS_NUM_AFTER_LAYER_3 = {           
         "resnet18": 256,
+        "resnet50": 1024
     }
 
 
