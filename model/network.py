@@ -40,10 +40,10 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
     
     def forward(self, x):
         if self.backbone_name in ["vit", "cvt", "cct"]:
-            x = self.backbone(x)        # con transformers ritorna feature di dim [32, num_classes] [batch_size, features_dim]
-            x = nn.functional.adaptive_avg_pool2d(x, 1) # global averaage pooling to reduce spatial dimensions
-            x = x.view(x.size(0), -1) # flatten the features
-            x = self.aggregation_vit(x)
+            x = self.backbone(x)        # con transformers ritorna feature di dim [32, num_classes] [batch_size, features_dim] che deve essere uguale all'output
+            # x = nn.functional.adaptive_avg_pool2d(x, 1) # global averaage pooling to reduce spatial dimensions
+            # x = x.view(x.size(0), -1) # flatten the features
+            # x = self.aggregation_vit(x)
         else:
             x = self.backbone(x)        # con resnet18 esce [32, 512, 7, 7]
             x = self.aggregation(x)     # con resnet18 esce [32, 512]
