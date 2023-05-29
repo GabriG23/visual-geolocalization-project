@@ -79,7 +79,7 @@ class TransformerEncoderLayer(Module):
 class TransformerClassifier(Module):  # Multi Layer Perceptron
     def __init__(self,
                  seq_pool=True,                                                     # True per CVT e CCT
-                 feature_dim=256,                                                 # dimensione data in ingresso
+                 embedding_dim=256,                                                 # dimensione data in ingresso
                  num_layers=12,                                                     # layers
                  num_heads=12,                                                      # head
                  mlp_ratio=4.0,                                                     # niente di nuovo
@@ -94,8 +94,8 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
         positional_embedding = positional_embedding if \
             positional_embedding in ['sine', 'learnable', 'none'] else 'sine'
         
-        dim_feedforward = int(feature_dim * mlp_ratio)                        # int 128 * 1 o 2 = 128 o 256
-        self.feature_dim = feature_dim                                      # dim 128
+        dim_feedforward = int(embedding_dim * mlp_ratio)                        # int 128 * 1 o 2 = 128 o 256
+        self.embedding_dim = embedding_dim                                      # dim 128
         self.sequence_length = sequence_length                                  # 3136
         self.seq_pool = seq_pool
         self.num_tokens = 0
@@ -106,30 +106,30 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
 
         if not seq_pool:            # controlla il sequence pool, per ViT non serve
             sequence_length += 1
-            self.class_emb = Parameter(torch.zeros(1, 1, self.feature_dim), requires_grad=True)  # 1 1 128
+            self.class_emb = Parameter(torch.zeros(1, 1, self.embedding_dim), requires_grad=True)  # 1 1 128
             self.num_tokens = 1
         else:
-            self.attention_pool = Linear(self.feature_dim, 1)     # questo per ViT
+            self.attention_pool = Linear(self.embedding_dim, 1)     # questo per ViT
 
         if positional_embedding != 'none':
             if positional_embedding == 'learnable':                 # per ViT e CVT
-                self.positional_emb = Parameter(torch.zeros(1, sequence_length, feature_dim), requires_grad=True) # zeri 1 3 128
+                self.positional_emb = Parameter(torch.zeros(1, sequence_length, embedding_dim), requires_grad=True) # zeri 1 3 128
                 init.trunc_normal_(self.positional_emb, std=0.2)
             else:
-                self.positional_emb = Parameter(self.sinusoidal_embedding(sequence_length, feature_dim), requires_grad=False)
+                self.positional_emb = Parameter(self.sinusoidal_embedding(sequence_length, embedding_dim), requires_grad=False)
         else:
             self.positional_emb = None
 
         self.dropout = Dropout(p=dropout)                   # init dropout
         dpr = [x.item() for x in torch.linspace(0, stochastic_depth, num_layers)]
         self.blocks = ModuleList([
-            TransformerEncoderLayer(d_model=feature_dim, nhead=num_heads,
+            TransformerEncoderLayer(d_model=embedding_dim, nhead=num_heads,
                                     dim_feedforward=dim_feedforward, dropout=dropout,
                                     attention_dropout=attention_dropout, drop_path_rate=dpr[i])
             for i in range(num_layers)])
-        self.norm = LayerNorm(feature_dim)                                                             # Layer Normalization
+        self.norm = LayerNorm(embedding_dim)                                                             # Layer Normalization
 
-        self.linear = Linear(feature_dim, num_classes)        # passaggio finale, Linear, da fare con tutti e 3 ViT, CVT e CCT
+        self.linear = Linear(embedding_dim, num_classes)        # passaggio finale, Linear, da fare con tutti e 3 ViT, CVT e CCT
         self.apply(self.init_weight)
 
     def forward(self, x):     # x è quello che esce dal tokenizer
@@ -162,7 +162,7 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
         if self.seq_pool:   # Sequence pooling, da fare solo con CVT e CCT
             x = torch.matmul(F.softmax(self.attention_pool(x), dim=1).transpose(-1, -2), x).squeeze(-2)                         # softmax
         else:
-            x = x[:, 0]         # slice the array, taking all rows (;) but keeping the first column (1)
+            x = x[:, 0]         # slice the array, taking all rows (;) but keeping the first column (1), è il flatten??
 
         x = self.linear(x)      # Linear -> embedding, num_classes = fc_output_dim
         
