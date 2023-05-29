@@ -5,6 +5,7 @@ from scipy import spatial
 from skimage import feature
 from skimage import measure
 from skimage import transform
+import torch.nn.functional as F
 
 def CalculateKeypointCenters(boxes):
    # Helper function to compute feature centers, from RF boxes.
@@ -54,7 +55,7 @@ def retrieve_locations_descriptors(feature_map, attention_prob):
     attention_prob = attention_prob.view(-1)
     feature_map = feature_map.view(-1, feature_map.shape[0])          
 
-    abs_thres = 0.5
+    abs_thres = 75
     # abs_thres = 0.2
 
     indices = (attention_prob >= abs_thres).nonzero().squeeze(1) 
@@ -62,10 +63,8 @@ def retrieve_locations_descriptors(feature_map, attention_prob):
 
     selected_boxes = torch.index_select(rf_boxes, 0, indices)
     selected_features = torch.index_select(feature_map, 0, indices)
-    selected_scores = torch.index_select(attention_prob, 0, indices)
 
-    scale = 1
-    scales = torch.ones_like(selected_scores, dtype=torch.float32) / scale                 # dalla repo. Tensore di 1  riscalati rispetto alla scala
+    norm_selected_features = F.normalize(selected_features, p=2, dim=1)
 
     # print(scales)
 
@@ -175,28 +174,30 @@ def match_features(query_locations,
     # (non considera quelli in cui indices[i] != num_features_database_image perché significa che non c'è stato un matching)
 
 
-    print(f"KDTree matching: {matching_query_locations.shape[0]}")
+    # print(f"KDTree matching: {matching_query_locations.shape[0]}")
 
 
     # If there are not enough putative matches, early return 0.
-    if matching_query_locations.shape[0] <= _MIN_RANSAC_SAMPLES:
-        return 0
+    # if matching_query_locations.shape[0] <= _MIN_RANSAC_SAMPLES:
+    #     return 0
 
-    # Perform geometric verification using RANSAC.
-    _, inliers = measure.ransac(
-        (matching_image_locations, matching_query_locations),
-        transform.PolynomialTransform,
-        min_samples=_MIN_RANSAC_SAMPLES,
-        residual_threshold=ransac_residual_threshold,
-        max_trials=_NUM_RANSAC_TRIALS,
-        random_state=0)
+    # # Perform geometric verification using RANSAC.
+    # _, inliers = measure.ransac(
+    #     (matching_image_locations, matching_query_locations),
+    #     transform.PolynomialTransform,
+    #     min_samples=_MIN_RANSAC_SAMPLES,
+    #     residual_threshold=ransac_residual_threshold,
+    #     max_trials=_NUM_RANSAC_TRIALS,
+    #     random_state=0)
 
-    if inliers is None:
-        inliers = []
-    elif query_im_array is not None and index_im_array is not None:
-      plot_inlier_lines(query_im_array, index_im_array, matching_query_locations, matching_image_locations, inliers)
-        
-    return sum(inliers)
+    # if inliers is None:
+    #     inliers = []
+    # elif query_im_array is not None and index_im_array is not None:
+    #   plot_inlier_lines(query_im_array, index_im_array, matching_query_locations, matching_image_locations, inliers)
+     
+    # return sum(inliers)
+
+    return matching_query_locations.shape[0]  
 
 
 

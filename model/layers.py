@@ -44,15 +44,15 @@ class L2Norm(nn.Module):            # least square error
 class Attention(nn.Module):
     def __init__(self, input_features):                     # in_c mi sembra siano 256
         super().__init__()
-        self.conv1 = nn.Conv2d(input_features, 128, 1, 1, padding='same')   # attention module (in 128, così come lui riduce 1024 in 512)
+        self.conv1 = nn.Conv2d(input_features, 512, 1, 1, padding='same')   # attention module (in 128, così come lui riduce 1024 in 512)
                                                             # riduce solo la profondità a 512?      
                                                             # alla fine dell'attention module, devo avere solo S' (Hs, Ws), come S (32, 32)      
-        self.bn = nn.BatchNorm2d(128)                       # in ingresso dovrebbe stesso discorso per 128. Per il resto è lasciato con parametri di default
+        self.bn = nn.BatchNorm2d(512)                       # in ingresso dovrebbe stesso discorso per 128. Per il resto è lasciato con parametri di default
                                                             # il batch ritorna la stessa shape dell'input 
                                                             # ad ogni elemento, toglie media e varianza calcolata sull'intero batch (è fatta sulla C dimension)
         self.relu = nn.ReLU()                               # nel paper è scritto "followed by ReLU"
 
-        self.conv2 = nn.Conv2d(128, 1, 1, 1, padding='same')                # filter è 1 come nel paper; 128 sono quelli che lui riceve
+        self.conv2 = nn.Conv2d(512, 1, 1, 1, padding='same')                # filter è 1 come nel paper; 128 sono quelli che lui riceve
         self.softplus = nn.Softplus()   # use default setting.
 
         # for conv in [self.conv1, self.conv2]:             # per ora non esplicito nessuna inizializzazione per il conv2

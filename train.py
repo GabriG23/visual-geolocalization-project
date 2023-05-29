@@ -8,7 +8,7 @@ import multiprocessing
 from datetime import datetime
 import torchvision.transforms as T
 
-import test
+import test, test_reranked
 import util
 import parser
 import commons
@@ -238,7 +238,7 @@ best_model_state_dict = torch.load(f"{output_folder}/best_model.pth")           
 model.load_state_dict(best_model_state_dict)
 
 logging.info(f"Now testing on the test set: {test_ds}")                         
-recalls, recalls_str = test.test(args, test_ds, model)                          # prova il modello migliore sul dataset di test (queries v1)
+recalls, recalls_str = test_reranked.test(args, test_ds, model)                          # prova il modello migliore sul dataset di test (queries v1)
 logging.info(f"{test_ds}: {recalls_str}")
 
 logging.info("Experiment finished (without any errors)")

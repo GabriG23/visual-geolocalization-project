@@ -129,8 +129,9 @@ def get_backbone(backbone_name):
 
 
 # image = torch.rand([1, 3, 224, 224])
-# model = GeoLocalizationNet('resnet18', 512, 128, True)
+# model = GeoLocalizationNet('resnet50', 512, 128, True)
 # global_features, attn_logits, feature_map, rec_feature_map, reduced_dim, attn_scores = model(image)
+# print(rec_feature_map.shape)
 
 # for name, param in model.named_parameters():
 #     print(name)

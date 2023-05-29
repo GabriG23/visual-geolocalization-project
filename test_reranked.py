@@ -75,10 +75,10 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
     recalls = np.zeros(len(RECALL_VALUES))                  # vettore di recalls iniziaizzato a zero
     for query_index, preds in enumerate(predictions):       # per ogni predizione, prende indice e relativa predizione
     # for query_index, preds in tqdm(predictions, ncols=100):
-        reraked_preds = RerankByGeometricVerification(preds, distances[query_index], queries_local_descriptors[query_index], 
+        reranked_preds = RerankByGeometricVerification(preds, distances[query_index], queries_local_descriptors[query_index], 
                                     queries_att_prob[query_index], database_local_descriptors[preds], database_att_prob[preds])
         for i, n in enumerate(RECALL_VALUES):               # per ogni valore delle recall values (sono 5 valori)
-            if np.any(np.in1d(reraked_preds[:n], positives_per_query[query_index])):    # controlla che ogni valore nel primo 1Darray (quindi penso descrittore, non immagine) sia contenuto 
+            if np.any(np.in1d(reranked_preds[:n], positives_per_query[query_index])):    # controlla che ogni valore nel primo 1Darray (quindi penso descrittore, non immagine) sia contenuto 
                                                                                 # nel secondo. Quindi per ogni n controlla se le predizioni fino ad n (le n più vicine) contengono 
                                                                                 # la relativa immagine di query (np.any -> almeno 1)
                 recalls[i:] += 1                                                # se si, aumenta la relativa recall
@@ -94,8 +94,8 @@ def RerankByGeometricVerification(query_predictions, distances, query_descriptor
     # ranks_before_gv[i] = np.argsort(-similarities)      # tieni conto di questo!!!
     use_ratio_test = False
 
-    for i in range(20):
-      print(f"[{query_predictions[i]}, -, {distances[i]}]")
+    # for i in range(20):
+    #   print(f"[{query_predictions[i]}, -, {distances[i]}]")
     query_locations, query_descriptors = retrieve_locations_descriptors(torch.from_numpy(query_descriptors), torch.from_numpy(query_attention_prob))
 
     inliers_and_initial_scores = []                   # in 0 avrà l'indice della predizione, in 1 avrà gli outliers, in 2 avrà gli scores (già calcolati)
@@ -118,8 +118,8 @@ def RerankByGeometricVerification(query_predictions, distances, query_descriptor
         # così il ranking è fatto dando la precedenza agli inliers
         # parte di ricalcolo della recall una volta ottenuti gli inliers
 
-    for x in inliers_and_initial_scores:
-      print(x)
+    # for x in inliers_and_initial_scores:
+    #   print(x)
 
     new_rank = [x[0] for x in inliers_and_initial_scores]
 
