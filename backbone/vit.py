@@ -19,17 +19,17 @@ def vision_transformer_lite(fc_output_dim, layers):
         logging.info(f"ERROR number of layers. Layers cannot be equals to {layers}")
 
 #feature dim = hidden layer
-def vit_2(img_size, fc_output_dim):
-    return _vit_lite(num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128, img_size=img_size, fc_output_dim=fc_output_dim)   # layers, attention head, Multi layer perceptron ratio, dimensione descrittori
+def vit_2(fc_output_dim):
+    return _vit_lite(num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128, img_size=224, fc_output_dim=fc_output_dim)   # layers, attention head, Multi layer perceptron ratio, dimensione descrittori
 
-def vit_4(img_size, fc_output_dim):
-    return _vit_lite(num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128, img_size=img_size, fc_output_dim=fc_output_dim)
+def vit_4(fc_output_dim):
+    return _vit_lite(num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128, img_size=224, fc_output_dim=fc_output_dim)
 
-def vit_6(img_size, fc_output_dim):
-    return _vit_lite(num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256, img_size=img_size, fc_output_dim=fc_output_dim)
+def vit_6(fc_output_dim):
+    return _vit_lite(num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256, img_size=224, fc_output_dim=fc_output_dim)
 
-def vit_7(img_size, fc_output_dim):
-    return _vit_lite(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256, img_size=img_size, fc_output_dim=fc_output_dim)
+def vit_7(fc_output_dim):
+    return _vit_lite(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256, img_size=224, fc_output_dim=fc_output_dim)
 
 def _vit_lite(num_layers, num_heads, mlp_ratio, embedding_dim, img_size, fc_output_dim, kernel_size=4):      # dimensione del kernel
                                     
