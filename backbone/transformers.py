@@ -78,13 +78,12 @@ class TransformerEncoderLayer(Module):
 
 class TransformerClassifier(Module):  # Multi Layer Perceptron
     def __init__(self,
-                 fc_output_dim=512,
                  seq_pool=True,                                                     # True per CVT e CCT
                  feature_dim=256,                                                 # dimensione data in ingresso
                  num_layers=12,                                                     # layers
                  num_heads=12,                                                      # head
                  mlp_ratio=4.0,                                                     # niente di nuovo
-                 num_classes=5965,
+                 num_classes=512,
                  dropout=0.1,
                  attention_dropout=0.1,
                  stochastic_depth=0.1,
@@ -130,8 +129,7 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
             for i in range(num_layers)])
         self.norm = LayerNorm(feature_dim)                                                             # Layer Normalization
 
-        #self.linear = Linear(feature_dim, num_classes)        # passaggio finale, Linear, da fare con tutti e 3 ViT, CVT e CCT
-        self.linear = Linear(feature_dim, fc_output_dim)
+        self.linear = Linear(feature_dim, num_classes)        # passaggio finale, Linear, da fare con tutti e 3 ViT, CVT e CCT
         self.apply(self.init_weight)
 
     def forward(self, x):     # x è quello che esce dal tokenizer
@@ -166,7 +164,7 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
         else:
             x = x[:, 0]         # slice the array, taking all rows (;) but keeping the first column (1)
 
-        x = self.linear(x)      # Linear -> embedding, num_classes?
+        x = self.linear(x)      # Linear -> embedding, num_classes = fc_output_dim
         
         return x
 
