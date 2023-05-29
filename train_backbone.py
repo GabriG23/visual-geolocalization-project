@@ -34,7 +34,7 @@ logging.info(f"The outputs are being saved in {output_folder}")
 
 #### Model
 # fc_output_dim: dimensione dell'ultimo fully connected layer
-model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim)      # istanzia il modello con backbone e dimensione del descrittore
+model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim, args.layers_number)      # istanzia il modello con backbone e dimensione del descrittore
                                                                            # passati da linea di comando
 logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")  # conta GPUs e CPUs
 

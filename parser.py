@@ -17,8 +17,8 @@ def parse_arguments(is_training: bool = True):
                         choices=["vgg16", "resnet18", "resnet50", "resnet101", "resnet152", "vit", "cvt", "cct"], help="_")
     parser.add_argument("--fc_output_dim", type=int, default=512,
                         help="Output dimension of final fully connected layer")
-    # parser.add_argument("--layers_number", type=int, default=2,
-    #                     help="used for Hyperparameter tuning [2, 4, 6, 7, 8, 14]")
+    parser.add_argument("--layers_number", type=int, default=2,
+                        help="used for Hyperparameter tuning [2, 4, 6, 7, 8, 14]")
     # Training parameters
     parser.add_argument("--use_amp16", action="store_true",
                         help="use Automatic Mixed Precision")

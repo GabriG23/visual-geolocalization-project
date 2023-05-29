@@ -13,15 +13,12 @@ CHANNELS_NUM_IN_LAST_CONV = {           # questi dipendono dall'architettura del
         "resnet101": 2048,
         "resnet152": 2048,
         "vgg16": 512,
-        "vit": 128,     # features dim, multipli di 2, 128 - 256 - 512
-        "cvt": 256,
-        "cct": 256,
     }
 
 class GeoLocalizationNet(nn.Module):                        # questa è la rete principale
-    def __init__(self, backbone, fc_output_dim):            # l'oggetto della classe parent è creato in funzione della backbone scelta
+    def __init__(self, backbone, fc_output_dim, layers_numbers):            # l'oggetto della classe parent è creato in funzione della backbone scelta
         super().__init__()
-        self.backbone, features_dim = get_backbone(backbone, fc_output_dim)
+        self.backbone, features_dim = get_backbone(backbone, fc_output_dim, layers_numbers)
         self.aggregation = nn.Sequential(                   # container sequenziale di layers, che sono appunto eseguiti in sequenza come una catena
                 L2Norm(),                                   # questi sono le classi definite in layers
                 GeM(),
@@ -29,11 +26,11 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
                 nn.Linear(features_dim, fc_output_dim),     # applica la trasformazione y = x @ A.T + b dove A sono i parametri della rete in quel punto 
                 L2Norm()                                    # e b è il bias aggiunto se è passato bias=True al modello. I pesi e il bias sono inizializzati
             )                                               # random dalle features in ingresso
-        self.aggregation_vit = nn.Sequential(
-            L2Norm(),
-            nn.Linear(features_dim, fc_output_dim),
-            L2Norm()
-        )
+        # self.aggregation_vit = nn.Sequential(
+        #     L2Norm(),
+        #     nn.Linear(features_dim, fc_output_dim),
+        #     L2Norm()
+        # )
         self.linear = nn.Linear(features_dim, fc_output_dim)
         self.l2norm = L2Norm()
         self.backbone_name = backbone
@@ -50,7 +47,7 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
         return x
 
 
-def get_backbone(backbone_name, fc_output_dim):                            # backbone_name è uno degli argomenti del programma
+def get_backbone(backbone_name, fc_output_dim, layers_numbers):         # backbone_name è uno degli argomenti del programma
     if backbone_name.startswith("resnet"):
         if backbone_name == "resnet18":
             backbone = torchvision.models.resnet18(pretrained=True)     # loading del modello già allenato
@@ -84,11 +81,11 @@ def get_backbone(backbone_name, fc_output_dim):                            # bac
         backbone = torch.nn.Sequential(*layers)                         # crea una backbone dopo la manipolazione dei layers
 
     elif backbone_name == "vit": # Vision Transformer Lite            224x224 
-        backbone = vit.vision_transformer_lite(224, fc_output_dim)                     # layers e img_size
+        return vit.vision_transformer_lite(fc_output_dim, layers_numbers), 512              # feature_dim di ritorno, non viene usato     # layers e img_size
     elif backbone_name == "cvt": # Convolutional Vision Transformer   224x224 
-        backbone = cvt.convolutional_vision_transformer(224, fc_output_dim)
+        return cvt.convolutional_vision_transformer(fc_output_dim, layers_numbers), 512
     elif backbone_name == "cct": # Convolutional Compact Transformer  224x224 
-        backbone = cct.convolutional_compact_transformer(224, fc_output_dim)
+        return cct.convolutional_compact_transformer(fc_output_dim, layers_numbers), 512
 
    
     features_dim = CHANNELS_NUM_IN_LAST_CONV[backbone_name]         # prende la dimensione corretta dell'utlimo layer in modo da poterla

@@ -1,25 +1,61 @@
 import torch.nn as nn
 from .transformers import TransformerClassifier
 from .tokenizer import Tokenizer
+import logging
 
+def convolutional_compact_transformer(fc_output_dim, layers):
+    if layers == 2:
+        return cct_2(fc_output_dim)     # num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128
+    elif layers == 4:
+        return cct_4(fc_output_dim)     # anum_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128
+    elif layers == 6:
+        return cct_6(fc_output_dim)     # num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256
+    elif layers == 7:
+        return cct_7(fc_output_dim)     # num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256
+    elif layers == 14:
+        return cct_14(fc_output_dim)    # num_layers=14, num_heads=6, mlp_ratio=3, embedding_dim=384
+    else:
+        logging.info(f"ERROR number of layers. Layers cannot be equals to {layers}")
+        
+# embedding dim = feature dim
+def cct_2(fc_output_dim):
+    return _cct(num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128, fc_output_dim=fc_output_dim)
 
-def convolutional_compact_transformer(type):
-    if type == 2:
-        return cct_2()     # num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128
-    elif type == 4:
-        return cct_4()     # anum_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128
-    elif type == 6:
-        return cct_6()     # num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256
-    elif type == 7:
-        return cct_7()     # num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256
-    elif type == 14:
-        return cct_14()    # num_layers=14, num_heads=6, mlp_ratio=3, embedding_dim=384
+def cct_4(fc_output_dim):
+    return _cct(anum_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128, fc_output_dim=fc_output_dim)
+
+def cct_6(fc_output_dim):
+    return _cct(num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256, fc_output_dim=fc_output_dim)
+
+def cct_7(fc_output_dim):
+    return _cct(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256, fc_output_dim=fc_output_dim)
+
+def cct_14(fc_output_dim):
+    return _cct(num_layers=14, num_heads=6, mlp_ratio=3, embedding_dim=384, fc_output_dim=fc_output_dim)
 
 # Compact Convolutional Trasformers: utilizes a convolutional tokenizer, generating richer toknes and preserving local information.
 # The The convolutional tokenizer is better at encoding relationships between patches compared to the original ViT
 
 # Tokenizer: ConvLayer + Pooling + Reshape
 # Trasformer Classifier: Transformer Encoder + SeqPool + Linear Layer
+
+def _cct(num_layers, num_heads, mlp_ratio, embedding_dim, fc_output_dim, kernel_size=3, stride=None, padding=None):
+
+    stride = stride if stride is not None else max(1, (kernel_size // 2) - 1)
+
+    padding = padding if padding is not None else max(1, (kernel_size // 2))
+
+    model = CCT(num_layers=num_layers,
+                num_heads=num_heads,
+                mlp_ratio=mlp_ratio,
+                embedding_dim=embedding_dim,
+                kernel_size=kernel_size,
+                stride=stride,
+                padding=padding,
+                num_classes=fc_output_dim
+                )
+
+    return model
 
 class CCT(nn.Module):
     def __init__(self,
@@ -39,7 +75,7 @@ class CCT(nn.Module):
                  num_layers=14,
                  num_heads=6,
                  mlp_ratio=4.0,
-                 num_classes=5965,
+                 num_classes=512,
                  positional_embedding='learnable',
                  ):
                  
@@ -76,38 +112,3 @@ class CCT(nn.Module):
         x = self.tokenizer(x)
         x = self.classifier(x)
         return x
-
-
-def _cct(num_layers, num_heads, mlp_ratio, embedding_dim,
-         kernel_size=3, stride=None, padding=None):
-
-    stride = stride if stride is not None else max(1, (kernel_size // 2) - 1)
-
-    padding = padding if padding is not None else max(1, (kernel_size // 2))
-
-    model = CCT(num_layers=num_layers,
-                num_heads=num_heads,
-                mlp_ratio=mlp_ratio,
-                embedding_dim=embedding_dim,
-                kernel_size=kernel_size,
-                stride=stride,
-                padding=padding
-                )
-
-    return model
-
-
-def cct_2():
-    return _cct(num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128)
-
-def cct_4():
-    return _cct(anum_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128)
-
-def cct_6():
-    return _cct(num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256)
-
-def cct_7():
-    return _cct(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256)
-
-def cct_14():
-    return _cct(num_layers=14, num_heads=6, mlp_ratio=3, embedding_dim=384)
