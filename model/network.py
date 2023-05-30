@@ -42,12 +42,12 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
             # [32, 224]
             x = torch.unsqueeze(x, 2)  # Add a dummy spatial dimension of size 1
             x = torch.unsqueeze(x, 3)  # Add another dummy spatial dimension of size 1
-            print(x.shape)
+            # [32, 224, 1, 1]
             x = nn.functional.adaptive_avg_pool2d(x, 1)     # global averaage pooling to reduce spatial dimensions resulting in a tensor of shape [batch_size, features_dim, 1, 1].
-            print(x.shape)
+            # [32, 224, 1, 1]
             # [1, 1]
             x = x.view(x.size(0), -1)                       # This flattens the feature map obtained from the previous step into a 1D tensor. It reshapes the tensor to have a shape of [batch_size, features_dim], where each element corresponds to a specific feature channel.
-            print(x.shape)
+            # [32, 224]
             # [1, 1]
             # prima di arrivare qui deve avere [batch_size, feature_dim]
             x = self.aggregation_vit(x)                     # This applies additional aggregation operations to the flattened feature map. In the provided code, it consists of a sequence of operations including L2 normalization, linear transformation (using nn.Linear), and another L2 normalization
@@ -92,17 +92,17 @@ def get_backbone(backbone_name, fc_output_dim, layers_numbers):         # backbo
 
     elif backbone_name == "vit": # Vision Transformer Lite            224x224 
         if layers_numbers == 2 or layers_numbers == 4:
-            features_dim = 128
+            features_dim = 224
         else:
             if layers_numbers == 6 or layers_numbers == 7:
-                features_dim = 256
+                features_dim = 224
         return vit.vision_transformer_lite(fc_output_dim, layers_numbers), features_dim              # feature_dim di ritorno, non viene usato     # layers e img_size
     elif backbone_name == "cvt": # Convolutional Vision Transformer   224x224 
         if layers_numbers == 2 or layers_numbers == 4:
-            features_dim = 128
+            features_dim = 224
         else:
             if layers_numbers == 6 or layers_numbers == 7 or layers_numbers == 8:
-                features_dim = 256
+                features_dim = 224
         return cvt.convolutional_vision_transformer(fc_output_dim, layers_numbers), features_dim
     elif backbone_name == "cct": # Convolutional Compact Transformer  224x224
         if layers_numbers == 2 or layers_numbers == 4:
