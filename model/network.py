@@ -37,16 +37,20 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
     
     def forward(self, x):
         if self.backbone_name in ["vit", "cvt", "cct"]:
-            print(x.shape)
+            # [32, 3, 224, 224]
             x = self.backbone(x)                            # con transformers ritorna feature di dim [32, num_classes] [batch_size, features_dim] che deve essere uguale all'output
+            # [32, 224]
+            x = torch.unsqueeze(x, 2)  # Add a dummy spatial dimension of size 1
+            x = torch.unsqueeze(x, 3)  # Add another dummy spatial dimension of size 1
             print(x.shape)
             x = nn.functional.adaptive_avg_pool2d(x, 1)     # global averaage pooling to reduce spatial dimensions resulting in a tensor of shape [batch_size, features_dim, 1, 1].
             print(x.shape)
+            # [1, 1]
             x = x.view(x.size(0), -1)                       # This flattens the feature map obtained from the previous step into a 1D tensor. It reshapes the tensor to have a shape of [batch_size, features_dim], where each element corresponds to a specific feature channel.
             print(x.shape)
+            # [1, 1]
             # prima di arrivare qui deve avere [batch_size, feature_dim]
             x = self.aggregation_vit(x)                     # This applies additional aggregation operations to the flattened feature map. In the provided code, it consists of a sequence of operations including L2 normalization, linear transformation (using nn.Linear), and another L2 normalization
-            print(x.shape)
         else:
             x = self.backbone(x)        # con resnet18 esce [32, 512, 7, 7]
             x = self.aggregation(x)     # con resnet18 esce [32, 512]
