@@ -41,6 +41,7 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
             # x = nn.functional.adaptive_avg_pool2d(x, 1) # global averaage pooling to reduce spatial dimensions
             # x = x.view(x.size(0), -1) # flatten the features
             # x = self.aggregation_vit(x)
+            x = self.l2norm(x)
         else:
             x = self.backbone(x)        # con resnet18 esce [32, 512, 7, 7]
             x = self.aggregation(x)     # con resnet18 esce [32, 512]
