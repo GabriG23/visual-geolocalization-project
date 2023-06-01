@@ -123,7 +123,7 @@ def RerankByGeometricVerification(query_predictions, distances, query_descriptor
             RANSAC=False)
 
         inliers_and_initial_scores.append([preds, match_result, distances[i]])
-        
+
     inliers_and_initial_scores = sorted(inliers_and_initial_scores, key=lambda x : (x[1], -x[2]), reverse=True)
     new_rank = [x[0] for x in inliers_and_initial_scores]
 

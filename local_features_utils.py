@@ -7,7 +7,7 @@ from skimage import transform
 from skimage.measure import ransac
 import torch.nn.functional as F
 
-def retrive_locations_and_descriptors(attn_scores, red_feature_map, k=20):
+def retrieve_locations_and_descriptors(attn_scores, red_feature_map, k=20):
     attn_scores = np.transpose(attn_scores, (1, 2, 0))
     red_feature_map = np.transpose(red_feature_map, (1, 2, 0))
     flat_indices = np.argpartition(attn_scores.flatten(), -k)[-k:]
@@ -128,24 +128,5 @@ def match_features(query_locations,
         return sum(inliers)
     else:
         return image_locations_to_use.shape[0]
-
-
-def plot_inlier_lines(query_im_array, index_im_array, query_locations, index_locations, inliers):
-    inlier_idxs = np.nonzero(inliers)[0]
-    
-    fig, ax = plt.subplots()
-    ax.axis('off')
-    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
-    plt.margins(0, 0)
-    
-    feature.plot_matches(ax, query_im_array, 
-                         index_im_array, 
-                         query_locations, 
-                         index_locations,
-                         np.column_stack((inlier_idxs, inlier_idxs)), 
-                         only_matches=True,)
-
-    plt.show()
-
 
 
