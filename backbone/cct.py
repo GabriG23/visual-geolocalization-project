@@ -53,7 +53,7 @@ def _cct(num_layers, num_heads, mlp_ratio, embedding_dim, fc_output_dim, kernel_
                 kernel_size=kernel_size,
                 stride=stride,
                 padding=padding,
-                num_classes=5965
+                num_classes=fc_output_dim
                 )
 
     return model
@@ -76,7 +76,7 @@ class CCT(nn.Module):
                  num_layers=14,
                  num_heads=6,
                  mlp_ratio=4.0,
-                 num_classes=5965,
+                 num_classes=224,
                  positional_embedding='learnable',
                  ):
                  

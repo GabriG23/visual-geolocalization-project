@@ -41,7 +41,7 @@ def _vit_lite(num_layers, num_heads, mlp_ratio, embedding_dim, img_size, fc_outp
                     kernel_size=kernel_size,                        # dim kernel
                     positional_embedding='learnable',                # dipende molto dal positional_embedding  
                     img_size=img_size,
-                    num_classes=5965                       # rendo le classi uguali all'output
+                    num_classes=fc_output_dim                       # rendo le classi uguali all'output
                     )
     return model
 
@@ -61,7 +61,7 @@ class ViTLite(nn.Module):
                  num_layers=14,                              # numero di layers - passata da parametro  2 4 6 7 8
                  num_heads=6,                                # numero di head   - passata da parametro  2 2 4 4 4
                  mlp_ratio=4.0,                              # mlp ratio        - passata da parametro  1 1 2 2 2
-                 num_classes=5965,                            # dimensione dell'ultimo layer 
+                 num_classes=224,                            # dimensione dell'ultimo layer 
                  positional_embedding='learnable'            # learnable
                 ):
         super(ViTLite, self).__init__()
