@@ -163,7 +163,7 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
             x = torch.matmul(F.softmax(self.attention_pool(x), dim=1).transpose(-1, -2), x).squeeze(-2)                         # softmax
         else:
             x = x[:, 0]         # slice the array, taking all rows (;) but keeping the first column (1), è il flatten??
-
+        # [batch_size, features_dim]
         print(x.shape)
         #x = self.linear(x)      # Linear -> embedding, num_classes = fc_output_dim  [feature_dim, fc_output_dim] tolgo il linear, sta nell'aggregation
         
