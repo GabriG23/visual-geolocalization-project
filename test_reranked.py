@@ -64,39 +64,47 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
     faiss_index.add(database_global_descriptors)                 
     del all_local_descriptors, all_descriptors, all_att_prob          
     
+    RANSAC = False
     logging.debug("Calculating recalls")
-    distances, predictions = faiss_index.search(queries_global_descriptors, max(RECALL_VALUES))    # effettua la ricerca con i descrittori delle query con i valori di recall specificati
-                                                            # questa parte quindi è svolta unicamente da questa libreria, che calcola la distanza euclidea (quindi la vicinanza)
-                                                            # per ogni k (preso da RECALL_VALUES) immagini con le immagini di query. Più k è alto è più ho possibilità di prendere la 
-                                                            # più vicina (lo si vede dopo)
+    distances, predictions = faiss_index.search(queries_global_descriptors, max(RECALL_VALUES))    
+    positives_per_query = eval_ds.get_positives() 
+    for k in [80, 85, 90, 95]:
+        for th in [0.55, 0.6, 0.65]:
+            recalls = np.zeros(len(RECALL_VALUES))    
+            reranked_recalls = np.zeros(len(RECALL_VALUES))                
+            for query_index, preds in enumerate(predictions): 
+            # for query_index, preds in tqdm(predictions, ncols=100):
+                reranked_preds = RerankByGeometricVerification(preds, distances[query_index], queries_local_descriptors[query_index], 
+                                            queries_att_prob[query_index], database_local_descriptors[preds], database_att_prob[preds],
+                                            k=k, descriptor_matching_threshold=th)
+                for i, n in enumerate(RECALL_VALUES):           
+                    if np.any(np.in1d(reranked_preds[:n], positives_per_query[query_index])):                                                                                                                         
+                        reranked_recalls[i:] += 1                                               
+                        break     
+                for i, n in enumerate(RECALL_VALUES):            
+                    if np.any(np.in1d(preds[:n], positives_per_query[query_index])):                                                                                                                                          
+                        recalls[i:] += 1                                             
+                        break                                                           
 
-    #### For each query, check if the predictions are correct
-    positives_per_query = eval_ds.get_positives()           # per ogni query, restituisce le immagini più vicine alla query di 25 mt
-    recalls = np.zeros(len(RECALL_VALUES))                  # vettore di recalls iniziaizzato a zero
-    for query_index, preds in enumerate(predictions):       # per ogni predizione, prende indice e relativa predizione
-    # for query_index, preds in tqdm(predictions, ncols=100):
-        reranked_preds = RerankByGeometricVerification(preds, distances[query_index], queries_local_descriptors[query_index], 
-                                    queries_att_prob[query_index], database_local_descriptors[preds], database_att_prob[preds])
-        for i, n in enumerate(RECALL_VALUES):               # per ogni valore delle recall values (sono 5 valori)
-            if np.any(np.in1d(reranked_preds[:n], positives_per_query[query_index])):    # controlla che ogni valore nel primo 1Darray (quindi penso descrittore, non immagine) sia contenuto 
-                                                                                # nel secondo. Quindi per ogni n controlla se le predizioni fino ad n (le n più vicine) contengono 
-                                                                                # la relativa immagine di query (np.any -> almeno 1)
-                recalls[i:] += 1                                                # se si, aumenta la relativa recall
-                break                                                           # ed esce perché tanto l'ha già trovata. Quindi si favoriscono recall più basse
-    # Divide by queries_num and multiply by 100, so the recalls are in percentages
-    recalls = recalls / eval_ds.queries_num * 100                               # valori di recall espressi in percentuale (cioè quante query in percentuale sono cadute in quel valore di recall)                                                                                     
-    recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, recalls)])    # valori di recall in stringa
+        recalls = recalls / eval_ds.queries_num * 100   
+        reranked_recalls = reranked_recalls / eval_ds.queries_num * 100                            
+
+        recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, recalls)])  
+        reranked_recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, reranked_recalls)])    
+
+        print(f"{k = } - {th = }  {RANSAC = } ")
+        print('Recalls \t', recalls_str)
+        print('Reranked Recalls', reranked_recalls_str)
+        print("------------------")
     return recalls, recalls_str
 
 
 def RerankByGeometricVerification(query_predictions, distances, query_descriptors, query_attention_prob, 
-                    images_local_descriptors, images_attention_prob):
+                    images_local_descriptors, images_attention_prob, k, descriptor_matching_threshold):
    
-    k = 95
-    descriptor_matching_threshold=0.6
+    # k = 85
+    # descriptor_matching_threshold=0.6
     ransac_residual_threshold=9.0
-    # for i in range(len(query_predictions)):
-    #   print(f"[{query_predictions[i]}, -, {distances[i]}]")
     query_locations, query_descriptors = retrieve_locations_and_descriptors(query_attention_prob, query_descriptors, k=k)
 
     inliers_and_initial_scores = []                   
@@ -112,15 +120,11 @@ def RerankByGeometricVerification(query_predictions, distances, query_descriptor
             descriptor_matching_threshold,
             ransac_residual_threshold,
             use_ratio_test=False,
-            RANSAC=True)
+            RANSAC=False)
 
         inliers_and_initial_scores.append([preds, match_result, distances[i]])
-
+        
     inliers_and_initial_scores = sorted(inliers_and_initial_scores, key=lambda x : (x[1], -x[2]), reverse=True)
-
-    # for x in inliers_and_initial_scores:
-    #   print(x)
-
     new_rank = [x[0] for x in inliers_and_initial_scores]
 
     return new_rank
