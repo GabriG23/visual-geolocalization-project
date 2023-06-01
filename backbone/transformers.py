@@ -83,7 +83,7 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
                  num_layers=12,                                                     # layers
                  num_heads=12,                                                      # head
                  mlp_ratio=4.0,                                                     # niente di nuovo
-                 num_classes=512,
+                 num_classes=5965,
                  dropout=0.1,
                  attention_dropout=0.1,
                  stochastic_depth=0.1,
@@ -165,7 +165,7 @@ class TransformerClassifier(Module):  # Multi Layer Perceptron
             x = x[:, 0]         # slice the array, taking all rows (;) but keeping the first column (1), è il flatten??
         # [batch_size, features_dim]
         #print(x.shape)
-        #x = self.linear(x)      # Linear -> embedding, num_classes = fc_output_dim  [feature_dim, fc_output_dim] tolgo il linear, sta nell'aggregation
+        x = self.linear(x)      # Linear -> embedding, num_classes = fc_output_dim  [feature_dim, fc_output_dim] tolgo il linear, sta nell'aggregation
         
         return x
 

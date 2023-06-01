@@ -40,7 +40,7 @@ def _cvt(num_layers, num_heads, mlp_ratio, embedding_dim, fc_output_dim, kernel_
                 mlp_ratio=mlp_ratio,
                 embedding_dim=embedding_dim,
                 kernel_size=kernel_size,
-                num_classes=fc_output_dim
+                num_classes=5965
                 )
 
     return model
@@ -59,7 +59,7 @@ class CVT(nn.Module):
                  num_layers=14,
                  num_heads=6,
                  mlp_ratio=4.0,
-                 num_classes=512,
+                 num_classes=5965,
                  positional_embedding='learnable'                       # dipende molto dal positional_embedding come Vit-Lite
                  ):
         super(CVT, self).__init__()
