@@ -42,7 +42,7 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
         if self.backbone_name in ["vit", "cvt", "cct"]:
             # [32, 3, 224, 224]
             x = self.backbone(x)                            # con transformers ritorna feature di dim [32, num_classes] [batch_size, features_dim] che deve essere uguale all'output
-            x = self.aggregation_transformer(x)     # con resnet18 esce [32, 512]
+            #x = self.aggregation_transformer(x)     # con resnet18 esce [32, 512]
 
         #     [32, 224]
             x = torch.unsqueeze(x, 2)  # Add a dummy spatial dimension of size 1
@@ -55,7 +55,7 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
         #     [32, 224]
         #     [1, 1]
         #     prima di arrivare qui deve avere [batch_size, feature_dim]
-            x = self.aggregation_vit(x)                     # This applies additional aggregation operations to the flattened feature map. In the provided code, it consists of a sequence of operations including L2 normalization, linear transformation (using nn.Linear), and another L2 normalization
+            x = self.aggregation_transformer(x)                     # This applies additional aggregation operations to the flattened feature map. In the provided code, it consists of a sequence of operations including L2 normalization, linear transformation (using nn.Linear), and another L2 normalization
         else:
             x = self.backbone(x)        # con resnet18 esce [32, 512, 7, 7]
             x = self.aggregation(x)     # con resnet18 esce [32, 512]
