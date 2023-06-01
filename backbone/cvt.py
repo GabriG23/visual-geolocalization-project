@@ -3,7 +3,7 @@ from .transformers import TransformerClassifier
 from .tokenizer import Tokenizer
 import logging
 
-def convolutional_vision_transformer(fc_output_dim, layers):
+def convolutional_vision_transformer(fc_output_dim):
 
     return _cvt(num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=224, fc_output_dim=fc_output_dim)
 
