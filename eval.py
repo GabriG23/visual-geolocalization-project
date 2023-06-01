@@ -5,7 +5,7 @@ import logging
 import multiprocessing
 from datetime import datetime
 
-import test
+import test, test_reranked
 import parser
 import commons
 from model import network
@@ -40,6 +40,6 @@ model = model.to(args.device)
 test_ds = TestDataset(args.test_set_folder, queries_folder="queries",
                       positive_dist_threshold=args.positive_dist_threshold)
 
-recalls, recalls_str = test.test(args, test_ds, model)
+recalls, recalls_str = test_reranked.test(args, test_ds, model)
 
 logging.info(f"{test_ds}: {recalls_str}")

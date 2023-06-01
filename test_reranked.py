@@ -8,7 +8,7 @@ from typing import Tuple
 from argparse import Namespace
 from torch.utils.data.dataset import Subset
 from torch.utils.data import DataLoader, Dataset
-from local_features_utils import retrieve_locations_descriptors, match_features
+from local_features_utils import retrieve_locations_and_descriptors, match_features
 
 # Compute R@1, R@5, R@10, R@20
 RECALL_VALUES = [1, 5, 10, 20]
@@ -91,32 +91,32 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
 
 def RerankByGeometricVerification(query_predictions, distances, query_descriptors, query_attention_prob, 
                     images_local_descriptors, images_attention_prob):
-    # ranks_before_gv[i] = np.argsort(-similarities)      # tieni conto di questo!!!
-    use_ratio_test = False
-
-    # for i in range(20):
+   
+    k = 95
+    descriptor_matching_threshold=0.6
+    ransac_residual_threshold=9.0
+    # for i in range(len(query_predictions)):
     #   print(f"[{query_predictions[i]}, -, {distances[i]}]")
-    query_locations, query_descriptors = retrieve_locations_descriptors(torch.from_numpy(query_descriptors), torch.from_numpy(query_attention_prob))
+    query_locations, query_descriptors = retrieve_locations_and_descriptors(query_attention_prob, query_descriptors, k=k)
 
-    inliers_and_initial_scores = []                   # in 0 avrà l'indice della predizione, in 1 avrà gli outliers, in 2 avrà gli scores (già calcolati)
+    inliers_and_initial_scores = []                   
     for i, preds in enumerate(query_predictions):
 
-        image_locations, image_descriptors = retrieve_locations_descriptors(torch.from_numpy(images_local_descriptors[i]), 
-                                                                    torch.from_numpy(images_attention_prob[i]))
+        image_locations, image_descriptors = retrieve_locations_and_descriptors(images_attention_prob[i], images_local_descriptors[i], k=k)
 
-        inliers = match_features(
-            query_locations.numpy(),
-            query_descriptors.numpy(),
-            image_locations.numpy(),
-            image_descriptors.numpy(),
-            use_ratio_test=use_ratio_test)
+        match_result = match_features(
+            query_locations,  
+            query_descriptors,
+            image_locations,
+            image_descriptors,
+            descriptor_matching_threshold,
+            ransac_residual_threshold,
+            use_ratio_test=False,
+            RANSAC=True)
 
-        inliers_and_initial_scores.append([preds, inliers, distances[i]])
-        # print(f"inliers e distance : {inliers_and_initial_scores}")
+        inliers_and_initial_scores.append([preds, match_result, distances[i]])
 
     inliers_and_initial_scores = sorted(inliers_and_initial_scores, key=lambda x : (x[1], -x[2]), reverse=True)
-        # così il ranking è fatto dando la precedenza agli inliers
-        # parte di ricalcolo della recall una volta ottenuti gli inliers
 
     # for x in inliers_and_initial_scores:
     #   print(x)
