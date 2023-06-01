@@ -104,7 +104,7 @@ def get_backbone(backbone_name, fc_output_dim, layers):         # backbone_name 
         return cvt.convolutional_vision_transformer(fc_output_dim, layers), features_dim
     elif backbone_name == "cct": # Convolutional Compact Transformer  CCT 224x224
         features_dim = CHANNELS_NUM_IN_LAST_CONV[backbone_name]  
-        return cct.convolutional_compact_transformer(fc_output_dim. layers), features_dim
+        return cct.convolutional_compact_transformer(fc_output_dim, layers), features_dim
 
    
     features_dim = CHANNELS_NUM_IN_LAST_CONV[backbone_name]         # prende la dimensione corretta dell'utlimo layer in modo da poterla
