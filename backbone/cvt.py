@@ -3,37 +3,35 @@ from .transformers import TransformerClassifier
 from .tokenizer import Tokenizer
 import logging
 
-def convolutional_vision_transformer(fc_output_dim):
+def convolutional_vision_transformer(fc_output_dim, layers):
 
+    if layers == 2:
+        return cvt_2(fc_output_dim)     # num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128
+    elif layers == 4:
+        return cvt_4(fc_output_dim)     # num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128
+    elif layers == 6:
+        return cvt_6(fc_output_dim)     # num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256
+    elif layers == 7:
+        return cvt_7(fc_output_dim)     # num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256
+    elif layers == 8:
+        return cvt_8(fc_output_dim)     # num_layers=8, num_heads=4, mlp_ratio=2, embedding_dim=256
+    else:
+        logging.info(f"ERROR number of layers. Layers cannot be equals to {layers}")
+
+def cvt_2(fc_output_dim):
+    return _cvt(num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=224, fc_output_dim=fc_output_dim)
+
+def cvt_4(fc_output_dim):
+    return _cvt(num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=224, fc_output_dim=fc_output_dim)
+
+def cvt_6(fc_output_dim):
     return _cvt(num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=224, fc_output_dim=fc_output_dim)
 
-    # if layers == 2:
-    #     return cvt_2(fc_output_dim)     # num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128
-    # elif layers == 4:
-    #     return cvt_4(fc_output_dim)     # num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128
-    # elif layers == 6:
-    #     return cvt_6(fc_output_dim)     # num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256
-    # elif layers == 7:
-    #     return cvt_7(fc_output_dim)     # num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256
-    # elif layers == 8:
-    #     return cvt_8(fc_output_dim)     # num_layers=8, num_heads=4, mlp_ratio=2, embedding_dim=256
-    # else:
-    #     logging.info(f"ERROR number of layers. Layers cannot be equals to {layers}")
-
-# def cvt_2(fc_output_dim):
-#     return _cvt(num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128, fc_output_dim=fc_output_dim)
-
-# def cvt_4(fc_output_dim):
-#     return _cvt(num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128, fc_output_dim=fc_output_dim)
-
-# def cvt_6(fc_output_dim):
-#     return _cvt(num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256, fc_output_dim=fc_output_dim)
-
-# def cvt_7(fc_output_dim):
-#     return _cvt(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256, fc_output_dim=fc_output_dim)
+def cvt_7(fc_output_dim):
+    return _cvt(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=224, fc_output_dim=fc_output_dim)
  
-# def cvt_8(fc_output_dim):
-#     return _cvt(num_layers=8, num_heads=4, mlp_ratio=2, embedding_dim=256, fc_output_dim=fc_output_dim)
+def cvt_8(fc_output_dim):
+    return _cvt(num_layers=8, num_heads=4, mlp_ratio=2, embedding_dim=224, fc_output_dim=fc_output_dim)
 
 def _cvt(num_layers, num_heads, mlp_ratio, embedding_dim, fc_output_dim, kernel_size=4):
 

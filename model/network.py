@@ -19,9 +19,9 @@ CHANNELS_NUM_IN_LAST_CONV = {           # questi dipendono dall'architettura del
     }
 
 class GeoLocalizationNet(nn.Module):                        # questa è la rete principale
-    def __init__(self, backbone, fc_output_dim):            # l'oggetto della classe parent è creato in funzione della backbone scelta
+    def __init__(self, backbone, fc_output_dim, layers):            # l'oggetto della classe parent è creato in funzione della backbone scelta
         super().__init__()
-        self.backbone, features_dim = get_backbone(backbone, fc_output_dim)
+        self.backbone, features_dim = get_backbone(backbone, fc_output_dim, layers)
         self.aggregation = nn.Sequential(                   # container sequenziale di layers, che sono appunto eseguiti in sequenza come una catena
                 L2Norm(),                                   # questi sono le classi definite in layers
                 GeM(),
@@ -63,7 +63,7 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
         return x
 
 
-def get_backbone(backbone_name, fc_output_dim):         # backbone_name è uno degli argomenti del programma
+def get_backbone(backbone_name, fc_output_dim, layers):         # backbone_name è uno degli argomenti del programma
     if backbone_name.startswith("resnet"):
         if backbone_name == "resnet18":
             backbone = torchvision.models.resnet18(pretrained=True)     # loading del modello già allenato
@@ -98,13 +98,13 @@ def get_backbone(backbone_name, fc_output_dim):         # backbone_name è uno d
 
     elif backbone_name == "vit": # Vision Transformer Lite            ViT Lite 224x224 
         features_dim = CHANNELS_NUM_IN_LAST_CONV[backbone_name]  
-        return vit.vision_transformer_lite(fc_output_dim), features_dim            
+        return vit.vision_transformer_lite(fc_output_dim, layers), features_dim            
     elif backbone_name == "cvt": # Convolutional Vision Transformer   CVT 224x224 
         features_dim = CHANNELS_NUM_IN_LAST_CONV[backbone_name]  
-        return cvt.convolutional_vision_transformer(fc_output_dim), features_dim
+        return cvt.convolutional_vision_transformer(fc_output_dim, layers), features_dim
     elif backbone_name == "cct": # Convolutional Compact Transformer  CCT 224x224
         features_dim = CHANNELS_NUM_IN_LAST_CONV[backbone_name]  
-        return cct.convolutional_compact_transformer(fc_output_dim), features_dim
+        return cct.convolutional_compact_transformer(fc_output_dim. layers), features_dim
 
    
     features_dim = CHANNELS_NUM_IN_LAST_CONV[backbone_name]         # prende la dimensione corretta dell'utlimo layer in modo da poterla

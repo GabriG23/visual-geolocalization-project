@@ -3,38 +3,36 @@ from .transformers import TransformerClassifier
 from .tokenizer import Tokenizer
 import logging
 
-def convolutional_compact_transformer(fc_output_dim):
+def convolutional_compact_transformer(fc_output_dim, layers):
 
+    if layers == 2:
+        return cct_2(fc_output_dim)     # num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128
+    elif layers == 4:
+        return cct_4(fc_output_dim)     # num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128
+    elif layers == 6:
+        return cct_6(fc_output_dim)     # num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256
+    elif layers == 7:
+        return cct_7(fc_output_dim)     # num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256
+    elif layers == 14:
+        return cct_14(fc_output_dim)    # num_layers=14, num_heads=6, mlp_ratio=3, embedding_dim=384
+    else:
+        logging.info(f"ERROR number of layers. Layers cannot be equals to {layers}")
+
+# embedding dim = feature dim
+def cct_2(fc_output_dim):
+    return _cct(num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=224, fc_output_dim=fc_output_dim)
+
+def cct_4(fc_output_dim):
+    return _cct(num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=224, fc_output_dim=fc_output_dim)
+
+def cct_6(fc_output_dim):
     return _cct(num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=224, fc_output_dim=fc_output_dim)
 
-    # if layers == 2:
-    #     return cct_2(fc_output_dim)     # num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128
-    # elif layers == 4:
-    #     return cct_4(fc_output_dim)     # num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128
-    # elif layers == 6:
-    #     return cct_6(fc_output_dim)     # num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256
-    # elif layers == 7:
-    #     return cct_7(fc_output_dim)     # num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256
-    # elif layers == 14:
-    #     return cct_14(fc_output_dim)    # num_layers=14, num_heads=6, mlp_ratio=3, embedding_dim=384
-    # else:
-    #     logging.info(f"ERROR number of layers. Layers cannot be equals to {layers}")
+def cct_7(fc_output_dim):
+    return _cct(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=224, fc_output_dim=fc_output_dim)
 
-# # embedding dim = feature dim
-# def cct_2(fc_output_dim):
-#     return _cct(num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128, fc_output_dim=fc_output_dim)
-
-# def cct_4(fc_output_dim):
-#     return _cct(num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128, fc_output_dim=fc_output_dim)
-
-# def cct_6(fc_output_dim):
-#     return _cct(num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256, fc_output_dim=fc_output_dim)
-
-# def cct_7(fc_output_dim):
-#     return _cct(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256, fc_output_dim=fc_output_dim)
-
-# def cct_14(fc_output_dim):
-#     return _cct(num_layers=14, num_heads=6, mlp_ratio=3, embedding_dim=384, fc_output_dim=fc_output_dim)
+def cct_14(fc_output_dim):
+    return _cct(num_layers=14, num_heads=6, mlp_ratio=3, embedding_dim=224, fc_output_dim=fc_output_dim)
 
 # Compact Convolutional Trasformers: utilizes a convolutional tokenizer, generating richer toknes and preserving local information.
 # The The convolutional tokenizer is better at encoding relationships between patches compared to the original ViT
