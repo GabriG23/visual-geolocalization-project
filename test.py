@@ -1,4 +1,3 @@
-
 import faiss
 import torch
 import logging
@@ -8,7 +7,6 @@ from typing import Tuple
 from argparse import Namespace
 from torch.utils.data.dataset import Subset
 from torch.utils.data import DataLoader, Dataset
-from local_features_utils import retrieve_locations_descriptors, match_features
 
 # Compute R@1, R@5, R@10, R@20
 RECALL_VALUES = [1, 5, 10, 20]

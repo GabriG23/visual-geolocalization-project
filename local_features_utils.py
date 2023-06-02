@@ -7,7 +7,7 @@ from skimage import transform
 from skimage.measure import ransac
 import torch.nn.functional as F
 
-def retrieve_locations_and_descriptors(attn_scores, red_feature_map, k=20):
+def retrieve_locations_and_descriptors(attn_scores, red_feature_map, k=85):
     attn_scores = np.transpose(attn_scores, (1, 2, 0))
     red_feature_map = np.transpose(red_feature_map, (1, 2, 0))
     flat_indices = np.argpartition(attn_scores.flatten(), -k)[-k:]
@@ -130,3 +130,41 @@ def match_features(query_locations,
         return image_locations_to_use.shape[0]
 
 
+
+# La stima di una trasformazione affine fra due set di punti in 2D può avere diverse applicazioni nel contesto del 
+# processamento delle immagini e della visione artificiale.
+
+# Uno degli utilizzi più comuni è quello della registrazione delle immagini, che consiste nell'allineare due o più 
+# immagini dello stesso soggetto prese da angolazioni o tempi diversi. Nella registrazione delle immagini, la trasformazione 
+# affine permette di correggere le variazioni di scala, rotazione, traslazione e deformazione (shear) tra le immagini.
+
+# Nel contesto del tuo codice, l'algoritmo sembra essere utilizzato per trovare corrispondenze tra feature locali 
+# (descrittori) in due immagini diverse. Le corrispondenze vengono poi utilizzate per stimare una trasformazione 
+# affine che mappa le posizioni delle feature nell'immagine di query alle posizioni corrispondenti nell'immagine del database.
+
+# Questo può essere utile in una varietà di contesti, come il riconoscimento di oggetti o luoghi, la creazione di 
+# panorami da più immagini, o la realtà aumentata. Per esempio, se si sta cercando di riconoscere un luogo da una foto, 
+# si può cercare di mappare le feature della foto a quelle di immagini note dello stesso luogo nel database. Se si può trovare 
+# una buona trasformazione affine che mappa le feature della foto a quelle delle immagini del database, allora è probabile che 
+# la foto rappresenti lo stesso luogo.
+
+# Inoltre, la trasformazione affine stessa può fornire informazioni utili. Per esempio, la scala e la rotazione della 
+# trasformazione possono dare un'idea della differenza di orientamento e distanza tra la camera e il soggetto nelle due immagini.
+
+
+#Se stai cercando di allineare le caratteristiche tra due immagini specifiche, allora sì, avrai bisogno di calcolare una 
+# trasformazione affine per ogni coppia di immagini. Questo perché ogni coppia di immagini avrà la propria relazione unica 
+# di traslazione, rotazione, scala e deformazione, determinata dalla posizione e orientamento relativo della camera quando 
+# ciascuna immagine è stata scattata.
+
+# Non è possibile calcolare una singola trasformazione affine che sarà valida per tutte le possibili immagini, a meno che non ci 
+# sia qualche condizione molto specifica che renda ciò possibile. Per esempio, se stai lavorando con un set di immagini che sono 
+# state tutte prese dalla stessa posizione e orientamento, allora potresti essere in grado di utilizzare la stessa trasformazione 
+# affine per tutte le immagini. Ma in generale, questo non sarà il caso.
+
+# Inoltre, anche se fosse possibile calcolare una singola trasformazione affine per tutte le immagini, ciò potrebbe non essere 
+# desiderabile. Una delle principali vantaggi del RANSAC e della stima di una trasformazione affine è che sono robusti agli outlier. 
+# Se si calcola una singola trasformazione affine per tutte le immagini, si rischia di ottenere una trasformazione che è distorta 
+# da outlier nelle immagini.
+
+# In conclusione, nel tuo caso, calcolare una trasformazione affine per ogni coppia di immagini sembra essere l'approccio più corretto.
