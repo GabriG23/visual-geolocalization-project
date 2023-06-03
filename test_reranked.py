@@ -72,8 +72,7 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
         for th in [0.55, 0.6, 0.65]:
             recalls = np.zeros(len(RECALL_VALUES))    
             reranked_recalls = np.zeros(len(RECALL_VALUES))                
-            for query_index, preds in enumerate(predictions): 
-            # for query_index, preds in tqdm(predictions, ncols=100):
+            for query_index, preds in enumerate(tqdm(predictions, ncols=100)):  
                 reranked_preds = RerankByGeometricVerification(preds, distances[query_index], queries_local_descriptors[query_index], 
                                             queries_att_prob[query_index], database_local_descriptors[preds], database_att_prob[preds],
                                             k=k, descriptor_matching_threshold=th)
