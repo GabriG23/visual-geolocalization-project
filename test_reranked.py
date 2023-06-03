@@ -91,7 +91,7 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
         recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, recalls)])  
         reranked_recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, reranked_recalls)])    
 
-        print(f"{k = } - {th = }  {RANSAC = } ")
+        print(f"\n{k = } - {th = }  {RANSAC = } ")
         print('Recalls \t', recalls_str)
         print('Reranked Recalls', reranked_recalls_str)
         print("------------------")
