@@ -36,22 +36,22 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
         self.l2norm = L2Norm()
         self.backbone_name = backbone
 
-        # self.aggregation = nn.Sequential(
-        #     nn.AdaptiveAvgPool2d(1),
-        #     Flatten(),
-        #     nn.Linear(backbone_channels, fc_output_dim),
-        #     nn.BatchNorm1d(fc_output_dim),
-        #     nn.ReLU(inplace=True),
-        #     nn.Linear(fc_output_dim, fc_output_dim),
-        #     nn.BatchNorm1d(fc_output_dim),
-        #     nn.ReLU(inplace=True),
-        #     nn.Linear(fc_output_dim, fc_output_dim),
-        #     L2Norm()
-        # )
+        self.aggregation2 = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            Flatten(),
+            nn.Linear(512, fc_output_dim),
+            nn.BatchNorm1d(fc_output_dim),
+            nn.ReLU(inplace=True),
+            nn.Linear(fc_output_dim, fc_output_dim),
+            nn.BatchNorm1d(fc_output_dim),
+            nn.ReLU(inplace=True),
+            nn.Linear(fc_output_dim, fc_output_dim),
+            L2Norm()
+        )
     
     def forward(self, x):
         x = self.backbone(x)        # con resnet18 esce [32, 512, 7, 7]
-        x = self.aggregation(x)     # con resnet18 esce [32, 512]
+        x = self.aggregation2(x)     # con resnet18 esce [32, 512]
         return x
 
 
