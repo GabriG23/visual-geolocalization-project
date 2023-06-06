@@ -51,7 +51,7 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
     
     def forward(self, x):
         x = self.backbone(x)        # con resnet18 esce [32, 512, 7, 7]
-        x = self.aggregation2(x)     # con resnet18 esce [32, 512]
+        #x = self.aggregation2(x)     # con resnet18 esce [32, 512]
         return x
 
 
