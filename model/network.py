@@ -29,7 +29,7 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
         self.l2norm = L2Norm()
         self.backbone_name = backbone
 
-        if backbone == ["cvt", "cct"]:  ### CCT and CVT
+        if backbone in ["cvt", "cct"]:  ### CCT and CVT
             self.aggregation = nn.Sequential(
                 L2Norm(),                                   # questi sono le classi definite in layers
                 nn.Linear(features_dim, fc_output_dim),     # applica la trasformazione y = x @ A.T + b dove A sono i parametri della rete in quel punto 
