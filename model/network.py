@@ -13,8 +13,8 @@ CHANNELS_NUM_IN_LAST_CONV = {           # questi dipendono dall'architettura del
         "resnet101": 2048,
         "resnet152": 2048,
         "vgg16": 512,
-        "cvt": 512,
-        "cct": 512
+        "cvt": 224,
+        "cct": 224
         # ,"vit": 224,
         # "cvt": 224,
         # "cct": 224
