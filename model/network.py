@@ -24,35 +24,41 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
     def __init__(self, backbone, fc_output_dim):            # l'oggetto della classe parent è creato in funzione della backbone scelta
         super().__init__()
         self.backbone, features_dim = get_backbone(backbone, fc_output_dim)
-        self.aggregation = nn.Sequential(                   # container sequenziale di layers, che sono appunto eseguiti in sequenza come una catena
+
+        self.linear = nn.Linear(features_dim, fc_output_dim)
+        self.l2norm = L2Norm()
+        self.backbone_name = backbone
+
+        if backbone == ["cvt", "cct"]:  ### CCT and CVT
+            self.aggregation = nn.Sequential(
+                L2Norm(),                                   # questi sono le classi definite in layers
+                nn.Linear(features_dim, fc_output_dim),     # applica la trasformazione y = x @ A.T + b dove A sono i parametri della rete in quel punto 
+                L2Norm()  
+            )
+        else:   # resnet
+            self.aggregation = nn.Sequential(               # container sequenziale di layers, che sono appunto eseguiti in sequenza come una catena
                 L2Norm(),                                   # questi sono le classi definite in layers
                 GeM(),
                 Flatten(),
                 nn.Linear(features_dim, fc_output_dim),     # applica la trasformazione y = x @ A.T + b dove A sono i parametri della rete in quel punto 
                 L2Norm()                                    # e b è il bias aggiunto se è passato bias=True al modello. I pesi e il bias sono inizializzati
             )                                               # random dalle features in ingresso
-
-        self.linear = nn.Linear(features_dim, fc_output_dim)
-        self.l2norm = L2Norm()
-        self.backbone_name = backbone
-
-        self.aggregation2 = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1),
-            Flatten(),
-            nn.Linear(512, fc_output_dim),
-            nn.BatchNorm1d(fc_output_dim),
-            nn.ReLU(inplace=True),
-            nn.Linear(fc_output_dim, fc_output_dim),
-            nn.BatchNorm1d(fc_output_dim),
-            nn.ReLU(inplace=True),
-            nn.Linear(fc_output_dim, fc_output_dim),
-            L2Norm()
-        )
     
     def forward(self, x):
         x = self.backbone(x)        # con resnet18 esce [32, 512, 7, 7]
-        #x = self.aggregation2(x)     # con resnet18 esce [32, 512]
+        x = self.aggregation(x)     # con resnet18 esce [32, 512]
         return x
+    
+                # nn.AdaptiveAvgPool2d(1),
+                # Flatten(),
+                # nn.Linear(512, fc_output_dim),
+                # nn.BatchNorm1d(fc_output_dim),
+                # nn.ReLU(inplace=True),
+                # nn.Linear(fc_output_dim, fc_output_dim),
+                # nn.BatchNorm1d(fc_output_dim),
+                # nn.ReLU(inplace=True),
+                # nn.Linear(fc_output_dim, fc_output_dim),
+                # L2Norm()
 
 
 def get_backbone(backbone_name, fc_output_dim):         # backbone_name è uno degli argomenti del programma

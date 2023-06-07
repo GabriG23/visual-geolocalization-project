@@ -11,6 +11,64 @@ def cvt_initialization(fc_output_dim):
 def cct_initiliaziation(fc_output_dim):
     return CompactTransformer(224, 16, fc_output_dim, conv_embed=True)
 
+class CompactTransformer(nn.Module):
+    def __init__(self, image_size, patch_size, num_classes, dim=768, depth=12, heads=12, pool='cls', in_channels=3, dim_head=64, dropout=0.1, emb_dropout=0.1, scale_dim=4, conv_embed=False):
+        super().__init__()
+
+        assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
+
+        assert image_size % patch_size == 0, 'Image dimensions must be divisible by the patch size.'
+        num_patches = (image_size // patch_size) ** 2                       # number of patches 224 // 16 (floor division) = 14
+        patch_dim = in_channels * patch_size ** 2                           # dimesnion of patch -> 3 * 16 ^ 2 = 2304
+
+        if conv_embed:      # convolutional embedding, only for cct
+            self.to_patch_embedding = ConvEmbed(in_channels, dim)
+            num_patches = self.to_patch_embedding.sequence_length()
+        else:               # sequential embedding, only for cvt
+            self.to_patch_embedding = nn.Sequential(
+                Rearrange('b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1=patch_size, p2=patch_size),
+                nn.Linear(patch_dim, dim),
+            )
+
+        self.pos_embedding = nn.Parameter(torch.randn(1, num_patches, dim))
+        nn.init.trunc_normal_(self.pos_embedding, std=0.2)
+
+        self.dropout = nn.Dropout(emb_dropout)
+
+        self.transformer = Transformer(dim, depth, heads, dim_head, dim*scale_dim, dropout)
+
+        self.pool = nn.Linear(dim, 1)
+        self.mlp_head = nn.Sequential(
+            nn.LayerNorm(dim),
+            nn.Linear(dim, num_classes)
+        )
+        self.apply(self.init_weight)
+
+    def forward(self, img):
+        x = self.to_patch_embedding(img)        # apply convolutional or sequential embedding
+        b, n, _ = x.shape
+
+        x += self.pos_embedding[:, :(n + 1)]
+        x = self.dropout(x)
+
+        x = self.transformer(x)
+
+        g = self.pool(x)                        # Sequence Pooling
+        xl = F.softmax(g, dim=1)
+        x = einsum('b n l, b n d -> b l d', xl, x)
+
+        return self.mlp_head(x.squeeze(-2))     # take of the last two dimensions
+
+    @staticmethod
+    def init_weight(m):
+        if isinstance(m, nn.Linear):
+            nn.init.trunc_normal_(m.weight, std=.02)
+            if isinstance(m, nn.Linear) and m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+        elif isinstance(m, nn.LayerNorm):
+            nn.init.constant_(m.bias, 0)
+            nn.init.constant_(m.weight, 1.0)
+
 ##### Residual Block #####
 class Residual(nn.Module):                             # adds the output of a given function to its input
     def __init__(self, fn):
@@ -120,61 +178,3 @@ class ConvEmbed(nn.Module):
     def init_weight(m):
         if isinstance(m, nn.Conv2d):
             nn.init.kaiming_normal_(m.weight)
-
-class CompactTransformer(nn.Module):
-    def __init__(self, image_size, patch_size, num_classes, dim=768, depth=12, heads=12, pool='cls', in_channels=3, dim_head=64, dropout=0.1, emb_dropout=0.1, scale_dim=4, conv_embed=False):
-        super().__init__()
-
-        assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
-
-        assert image_size % patch_size == 0, 'Image dimensions must be divisible by the patch size.'
-        num_patches = (image_size // patch_size) ** 2                       # number of patches 224 // 16 (floor division) = 14
-        patch_dim = in_channels * patch_size ** 2                           # dimesnion of patch -> 3 * 16 ^ 2 = 2304
-
-        if conv_embed:      # convolutional embedding, only for cct
-            self.to_patch_embedding = ConvEmbed(in_channels, dim)
-            num_patches = self.to_patch_embedding.sequence_length()
-        else:               # sequential embedding, only for cvt
-            self.to_patch_embedding = nn.Sequential(
-                Rearrange('b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1=patch_size, p2=patch_size),
-                nn.Linear(patch_dim, dim),
-            )
-
-        self.pos_embedding = nn.Parameter(torch.randn(1, num_patches, dim))
-        nn.init.trunc_normal_(self.pos_embedding, std=0.2)
-
-        self.dropout = nn.Dropout(emb_dropout)
-
-        self.transformer = Transformer(dim, depth, heads, dim_head, dim*scale_dim, dropout)
-
-        self.pool = nn.Linear(dim, 1)
-        self.mlp_head = nn.Sequential(
-            nn.LayerNorm(dim),
-            nn.Linear(dim, num_classes)
-        )
-        self.apply(self.init_weight)
-
-    def forward(self, img):
-        x = self.to_patch_embedding(img)        # apply convolutional or sequential embedding
-        b, n, _ = x.shape
-
-        x += self.pos_embedding[:, :(n + 1)]
-        x = self.dropout(x)
-
-        x = self.transformer(x)
-
-        g = self.pool(x)                        # Sequence Pooling
-        xl = F.softmax(g, dim=1)
-        x = einsum('b n l, b n d -> b l d', xl, x)
-
-        return self.mlp_head(x.squeeze(-2))     # take of the last two dimensions
-
-    @staticmethod
-    def init_weight(m):
-        if isinstance(m, nn.Linear):
-            nn.init.trunc_normal_(m.weight, std=.02)
-            if isinstance(m, nn.Linear) and m.bias is not None:
-                nn.init.constant_(m.bias, 0)
-        elif isinstance(m, nn.LayerNorm):
-            nn.init.constant_(m.bias, 0)
-            nn.init.constant_(m.weight, 1.0)
