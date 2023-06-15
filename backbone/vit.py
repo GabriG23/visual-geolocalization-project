@@ -37,7 +37,6 @@ class ViTLite(nn.Module):
                  num_layers=14,                              # numero di layers - passata da parametro  2 4 6 7 8
                  num_heads=6,                                # numero di head   - passata da parametro  2 2 4 4 4
                  mlp_ratio=4.0,                              # mlp ratio        - passata da parametro  1 1 2 2 2
-                 num_classes=224,                            # dimensione dell'ultimo layer 
                  positional_embedding='learnable'            # learnable
                 ):
         super(ViTLite, self).__init__()
@@ -64,7 +63,6 @@ class ViTLite(nn.Module):
             num_layers=num_layers,
             num_heads=num_heads,
             mlp_ratio=mlp_ratio,
-            num_classes=num_classes,
             positional_embedding=positional_embedding,
         )
     

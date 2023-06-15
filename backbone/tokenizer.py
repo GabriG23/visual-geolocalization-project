@@ -50,6 +50,7 @@ class Tokenizer(nn.Module):
             nn.init.kaiming_normal_(m.weight)
 #                          come sono le nostre                      come le vorrebbe lui
 #                        input             output                   input         output
-# self.conv_layers(x) -> 32 3 512 512   -> 32 128 128 128         32 3 224 224 -> 32 3 56 56
-# self.flattener(x)   -> 32 128 128 128 -> 32 128 16384           32 3 56 56   -> 32 56 3136
-# x.transpose         -> 32 128 16384   -> 32 16384 128           32 56 3136   -> 32 3136 56
+#     3 = input channel
+# self.conv_layers(x) -> 32 3 224 224   -> 32 3 56 56             32 3 224 224 -> 32 3 56 56
+# self.flattener(x)   -> 32 56 56 56 -> 32 128 12544               32 3 56 56   -> 32 56 3136
+# x.transpose         -> 32 128 12544   -> 32 16384 128           32 56 3136   -> 32 3136 56
