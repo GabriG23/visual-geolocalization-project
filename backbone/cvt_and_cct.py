@@ -8,7 +8,7 @@ from einops import rearrange
 def cvt_initialization(fc_output_dim):
     return CompactTransformer(224, 16, fc_output_dim)           # fc_output_dim era il numero delle classi
  
-def cct_initiliaziation(fc_output_dim):
+def cct_initialization(fc_output_dim):
     return CompactTransformer(224, 16, fc_output_dim, conv_embed=True) # dim = 768
 
 class CompactTransformer(nn.Module):
