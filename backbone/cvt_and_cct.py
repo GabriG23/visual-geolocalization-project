@@ -61,6 +61,7 @@ class CompactTransformer(nn.Module):
         # esco con [batch_size, numm_classes, ]
        
         # arriva con [32, 1, 224]
+        # con lo squeeze diventa [32, 224]
         return self.mlp_head(x.squeeze(-2))     # take of the last two dimensions
 
     @staticmethod
