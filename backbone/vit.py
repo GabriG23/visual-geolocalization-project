@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import logging
 
 def vision_transformer_lite(fc_output_dim):         # embedding_dim mettere 224?
-    return _vit_lite(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256, img_size=224)   # layers, attention head, Multi layer perceptron ratio, dimensione descrittori
+    return _vit_lite(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=224, img_size=224)   # layers, attention head, Multi layer perceptron ratio, dimensione descrittori
 
 def _vit_lite(num_layers, num_heads, mlp_ratio, embedding_dim, img_size, kernel_size=4):      # dimensione del kernel, mettere 16??
                                     
