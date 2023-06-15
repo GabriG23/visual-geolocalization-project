@@ -59,7 +59,8 @@ class CompactTransformer(nn.Module):
 
         # se non squeezo, cosa succede???
         # esco con [batch_size, numm_classes, ]
-        print(x.shape)
+       
+        # arriva con [32, 1, 224]
         return self.mlp_head(x.squeeze(-2))     # take of the last two dimensions
 
     @staticmethod
