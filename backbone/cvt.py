@@ -3,44 +3,16 @@ from .transformers import TransformerClassifier
 from .tokenizer import Tokenizer
 import logging
 
-def convolutional_vision_transformer(fc_output_dim, layers):
+def convolutional_vision_transformer(fc_output_dim): # embedding_dim mettere 224?
+    return _cvt(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256)
 
-    if layers == 2:
-        return cvt_2(fc_output_dim)     # num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128
-    elif layers == 4:
-        return cvt_4(fc_output_dim)     # num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128
-    elif layers == 6:
-        return cvt_6(fc_output_dim)     # num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256
-    elif layers == 7:
-        return cvt_7(fc_output_dim)     # num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256
-    elif layers == 8:
-        return cvt_8(fc_output_dim)     # num_layers=8, num_heads=4, mlp_ratio=2, embedding_dim=256
-    else:
-        logging.info(f"ERROR number of layers. Layers cannot be equals to {layers}")
-
-def cvt_2(fc_output_dim):
-    return _cvt(num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=224, fc_output_dim=fc_output_dim)
-
-def cvt_4(fc_output_dim):
-    return _cvt(num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=224, fc_output_dim=fc_output_dim)
-
-def cvt_6(fc_output_dim):
-    return _cvt(num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=224, fc_output_dim=fc_output_dim)
-
-def cvt_7(fc_output_dim):
-    return _cvt(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=224, fc_output_dim=fc_output_dim)
- 
-def cvt_8(fc_output_dim):
-    return _cvt(num_layers=8, num_heads=4, mlp_ratio=2, embedding_dim=224, fc_output_dim=fc_output_dim)
-
-def _cvt(num_layers, num_heads, mlp_ratio, embedding_dim, fc_output_dim, kernel_size=4):
+def _cvt(num_layers, num_heads, mlp_ratio, embedding_dim, kernel_size=4):
 
     model = CVT(num_layers=num_layers,
                 num_heads=num_heads,
                 mlp_ratio=mlp_ratio,
                 embedding_dim=embedding_dim,
-                kernel_size=kernel_size,
-                num_classes=fc_output_dim
+                kernel_size=kernel_size
                 )
 
     return model
@@ -59,7 +31,6 @@ class CVT(nn.Module):
                  num_layers=14,
                  num_heads=6,
                  mlp_ratio=4.0,
-                 num_classes=224,
                  positional_embedding='learnable'                       # dipende molto dal positional_embedding come Vit-Lite
                  ):
         super(CVT, self).__init__()
@@ -87,7 +58,6 @@ class CVT(nn.Module):
             num_layers=num_layers,
             num_heads=num_heads,
             mlp_ratio=mlp_ratio,
-            num_classes=num_classes,
             positional_embedding=positional_embedding
         )
 
