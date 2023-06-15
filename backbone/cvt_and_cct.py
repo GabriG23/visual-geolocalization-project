@@ -6,13 +6,13 @@ from einops import rearrange
 
 
 def cvt_initialization(fc_output_dim):
-    return CompactTransformer(224, 16, fc_output_dim)
+    return CompactTransformer(224, 16, 5965, fc_output_dim)           # fc_output_dim era il numero delle classi
  
 def cct_initiliaziation(fc_output_dim):
-    return CompactTransformer(224, 16, fc_output_dim, conv_embed=True)
+    return CompactTransformer(224, 16, 5965, fc_output_dim, conv_embed=True) # dim = 768
 
 class CompactTransformer(nn.Module):
-    def __init__(self, image_size, patch_size, num_classes, dim=768, depth=12, heads=12, pool='cls', in_channels=3, dim_head=64, dropout=0.1, emb_dropout=0.1, scale_dim=4, conv_embed=False):
+    def __init__(self, image_size, patch_size, num_classes, dim, depth=12, heads=12, pool='cls', in_channels=3, dim_head=64, dropout=0.1, emb_dropout=0.1, scale_dim=4, conv_embed=False):
         super().__init__()
 
         assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
@@ -48,15 +48,18 @@ class CompactTransformer(nn.Module):
         x = self.to_patch_embedding(img)        # apply convolutional or sequential embedding
         b, n, _ = x.shape
 
-        x += self.pos_embedding[:, :(n + 1)]
-        x = self.dropout(x)
+        x += self.pos_embedding[:, :(n + 1)]    # nn.Parameter(torch.randn(1, num_patches, dim))
+        x = self.dropout(x)                     # nn.Dropout(emb_dropout)
 
-        x = self.transformer(x)
+        x = self.transformer(x)                 # Transformer(dim, depth, heads, dim_head, dim*scale_dim, dropout)
 
-        g = self.pool(x)                        # Sequence Pooling
+        g = self.pool(x)                        # Sequence Pooling nn.Linear(dim, 1)
         xl = F.softmax(g, dim=1)
         x = einsum('b n l, b n d -> b l d', xl, x)
 
+        # se non squeezo, cosa succede???
+        # esco con [batch_size, numm_classes, ]
+        print(x.shape)
         return self.mlp_head(x.squeeze(-2))     # take of the last two dimensions
 
     @staticmethod
@@ -69,25 +72,23 @@ class CompactTransformer(nn.Module):
             nn.init.constant_(m.bias, 0)
             nn.init.constant_(m.weight, 1.0)
 
-##### Residual Block #####
-class Residual(nn.Module):                             # adds the output of a given function to its input
-    def __init__(self, fn):
+##### TRANSFORMER  #####
+class Transformer(nn.Module):
+    def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout = 0.):
         super().__init__()
-        self.fn = fn
+        self.layers = nn.ModuleList([])
+        for _ in range(depth):
+            self.layers.append(nn.ModuleList([
+                PreNorm(dim, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
+                PreNorm(dim, FeedForward(dim, mlp_dim, dropout = dropout))
+            ]))
 
-    def forward(self, x, **kwargs):
-        return self.fn(x, **kwargs) + x
-    
-##### Pre Normalization #####
-class PreNorm(nn.Module):                              # applies layer normalization before passing the input to a given function
-    def __init__(self, dim, fn):
-        super().__init__()
-        self.norm = nn.LayerNorm(dim)
-        self.fn = fn
+    def forward(self, x):
+        for attn, ff in self.layers:
+            x = attn(x) + x
+            x = ff(x) + x
+        return x
 
-    def forward(self, x, **kwargs):
-        return self.fn(self.norm(x), **kwargs)
-    
 ##### Feed Forward #####
 class FeedForward(nn.Module):                           # This class defines a feed-forward neural network module with GELU activation and dropout.
     def __init__(self, dim, hidden_dim, dropout = 0.):
@@ -134,23 +135,26 @@ class Attention(nn.Module):                             # implements the self-at
         out =  self.to_out(out)
         return out
 
-
-##### TRANSFORMER  #####
-class Transformer(nn.Module):
-    def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout = 0.):
+##### Residual Block #####
+class Residual(nn.Module):                             # adds the output of a given function to its input
+    def __init__(self, fn):
         super().__init__()
-        self.layers = nn.ModuleList([])
-        for _ in range(depth):
-            self.layers.append(nn.ModuleList([
-                PreNorm(dim, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
-                PreNorm(dim, FeedForward(dim, mlp_dim, dropout = dropout))
-            ]))
+        self.fn = fn
 
-    def forward(self, x):
-        for attn, ff in self.layers:
-            x = attn(x) + x
-            x = ff(x) + x
-        return x
+    def forward(self, x, **kwargs):
+        return self.fn(x, **kwargs) + x
+    
+##### Pre Normalization #####
+class PreNorm(nn.Module):                              # applies layer normalization before passing the input to a given function
+    def __init__(self, dim, fn):
+        super().__init__()
+        self.norm = nn.LayerNorm(dim)
+        self.fn = fn
+
+    def forward(self, x, **kwargs):
+        return self.fn(self.norm(x), **kwargs)
+    
+
 
 ##### CONVOLUTIONAL EMBEDDING #####
 class ConvEmbed(nn.Module):
@@ -178,3 +182,24 @@ class ConvEmbed(nn.Module):
     def init_weight(m):
         if isinstance(m, nn.Conv2d):
             nn.init.kaiming_normal_(m.weight)
+
+
+
+
+### CCT cosa entra e cosa esce
+# B D H W -> B (H W) D
+#
+#
+#
+#
+#
+### CVT cosa entra e cosa esce
+#
+#
+#
+#
+#
+#
+#
+#
+#

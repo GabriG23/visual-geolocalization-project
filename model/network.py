@@ -15,9 +15,7 @@ CHANNELS_NUM_IN_LAST_CONV = {           # questi dipendono dall'architettura del
         "vgg16": 512,
         "cvt": 224,
         "cct": 224
-        # ,"vit": 224,
-        # "cvt": 224,
-        # "cct": 224
+        # ,"vit": 224
     }
 
 class GeoLocalizationNet(nn.Module):                        # questa è la rete principale
@@ -29,24 +27,28 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
         self.l2norm = L2Norm()
         self.backbone_name = backbone
 
-        if backbone in ["cvt", "cct"]:  ### CCT and CVT
-            self.aggregation = nn.Sequential(
-                L2Norm(),                                   # questi sono le classi definite in layers
-                nn.Linear(features_dim, fc_output_dim),     # applica la trasformazione y = x @ A.T + b dove A sono i parametri della rete in quel punto 
-                L2Norm()  
-            )
-        else:   # resnet
-            self.aggregation = nn.Sequential(               # container sequenziale di layers, che sono appunto eseguiti in sequenza come una catena
-                L2Norm(),                                   # questi sono le classi definite in layers
-                GeM(),
-                Flatten(),
-                nn.Linear(features_dim, fc_output_dim),     # applica la trasformazione y = x @ A.T + b dove A sono i parametri della rete in quel punto 
-                L2Norm()                                    # e b è il bias aggiunto se è passato bias=True al modello. I pesi e il bias sono inizializzati
-            )                                               # random dalle features in ingresso
+        # if backbone in ["cvt", "cct"]:  ### CCT and CVT
+        #     # esce dal backcbone con [batch_size, num_classes] [32, 5965]
+        #     self.aggregation = nn.Sequential(
+        #         L2Norm(),                                   # questi sono le classi definite in layers
+        #         nn.Linear(features_dim, fc_output_dim),     # applica la trasformazione y = x @ A.T + b dove A sono i parametri della rete in quel punto 
+        #         L2Norm()  
+        #     )
+        # else:   # resnet
+        self.aggregation = nn.Sequential(               # container sequenziale di layers, che sono appunto eseguiti in sequenza come una catena
+            L2Norm(),                                   # questi sono le classi definite in layers
+            GeM(),
+            Flatten(),
+            nn.Linear(features_dim, fc_output_dim),     # applica la trasformazione y = x @ A.T + b dove A sono i parametri della rete in quel punto 
+            L2Norm()                                    # e b è il bias aggiunto se è passato bias=True al modello. I pesi e il bias sono inizializzati
+        )                                               # random dalle features in ingresso
     
     def forward(self, x):
-        x = self.backbone(x)        # con resnet18 esce [32, 512, 7, 7]
-        x = self.aggregation(x)     # con resnet18 esce [32, 512]
+        if self.backbone_name in ["cvt", "cct"]:
+            x = self.backbone(x)        # con resnet18 esce [32, 5965]
+        else:
+            x = self.backbone(x)        # con resnet18 esce [32, 512, 7, 7]
+            x = self.aggregation(x)     # con resnet18 esce [32, 512]
         return x
     
                 # nn.AdaptiveAvgPool2d(1),
