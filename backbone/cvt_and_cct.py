@@ -123,19 +123,22 @@ class Attention(nn.Module):                             # implements the self-at
             nn.Dropout(dropout)
         ) if project_out else nn.Identity()
 
-    def forward(self, x):
-        b, n, _, h = *x.shape, self.heads
-        qkv = self.to_qkv(x).chunk(3, dim = -1)
-        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = h), qkv)   # B N (H D) -> B H N D'
+def forward(self, x):
+    b, n, _, h = *x.shape, self.heads
+    qkv = self.to_qkv(x)
+    q, k, v = qkv.chunk(3, dim=-1)
+    q = rearrange(q, 'b n (h d) -> b h n d', h=h)
+    k = rearrange(k, 'b n (h d) -> b h n d', h=h)
+    v = rearrange(v, 'b n (h d) -> b h n d', h=h)
+    
+    dots = torch.einsum('b h i d, b h j d -> b h i j', q, k) * self.scale
 
-        dots = einsum('b h i d, b h j d -> b h i j', q, k) * self.scale             # B H I D, B H J D -> B H I J
+    attn = torch.softmax(dots, dim=-1)
 
-        attn = dots.softmax(dim=-1)
-
-        out = einsum('b h i j, b h j d -> b h i d', attn, v)                        # B H I J, B H J D -> B H I D
-        out = rearrange(out, 'b h n d -> b n (h d)')                                # B H N D -> B N (H D)
-        out =  self.to_out(out)
-        return out
+    out = torch.einsum('b h i j, b h j d -> b h i d', attn, v)
+    out = rearrange(out, 'b h n d -> b n (h d)')
+    out = self.to_out(out)
+    return out
 
 ##### Residual Block #####
 class Residual(nn.Module):                             # adds the output of a given function to its input
