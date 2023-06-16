@@ -12,7 +12,7 @@ def cct_initialization(fc_output_dim):
     return CompactTransformer(224, 16, fc_output_dim, conv_embed=True) # dim = 768
 
 class CompactTransformer(nn.Module):
-    def __init__(self, image_size, patch_size, dim, depth=12, heads=12, pool='cls', in_channels=3, dim_head=64, dropout=0.1, emb_dropout=0.1, scale_dim=4, conv_embed=False):
+    def __init__(self, image_size, patch_size, dim, depth=12, heads=8, pool='cls', in_channels=3, dim_head=64, dropout=0.1, emb_dropout=0.1, scale_dim=4, conv_embed=False):
         super().__init__()
 
         assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
