@@ -13,8 +13,7 @@ def open_image(path):
 
 
 class TestDataset(data.Dataset):
-    def __init__(self, dataset_folder, database_folder="database",
-                 queries_folder="queries", positive_dist_threshold=25):         # positive_dist_threshold viene passato come argomento da tastiera
+    def __init__(self, dataset_folder, database_folder="database", queries_folder="queries", positive_dist_threshold=25):         # positive_dist_threshold viene passato come argomento da tastiera
         """Dataset with images from database and queries, used for validation and test.
         Parameters
         ----------

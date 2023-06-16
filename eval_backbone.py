@@ -37,8 +37,7 @@ else:
 
 model = model.to(args.device)
 
-test_ds = TestDataset(args.test_set_folder, queries_folder="queries",
-                      positive_dist_threshold=args.positive_dist_threshold)
+test_ds = TestDataset(args.test_set_folder, queries_folder="queries", positive_dist_threshold=args.positive_dist_threshold)
 
 recalls, recalls_str = test.test(args, test_ds, model)
 logging.info(f"{test_ds}: {recalls_str}")
