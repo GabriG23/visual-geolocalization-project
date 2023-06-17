@@ -39,8 +39,8 @@ class CompactTransformer(nn.Module):
 
         self.pool = nn.Linear(dim, 1)
         self.mlp_head = nn.Sequential(
-            nn.LayerNorm(dim)
-            #nn.Linear(dim, num_classes)
+            nn.LayerNorm(dim),
+            nn.Linear(dim, dim)
         )
         self.apply(self.init_weight)
 

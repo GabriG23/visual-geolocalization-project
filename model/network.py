@@ -27,14 +27,6 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
         self.l2norm = L2Norm()
         self.backbone_name = backbone
 
-        # if backbone in ["cvt", "cct"]:  ### CCT and CVT
-        #     # esce dal backcbone con [batch_size, num_classes] [32, 5965]
-        #     self.aggregation = nn.Sequential(
-        #         L2Norm(),                                   # questi sono le classi definite in layers
-        #         nn.Linear(features_dim, fc_output_dim),     # applica la trasformazione y = x @ A.T + b dove A sono i parametri della rete in quel punto 
-        #         L2Norm()  
-        #     )
-        # else:   # resnet
         self.aggregation = nn.Sequential(               # container sequenziale di layers, che sono appunto eseguiti in sequenza come una catena
             L2Norm(),                                   # questi sono le classi definite in layers
             GeM(),
@@ -46,6 +38,7 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
     def forward(self, x):
         if self.backbone_name in ["cvt", "cct"]:
             x = self.backbone(x)        # con resnet18 esce [32, 224]
+            x = self.l2norm(x) # aggiungo una normalizzazione
             # esce con [32, 224]
         else:
             x = self.backbone(x)        # con resnet18 esce [32, 512, 7, 7]
