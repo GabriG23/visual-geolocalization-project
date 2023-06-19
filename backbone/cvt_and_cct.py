@@ -9,7 +9,7 @@ def cvt_initialization(fc_output_dim):
     return CompactTransformer(224, 16, dim=fc_output_dim, depth=12, heads=12)           # fc_output_dim era il numero delle classi
  
 def cct_initialization(fc_output_dim):
-    return CompactTransformer(224, 16, dim=fc_output_dim, conv_embed=True, depth=2, heads=2) # dim = 768
+    return CompactTransformer(224, 16, dim=fc_output_dim, conv_embed=True, depth=12, heads=12) # dim = 768
 
 class CompactTransformer(nn.Module):
     def __init__(self, image_size, patch_size, dim, depth, heads, pool='cls', in_channels=3, dim_head=64, dropout=0.1, emb_dropout=0.1, scale_dim=4, conv_embed=False):
