@@ -2,3 +2,6 @@
 __pycache__
 logs
 cache
+data_res18_red128_3+21/
+data_res50_red128_3+9/
+valutazione_in_locale.py

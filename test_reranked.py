@@ -69,21 +69,22 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
     distances, predictions = faiss_index.search(queries_global_descriptors, max(RECALL_VALUES))    
     positives_per_query = eval_ds.get_positives() 
     for k in [80, 85, 90, 95]:
-        for th in [0.55, 0.6, 0.65]:
-            recalls = np.zeros(len(RECALL_VALUES))    
-            reranked_recalls = np.zeros(len(RECALL_VALUES))                
-            for query_index, preds in enumerate(tqdm(predictions, ncols=100)):  
-                reranked_preds = RerankByGeometricVerification(preds, distances[query_index], queries_local_descriptors[query_index], 
-                                            queries_att_prob[query_index], database_local_descriptors[preds], database_att_prob[preds],
-                                            k=k, descriptor_matching_threshold=th)
-                for i, n in enumerate(RECALL_VALUES):           
-                    if np.any(np.in1d(reranked_preds[:n], positives_per_query[query_index])):                                                                                                                         
-                        reranked_recalls[i:] += 1                                               
-                        break     
-                for i, n in enumerate(RECALL_VALUES):            
-                    if np.any(np.in1d(preds[:n], positives_per_query[query_index])):                                                                                                                                          
-                        recalls[i:] += 1                                             
-                        break                                                           
+        for kd_th in [0.55, 0.6, 0.65]:
+            for ransac_th in [10.0, 15.0, 16.0]:
+                recalls = np.zeros(len(RECALL_VALUES))    
+                reranked_recalls = np.zeros(len(RECALL_VALUES))                
+                for query_index, preds in enumerate(tqdm(predictions, ncols=100)):  
+                    reranked_preds = RerankByGeometricVerification(preds, distances[query_index], queries_local_descriptors[query_index], 
+                                                queries_att_prob[query_index], database_local_descriptors[preds], database_att_prob[preds],
+                                                k=k, descriptor_matching_threshold=kd_th, ransac_residual_threshold=ransac_th)
+                    for i, n in enumerate(RECALL_VALUES):           
+                        if np.any(np.in1d(reranked_preds[:n], positives_per_query[query_index])):                                                                                                                         
+                            reranked_recalls[i:] += 1                                               
+                            break     
+                    for i, n in enumerate(RECALL_VALUES):            
+                        if np.any(np.in1d(preds[:n], positives_per_query[query_index])):                                                                                                                                          
+                            recalls[i:] += 1                                             
+                            break                                                           
 
         recalls = recalls / eval_ds.queries_num * 100   
         reranked_recalls = reranked_recalls / eval_ds.queries_num * 100                            
@@ -91,7 +92,7 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
         recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, recalls)])  
         reranked_recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, reranked_recalls)])    
 
-        print(f"\n{k = } - {th = }  {RANSAC = } ")
+        print(f"\n{k = } - {kd_th = } - {ransac_th = } ")
         print('Recalls \t', recalls_str)
         print('Reranked Recalls', reranked_recalls_str)
         print("------------------")
@@ -99,11 +100,11 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
 
 
 def RerankByGeometricVerification(query_predictions, distances, query_descriptors, query_attention_prob, 
-                    images_local_descriptors, images_attention_prob, k, descriptor_matching_threshold):
+                    images_local_descriptors, images_attention_prob, k, descriptor_matching_threshold, ransac_residual_threshold):
    
     # k = 85
     # descriptor_matching_threshold=0.6
-    ransac_residual_threshold=9.0
+    # ransac_residual_threshold=9.0
     query_locations, query_descriptors = retrieve_locations_and_descriptors(query_attention_prob, query_descriptors, k=k)
 
     inliers_and_initial_scores = []                   
@@ -119,7 +120,7 @@ def RerankByGeometricVerification(query_predictions, distances, query_descriptor
             descriptor_matching_threshold,
             ransac_residual_threshold,
             use_ratio_test=False,
-            RANSAC=False)
+            RANSAC=True)
 
         inliers_and_initial_scores.append([preds, match_result, distances[i]])
 
