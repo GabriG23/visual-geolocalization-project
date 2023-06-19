@@ -46,7 +46,6 @@ class GeoLocalizationNet(nn.Module):
         feature_map = self.backbone_after_3(x)              # prima entra nella backbone
         
         x = self.layers_4(feature_map)
-        print(x.shape)
         global_features = self.aggregation(x)               # in realtà per le global features mancherebbe il cosFace
         
         feature_map = feature_map.detach()                  # separa il tensore dal computational graph ritornando un nuovo tensore che non richiede un gradiente
