@@ -86,16 +86,16 @@ def test(args: Namespace, eval_ds: Dataset, model: torch.nn.Module) -> Tuple[np.
                             recalls[i:] += 1                                             
                             break                                                           
 
-        recalls = recalls / eval_ds.queries_num * 100   
-        reranked_recalls = reranked_recalls / eval_ds.queries_num * 100                            
+    recalls = recalls / eval_ds.queries_num * 100   
+    reranked_recalls = reranked_recalls / eval_ds.queries_num * 100                            
 
-        recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, recalls)])  
-        reranked_recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, reranked_recalls)])    
+    recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, recalls)])  
+    reranked_recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, reranked_recalls)])    
 
-        print(f"\n{k = } - {kd_th = } - {ransac_th = } ")
-        print('Recalls \t', recalls_str)
-        print('Reranked Recalls', reranked_recalls_str)
-        print("------------------")
+    print(f"\n{k = } - {kd_th = } - {ransac_th = } ")
+    print('Recalls \t', recalls_str)
+    print('Reranked Recalls', reranked_recalls_str)
+    print("------------------")
     return recalls, recalls_str
 
 
