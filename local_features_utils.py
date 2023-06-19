@@ -6,8 +6,9 @@ from skimage import feature
 from skimage import transform
 from skimage.measure import ransac
 import torch.nn.functional as F
+import warnings
 
-def retrieve_locations_and_descriptors(attn_scores, red_feature_map, k=85):
+def retrieve_locations_and_descriptors(attn_scores, red_feature_map, original_image_size=224, k=85):
     attn_scores = np.transpose(attn_scores, (1, 2, 0))
     red_feature_map = np.transpose(red_feature_map, (1, 2, 0))
     flat_indices = np.argpartition(attn_scores.flatten(), -k)[-k:]
@@ -17,9 +18,10 @@ def retrieve_locations_and_descriptors(attn_scores, red_feature_map, k=85):
 
     local_descriptors_ij = list(zip(x_coords, y_coords)) 
 
-    x_loc = k_coords[0]*16+7
-    y_loc = k_coords[1]*16+7
-    
+    regions_number = original_image_size//attn_scores.shape[1]
+    x_loc = x_coords*regions_number+regions_number//2
+    y_loc = y_coords*regions_number+regions_number//2
+
     local_descriptors_locations = np.array(list(zip(x_loc, y_loc)))
 
     filtered_local_descriptors = []
@@ -61,13 +63,13 @@ def match_features(query_locations,
                   query_descriptors,
                   image_locations,
                   image_descriptors,
-                  descriptor_matching_threshold=0.4,
-                  ransac_residual_threshold=10.0,
+                  descriptor_matching_threshold=0.6,
+                  ransac_residual_threshold=15.0,
                   query_im_array=None,
                   index_im_array=None,
                   ransac_seed=None,
                   use_ratio_test=False,
-                  RANSAC=False):
+                  RANSAC=True):
 
 
     num_features_query = query_locations.shape[0]    
@@ -99,25 +101,23 @@ def match_features(query_locations,
         
         image_locations_to_use = np.array([image_locations[indices[i],] for i in range(num_features_query) 
                                     if indices[i] != num_features_image])
-
+    
     if RANSAC:
-        _NUM_RANSAC_TRIALS = 500
-        _MIN_RANSAC_SAMPLES = 6
+        _NUM_RANSAC_TRIALS = 100
+        _MIN_RANSAC_SAMPLES = 3
 
         if query_locations_to_use.shape[0] <= _MIN_RANSAC_SAMPLES:
             return 0
-
-        _, inliers = ransac(
-            (image_locations_to_use, query_locations_to_use),
-            transform.AffineTransform,
-            min_samples=_MIN_RANSAC_SAMPLES,
-            residual_threshold=ransac_residual_threshold,
-            max_trials=_NUM_RANSAC_TRIALS)
         
-        # transform.PolynomialTransform
-        # transform.AffineTransform
-        # transform.ProjectiveTransform
-        # transform.ProjectiveTransform
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', 'No inliers found. Model not fitted', UserWarning)
+            _, inliers = ransac(
+                (image_locations_to_use, query_locations_to_use),
+                transform.AffineTransform,
+                min_samples=_MIN_RANSAC_SAMPLES,
+                residual_threshold=ransac_residual_threshold,
+                max_trials=_NUM_RANSAC_TRIALS,
+                random_state=ransac_seed)
 
         if inliers is None:
             inliers = []

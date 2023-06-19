@@ -46,7 +46,7 @@ class GeoLocalizationNet(nn.Module):
         feature_map = self.backbone_after_3(x)              # prima entra nella backbone
         
         x = self.layers_4(feature_map)
-        
+        print(x.shape)
         global_features = self.aggregation(x)               # in realtà per le global features mancherebbe il cosFace
         
         feature_map = feature_map.detach()                  # separa il tensore dal computational graph ritornando un nuovo tensore che non richiede un gradiente
@@ -129,7 +129,7 @@ def get_backbone(backbone_name):
 
 
 # image = torch.rand([1, 3, 224, 224])
-# model = GeoLocalizationNet('resnet50', 512, 128, True)
+# model = GeoLocalizationNet('resnet18', 512, 128, False)
 # global_features, attn_logits, feature_map, rec_feature_map, reduced_dim, attn_scores = model(image)
 # print(rec_feature_map.shape)
 
