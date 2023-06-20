@@ -76,7 +76,7 @@ class CompactTransformer(nn.Module):
 
 ##### TRANSFORMER  #####
 class Transformer(nn.Module):
-    def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout = 0.):
+    def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout = 0.1):
         super().__init__()
         self.layers = nn.ModuleList([])
         for _ in range(depth):
@@ -114,7 +114,7 @@ class Attention(nn.Module):                             # implements the self-at
         project_out = not (heads == 1 and dim_head == dim)           # 
 
         self.heads = heads                                           # 8
-        self.scale = dim_head ** -0.5                                # 64^(-0.5) = 0.125
+        self.scale = dim_head ** -0.25                                # 64^(-0.5) = 0.125
 
         self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)    # apply linear module
 
@@ -163,13 +163,11 @@ class PreNorm(nn.Module):                              # applies layer normaliza
 
 ##### CONVOLUTIONAL EMBEDDING #####
 class ConvEmbed(nn.Module):
-    def __init__(self, in_channel, out_channel, kernel_size=7, stride=2, padding=3, pool_kernel_size=3, pool_stride=2,
-                 pool_padding=1):
+    def __init__(self, in_channel, out_channel, kernel_size=7, stride=2, padding=3, pool_kernel_size=3, pool_stride=2, pool_padding=1):
         super(ConvEmbed, self).__init__()
 
         self.conv_layers = nn.Sequential(
-            nn.Conv2d(in_channel, out_channel, kernel_size=kernel_size, stride=stride,
-                    padding=padding, bias=False),
+            nn.Conv2d(in_channel, out_channel, kernel_size=kernel_size, stride=stride, padding=padding, bias=False),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=pool_kernel_size, stride=pool_stride, padding=pool_padding),
             Rearrange('b d h w -> b (h w) d')               # B D H W -> B (H W) D
