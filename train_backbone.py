@@ -12,7 +12,7 @@ import test
 import util
 import parser
 import commons
-import cosface_loss
+import cosface_loss_backbone
 import arcface_loss
 import sphereface_loss 
 import augmentations
@@ -52,7 +52,7 @@ model_optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)  # utilizza l
 #### Datasets
 groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,  current_group=n, min_images_per_class=args.min_images_per_class) for n in range(args.groups_num)]
 
-classifiers = [cosface_loss.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]   # il classifier è dato dalla loss(dimensione descrittore, numero di classi nel gruppo) 
+classifiers = [cosface_loss_backbone.MarginCosineProduct(args.fc_output_dim, len(group)) for group in groups]   # il classifier è dato dalla loss(dimensione descrittore, numero di classi nel gruppo) 
 classifiers_optimizers = [torch.optim.Adam(classifier.parameters(), lr=args.classifiers_lr) for classifier in classifiers] # rispettivo optimizer
 
 logging.info(f"Using {len(groups)} groups")                                                                                        # numero di gruppi

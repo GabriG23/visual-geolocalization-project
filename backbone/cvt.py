@@ -32,6 +32,7 @@ class CVT(nn.Module):
                  num_layers=14,
                  num_heads=6,
                  mlp_ratio=4.0,
+                 num_classes=5965,
                  positional_embedding='learnable'                       # dipende molto dal positional_embedding come Vit-Lite
                  ):
         super(CVT, self).__init__()
@@ -59,6 +60,7 @@ class CVT(nn.Module):
             num_layers=num_layers,
             num_heads=num_heads,
             mlp_ratio=mlp_ratio,
+            num_classes=num_classes,
             positional_embedding=positional_embedding
         )
 

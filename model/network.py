@@ -37,7 +37,7 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
     
     def forward(self, x):
         if self.backbone_name in ["cvt", "cct"]:
-            x = self.backbone(x)        # con cvt e cct esce [32, 224]
+            x = self.backbone(x)        # con cvt e cct esce [224, 5965]
         else:
             x = self.backbone(x)        # con resnet18 esce [32, 512, 7, 7]
             x = self.aggregation(x)     # con resnet18 esce [32, 512]
