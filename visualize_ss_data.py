@@ -6,23 +6,7 @@ import numpy as np
 from skimage import io
 
 import dataset_warp
-
-from PIL import Image
-from torchvision import transforms
-# caratteristiche del tensore
-transform = transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-            ])
-
-
-def open_image_and_apply_transform(image_path):
-    """Given the path of an image, open the image, and return it as a normalized tensor.
-    """
-    
-    pil_image = Image.open(image_path)        # prende l'immagine
-    tensor_image = transform(pil_image)       # la trasforma in un tensor
-    return tensor_image
+import datasets_util
 
 
 def tensor_to_numpy(tensor, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]):
@@ -61,7 +45,7 @@ parser.add_argument("--k", type=int, default=0.8,
                     help="parameter k, defining the difficulty of ss training data")
 args = parser.parse_args()
 
-img_source_img = open_image_and_apply_transform(args.image_path)
+img_source_img = datasets_util.open_image_and_apply_transform(args.image_path)
 images, _, points = dataset_warp.get_random_homographic_pair(img_source_img, args.k, is_debugging=True)
 
 images = [tensor_to_numpy(i) for i in images]
