@@ -4,7 +4,7 @@ from .tokenizer import Tokenizer
 import logging
 
 def convolutional_compact_transformer(fc_output_dim): # embedding_dim mettere 224?
-    return _cct(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=224, img_size=224)
+    return _cct(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=fc_output_dim, img_size=224)
 
 # Compact Convolutional Trasformers: utilizes a convolutional tokenizer, generating richer toknes and preserving local information.
 # The The convolutional tokenizer is better at encoding relationships between patches compared to the original ViT
@@ -32,7 +32,7 @@ def _cct(num_layers, num_heads, mlp_ratio, embedding_dim, img_size, kernel_size=
 class CCT(nn.Module):
     def __init__(self,
                  img_size=224,
-                 embedding_dim=768,
+                 embedding_dim=224,
                  n_input_channels=3,
                  n_conv_layers=1,
                  kernel_size=7,

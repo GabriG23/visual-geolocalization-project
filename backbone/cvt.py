@@ -4,7 +4,7 @@ from .tokenizer import Tokenizer
 import logging
 
 def convolutional_vision_transformer(fc_output_dim): # embedding_dim mettere 224?
-    return _cvt(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=224, img_size=224)
+    return _cvt(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=fc_output_dim, img_size=224)
 
 def _cvt(num_layers, num_heads, mlp_ratio, embedding_dim, img_size, kernel_size=4):
 
@@ -23,7 +23,7 @@ def _cvt(num_layers, num_heads, mlp_ratio, embedding_dim, img_size, kernel_size=
 class CVT(nn.Module):
     def __init__(self,
                  img_size=224,
-                 embedding_dim=768,
+                 embedding_dim=224,
                  n_input_channels=3,
                  kernel_size=16,
                  dropout=0.,
