@@ -12,7 +12,7 @@ def cct_initialization(fc_output_dim):
     return CompactTransformer(224, 16, dim=fc_output_dim, conv_embed=True, depth=6, heads=6) # dim = 768
 
 class CompactTransformer(nn.Module):
-    def __init__(self, image_size, patch_size, dim, depth, heads, pool='cls', in_channels=3, dim_head=64, dropout=0.1, emb_dropout=0.1, scale_dim=4, conv_embed=False):
+    def __init__(self, image_size, patch_size, dim, depth, heads, pool='cls', in_channels=3, dim_head=32, dropout=0.1, emb_dropout=0.1, scale_dim=4, conv_embed=False):
         super().__init__()
 
         assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
@@ -114,7 +114,7 @@ class Attention(nn.Module):                             # implements the self-at
         project_out = not (heads == 1 and dim_head == dim)           # 
 
         self.heads = heads                                           # 8
-        self.scale = dim_head ** -0.25                                # 64^(-0.5) = 0.125
+        self.scale = dim_head ** -0.20                                # 64^(-0.5) = 0.125
 
         self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)    # apply linear module
 
