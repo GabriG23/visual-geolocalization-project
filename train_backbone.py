@@ -129,6 +129,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):        # inizia il tra
         if not args.use_amp16:
             descriptors = model(images)                                     # inserisce il batch di immagini e restituisce il descrittore
             output = classifiers[current_group_num](descriptors, targets)   # riporta l'output del classifier (applica quindi la loss ai batches). Però passa sia descrittore cha label
+            # nell'output lui manda i logits sono quelli che ho io, ed i targets
             loss = criterion(output, targets)                               # calcola la loss (in funzione di output e target)
             loss.backward()                                                 # calcola il gradiente per ogni parametro che ha il grad settato a True
             epoch_losses = np.append(epoch_losses, loss.item())             # in epoch losses ci appende questa loss
