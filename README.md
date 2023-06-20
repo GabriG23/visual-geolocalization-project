@@ -4,25 +4,18 @@
 - Christian Dal Pozzolo: s303406
 # Visual Geolocalization: mapping images to GPS
 
-This is the official repository for the CVPR 2022 paper [Rethinking Visual Geo-localization for Large-Scale Applications](https://arxiv.org/abs/2204.02287).
-The paper presents a new dataset called San Francisco eXtra Large (SF-XL, go [_here_](https://forms.gle/wpyDzhDyoWLQygAT9) to download it), and a highly scalable training method (called CosPlace), which allows to reach SOTA results with compact descriptors.
+This is the official repository for the Advanced Machine Learning 2022-2023.
 
-The images below represent respectively:
-1) the map of San Francisco eXtra Large
-2) a visualization of how CosPlace Groups (read datasets) are formed
-3) results with CosPlace vs other methods on Pitts250k (CosPlace trained on SF-XL, others on Pitts30k)
-<p float="left">
-  <img src="https://github.com/gmberton/gmberton.github.io/blob/main/images/SF-XL%20map.jpg" height="150" />
-  <img src="https://github.com/gmberton/gmberton.github.io/blob/main/images/map_groups.png" height="150" /> 
-  <img src="https://github.com/gmberton/gmberton.github.io/blob/main/images/backbones_pitts250k_main.png" height="150" />
-</p>
+All the train and test procedure are performed through Google Colab environment. The following operations are used to run all the algorithm
 
+
+## Libraries
 
 
 ## Train
 After downloading the SF-XL dataset, simply run 
 
-`$ python3 train.py --dataset_folder path/to/sf-xl/processed`
+`!pip3 install 'torch>=1.8.2'`
 
 the script automatically splits SF-XL in CosPlace Groups, and saves the resulting object in the folder `cache`.
 By default training is performed with a ResNet-18 with descriptors dimensionality 512 is used, which fits in less than 4GB of VRAM.
