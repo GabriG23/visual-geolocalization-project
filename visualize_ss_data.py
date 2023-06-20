@@ -4,7 +4,7 @@ import argparse
 import numpy as np
 from skimage import io
 
-import warping_dataset
+from datasets.warping_dataset import get_random_homographic_pair
 
 from PIL import Image
 from torchvision import transforms
@@ -61,7 +61,7 @@ parser.add_argument("--k", type=int, default=0.8,
 args = parser.parse_args()
 
 img_source_img = open_image_and_apply_transform(args.image_path)
-images, _, points = warping_dataset.get_random_homographic_pair(img_source_img, args.k, is_debugging=True)
+images, _, points = get_random_homographic_pair(img_source_img, args.k, is_debugging=True)
 
 images = [tensor_to_numpy(i) for i in images]
 # The two proj_intersections on the img_source image are equal
