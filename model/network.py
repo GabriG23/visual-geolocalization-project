@@ -5,6 +5,7 @@ from torch import nn
 
 from model.layers import Flatten, L2Norm, GeM
 from model import cvt_and_cct
+from model import cvt, cct
 
 CHANNELS_NUM_IN_LAST_CONV = {           # questi dipendono dall'architettura della rete
         "resnet18": 512,
@@ -77,13 +78,13 @@ def get_backbone(backbone_name, fc_output_dim):         # backbone_name è uno d
         backbone = torch.nn.Sequential(*layers)                         # crea una backbone dopo la manipolazione dei layers
 
     elif backbone_name == "cvt": # Vision Transformer Lite            CVT 224x224
-        #backbone = cvt.convolutional_vision_transformer(fc_output_dim)
-        backbone = cvt_and_cct.cvt_initialization(fc_output_dim)
+        backbone = cvt.convolutional_vision_transformer(fc_output_dim)
+        #backbone = cvt_and_cct.cvt_initialization(fc_output_dim)
         features_dim = CHANNELS_NUM_IN_LAST_CONV[backbone_name]  
         return backbone, features_dim   
     elif backbone_name == "cct": # Convolutional Vision Transformer   CCT 224x224
-        #backbone = cct.convolutional_compact_transformer(fc_output_dim)
-        backbone = cvt_and_cct.cct_initialization(fc_output_dim)
+        backbone = cct.convolutional_compact_transformer(fc_output_dim)
+        #backbone = cvt_and_cct.cct_initialization(fc_output_dim)
         features_dim = CHANNELS_NUM_IN_LAST_CONV[backbone_name]  
         return backbone, features_dim
    
