@@ -44,7 +44,7 @@ class GeoLocalizationNet(nn.Module):                        # questa è la rete 
             x = self.aggregation(x)     # con resnet18 esce [32, 512]
         return x
 
-def get_backbone(backbone_name, fc_output_dim):         # backbone_name è uno degli argomenti del programma
+def get_backbone(backbone_name, fc_output_dim, layers):         # backbone_name è uno degli argomenti del programma
     if backbone_name.startswith("resnet"):
         if backbone_name == "resnet18":
             backbone = torchvision.models.resnet18(pretrained=True)     # loading del modello già allenato
