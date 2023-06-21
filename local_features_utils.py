@@ -18,9 +18,9 @@ def retrieve_locations_and_descriptors(attn_scores, red_feature_map, original_im
 
     local_descriptors_ij = list(zip(x_coords, y_coords)) 
 
-    regions_number = original_image_size//attn_scores.shape[1]
-    x_loc = x_coords*regions_number+regions_number//2
-    y_loc = y_coords*regions_number+regions_number//2
+    region_size = original_image_size//attn_scores.shape[1]
+    x_loc = x_coords*region_size+region_size//2
+    y_loc = y_coords*region_size+region_size//2
 
     local_descriptors_locations = np.array(list(zip(x_loc, y_loc)))
 
@@ -52,22 +52,15 @@ def plot_inlier_lines(query_im_array, index_im_array, query_locations, index_loc
     plt.show()
 
 
-
-# Il KDTree viene utilizzato per accelerare la ricerca dei descrittori più vicini tra immagini diverse, 
-# mentre RANSAC viene utilizzato per eliminare i descrittori che non appartengono a un modello coerente, 
-# come i descrittori errati o outliers. Il modello coerente identificato da RANSAC viene quindi utilizzato 
-# per effettuare la corrispondenza dei descrittori e calcolare la trasformazione tra le immagini. 
-# Questo processo aiuta a migliorare la precisione e la stabilità delle corrispondenze tra le immagini.
-
 def match_features(query_locations,
                   query_descriptors,
                   image_locations,
                   image_descriptors,
-                  descriptor_matching_threshold=0.6,
+                  descriptor_matching_threshold=0.65,
                   ransac_residual_threshold=15.0,
                   query_im_array=None,
                   index_im_array=None,
-                  ransac_seed=None,
+                  ransac_seed=4,
                   use_ratio_test=False,
                   RANSAC=True):
 
@@ -130,41 +123,3 @@ def match_features(query_locations,
         return image_locations_to_use.shape[0]
 
 
-
-# La stima di una trasformazione affine fra due set di punti in 2D può avere diverse applicazioni nel contesto del 
-# processamento delle immagini e della visione artificiale.
-
-# Uno degli utilizzi più comuni è quello della registrazione delle immagini, che consiste nell'allineare due o più 
-# immagini dello stesso soggetto prese da angolazioni o tempi diversi. Nella registrazione delle immagini, la trasformazione 
-# affine permette di correggere le variazioni di scala, rotazione, traslazione e deformazione (shear) tra le immagini.
-
-# Nel contesto del tuo codice, l'algoritmo sembra essere utilizzato per trovare corrispondenze tra feature locali 
-# (descrittori) in due immagini diverse. Le corrispondenze vengono poi utilizzate per stimare una trasformazione 
-# affine che mappa le posizioni delle feature nell'immagine di query alle posizioni corrispondenti nell'immagine del database.
-
-# Questo può essere utile in una varietà di contesti, come il riconoscimento di oggetti o luoghi, la creazione di 
-# panorami da più immagini, o la realtà aumentata. Per esempio, se si sta cercando di riconoscere un luogo da una foto, 
-# si può cercare di mappare le feature della foto a quelle di immagini note dello stesso luogo nel database. Se si può trovare 
-# una buona trasformazione affine che mappa le feature della foto a quelle delle immagini del database, allora è probabile che 
-# la foto rappresenti lo stesso luogo.
-
-# Inoltre, la trasformazione affine stessa può fornire informazioni utili. Per esempio, la scala e la rotazione della 
-# trasformazione possono dare un'idea della differenza di orientamento e distanza tra la camera e il soggetto nelle due immagini.
-
-
-#Se stai cercando di allineare le caratteristiche tra due immagini specifiche, allora sì, avrai bisogno di calcolare una 
-# trasformazione affine per ogni coppia di immagini. Questo perché ogni coppia di immagini avrà la propria relazione unica 
-# di traslazione, rotazione, scala e deformazione, determinata dalla posizione e orientamento relativo della camera quando 
-# ciascuna immagine è stata scattata.
-
-# Non è possibile calcolare una singola trasformazione affine che sarà valida per tutte le possibili immagini, a meno che non ci 
-# sia qualche condizione molto specifica che renda ciò possibile. Per esempio, se stai lavorando con un set di immagini che sono 
-# state tutte prese dalla stessa posizione e orientamento, allora potresti essere in grado di utilizzare la stessa trasformazione 
-# affine per tutte le immagini. Ma in generale, questo non sarà il caso.
-
-# Inoltre, anche se fosse possibile calcolare una singola trasformazione affine per tutte le immagini, ciò potrebbe non essere 
-# desiderabile. Una delle principali vantaggi del RANSAC e della stima di una trasformazione affine è che sono robusti agli outlier. 
-# Se si calcola una singola trasformazione affine per tutte le immagini, si rischia di ottenere una trasformazione che è distorta 
-# da outlier nelle immagini.
-
-# In conclusione, nel tuo caso, calcolare una trasformazione affine per ogni coppia di immagini sembra essere l'approccio più corretto.

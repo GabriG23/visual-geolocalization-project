@@ -8,31 +8,31 @@ import traceback
 import numpy as np
 
 
-class InfiniteDataLoader(torch.utils.data.DataLoader):      # classe che eredita dal dataloader. Non mi è chairo a cosa la usano
+class InfiniteDataLoader(torch.utils.data.DataLoader):     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.dataset_iterator = super().__iter__()          # questo è l'iteratore. Fa fatto per forza perché è ereditata?
+        self.dataset_iterator = super().__iter__()  
     
-    def __iter__(self):                                     # necessario riscriverlo se si eredita da questa classe?
+    def __iter__(self):                                  
         return self
     
-    def __next__(self):                                     # hanno solo riscritto questo metodo
+    def __next__(self):                                   
         try:
-            batch = next(self.dataset_iterator)             # prova a ottenere il prossimo batch
-        except StopIteration:                               # se non riesce, stoppa l'iterazione attuale (?)
-            self.dataset_iterator = super().__iter__()      # Non l'aveva fatto su?
-            batch = next(self.dataset_iterator)             # altrimenti ottiene il prossimo batch
-        return batch                                        # e lo restituisce
+            batch = next(self.dataset_iterator)            
+        except StopIteration:                            
+            self.dataset_iterator = super().__iter__()      
+            batch = next(self.dataset_iterator)            
+        return batch                                    
 
-    # penso che anche quella normale si sarebbe fermata senza più batch. Boh
+
 
 def make_deterministic(seed: int = 0):
     """Make results deterministic. If seed == -1, do not make deterministic.
         Running your script in a deterministic way might slow it down.
         Note that for some packages (eg: sklearn's PCA) this function is not enough.
     """
-    seed = int(seed)                                # setta tutti i seed di tutte le funzioni
-    if seed == -1:                                  # di default il seed è inizilizzato a zero dal programma
+    seed = int(seed)                                
+    if seed == -1:                               
         return
     random.seed(seed)
     np.random.seed(seed)
