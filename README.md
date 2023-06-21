@@ -1,7 +1,6 @@
 ### Students
 - Aiello Davide: s303296
 - Gabriele Greco: s303435
-- Christian Dal Pozzolo: s303406
 # Visual Geolocalization: mapping images to GPS
 
 This is the official repository for the Advanced Machine Learning 2022-2023.
