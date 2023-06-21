@@ -173,7 +173,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):
 
     #### Evaluation
     recalls, recalls_str = test.test(args, val_ds, model)  
-      
+
     # !!!!!! 
     # Here we're running the validation only on global features, because using local features
     # could exceed the Colab limits, which might result in the training not being completed
@@ -212,7 +212,7 @@ model.load_state_dict(best_model_state_dict)
 
 logging.info(f"Now testing on the test set: {test_ds}")                         
 recalls, recalls_str, reranked_recalls, reranked_recalls_str = test_reranked.test(args, test_ds, model)                          
-logging.info(f"{test_ds}: Recalls /t: {recalls_str}")
-logging.info(f"{test_ds}: Reranked Recalls /t: {reranked_recalls_str}")
+logging.info(f"{test_ds}: Recalls :\t\t {recalls_str}")
+logging.info(f"{test_ds}: Reranked Recalls : {reranked_recalls_str}")
 
 logging.info("Experiment finished (without any errors)")

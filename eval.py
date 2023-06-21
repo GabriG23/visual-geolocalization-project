@@ -40,5 +40,5 @@ test_ds = TestDataset(args.test_set_folder, queries_folder="queries",
                       positive_dist_threshold=args.positive_dist_threshold)
 
 recalls, recalls_str, reranked_recalls, reranked_recalls_str = test_reranked.test(args, test_ds, model)  
-logging.info(f"{test_ds}: Recalls /t: {recalls_str}")
-logging.info(f"{test_ds}: Reranked Recalls /t: {reranked_recalls_str}")
+logging.info(f"{test_ds}: Recalls :\t\t {recalls_str}")
+logging.info(f"{test_ds}: Reranked Recalls : {reranked_recalls_str}")
