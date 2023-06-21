@@ -30,8 +30,8 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--classifiers_lr", type=float, default=0.01, help="_")
     parser.add_argument("--loss_function", type=str, default="cosface",
                         help="type of loss function: cosface, arcface or sphereface") # aggiunta per il punto 3
-    parser.add_argument("--layers", type=int, default="2",
-                        choices=["2", "4", "6", "7", "8"], help="_")
+    parser.add_argument("--layers", type=int, default=2,
+                        choices=[2, 4, 6, 7, 8], help="_")
     # Data augmentation
     parser.add_argument("--brightness", type=float, default=0.7, help="_")
     parser.add_argument("--contrast", type=float, default=0.7, help="_")
