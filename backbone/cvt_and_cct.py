@@ -6,13 +6,13 @@ from einops import rearrange
 
 
 def cvt_initialization(fc_output_dim):
-    return CompactTransformer(224, 16, 5965, dim=fc_output_dim, depth=12, heads=12, dim_head=64, scale_dim=4)           # fc_output_dim era il numero delle classi
+    return CompactTransformer(224, 16, dim=fc_output_dim, depth=12, heads=12, dim_head=64, scale_dim=4)           # fc_output_dim era il numero delle classi
  
 def cct_initialization(fc_output_dim):
-    return CompactTransformer(224, 8, 5965, dim=fc_output_dim, conv_embed=True, depth=4, heads=4, dim_head=32, scale_dim=2) # dim = 768
+    return CompactTransformer(224, 8, dim=fc_output_dim, conv_embed=True, depth=4, heads=4, dim_head=32, scale_dim=2) # dim = 768
 
 class CompactTransformer(nn.Module):
-    def __init__(self, image_size, patch_size, num_classes, dim, depth, heads, dim_head, scale_dim, pool='cls', in_channels=3, dropout=0.1, emb_dropout=0.1, conv_embed=False):
+    def __init__(self, image_size, patch_size, dim, depth, heads, dim_head, scale_dim, pool='cls', in_channels=3, dropout=0.1, emb_dropout=0.1, conv_embed=False):
         super().__init__()
 
         assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
@@ -40,7 +40,7 @@ class CompactTransformer(nn.Module):
         self.pool = nn.Linear(dim, 1)
         self.mlp_head = nn.Sequential(
             nn.LayerNorm(dim),
-            nn.Linear(dim, num_classes)
+            #nn.Linear(dim, num_classes)
         )
         self.apply(self.init_weight)
 
