@@ -4,7 +4,7 @@ import torchvision
 from torch import nn
 
 from model.layers import Flatten, L2Norm, GeM
-from model import cvt_and_cct
+#from model import cvt_and_cct
 from model import cvt, cct
 
 CHANNELS_NUM_IN_LAST_CONV = {           # questi dipendono dall'architettura della rete
