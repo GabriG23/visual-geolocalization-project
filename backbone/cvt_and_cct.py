@@ -61,7 +61,7 @@ class CompactTransformer(nn.Module):
         # esco con [batch_size, numm_classes, ]
        
         # arriva con [32, 1, 224]
-        # con lo squeeze diventa [32, 224] e dopo fa una normalizzazione e un linear [224, 5965]
+        # con lo squeeze diventa [32, 224] e dopo fa una normalizzazione e un linear [32, 5965]
         return self.mlp_head(x.squeeze(-2))     # take of the last two dimensions
 
     @staticmethod
@@ -185,18 +185,3 @@ class ConvEmbed(nn.Module):
     def init_weight(m):
         if isinstance(m, nn.Conv2d):
             nn.init.kaiming_normal_(m.weight)
-
-
-    # def forward(self, x):
-    #     b, n, _, h = *x.shape, self.heads
-    #     qkv = self.to_qkv(x).chunk(3, dim = -1)
-    #     q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = h), qkv)   # B N (H D) -> B H N D'
-
-    #     dots = torch.einsum('b h i d, b h j d -> b h i j', q, k) * self.scale             # B H I D, B H J D -> B H I J
-
-    #     attn = dots.softmax(dim=-1)
-
-    #     out = einsum('b h i j, b h j d -> b h i d', attn, v)                        # B H I J, B H J D -> B H I D
-    #     out = rearrange(out, 'b h n d -> b n (h d)')                                # B H N D -> B N (H D)
-    #     out =  self.to_out(out)
-    #     return out
