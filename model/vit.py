@@ -6,8 +6,17 @@ import torch.nn as nn
 import torch.nn.functional as F
 import logging
 
-def vision_transformer_lite(fc_output_dim):         # embedding_dim mettere 224?
-    return _vit_lite(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=224, img_size=224)   # layers, attention head, Multi layer perceptron ratio, dimensione descrittori
+def vision_transformer_lite(fc_output_dim, layers):         # embedding_dim mettere 224
+    if layers==2:
+        return _vit_lite(num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=fc_output_dim, img_size=224)   # layers, attention head, Multi layer perceptron ratio, dimensione descrittori
+    elif layers == 4:
+        return _vit_lite(num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=fc_output_dim, img_size=224) 
+    elif layers == 6:
+        return _vit_lite(num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=fc_output_dim, img_size=224) 
+    elif layers == 7:
+        return _vit_lite(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=fc_output_dim, img_size=224) 
+    else:
+        raise ValueError(f"Wrong numbers of layers")
 
 def _vit_lite(num_layers, num_heads, mlp_ratio, embedding_dim, img_size, kernel_size=4):      # dimensione del kernel, mettere 16??
                                     

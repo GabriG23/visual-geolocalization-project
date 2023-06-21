@@ -3,8 +3,20 @@ from .transformers import TransformerClassifier
 from .tokenizer import Tokenizer
 import logging
 
-def convolutional_vision_transformer(fc_output_dim): # embedding_dim mettere 224?
-    return _cvt(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=fc_output_dim, img_size=224)
+
+def convolutional_vision_transformer(fc_output_dim, layers):         # embedding_dim mettere 224
+    if layers==2:
+        return _cvt(num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=fc_output_dim, img_size=224)   # layers, attention head, Multi layer perceptron ratio, dimensione descrittori
+    elif layers == 4:
+        return _cvt(num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=fc_output_dim, img_size=224) 
+    elif layers == 6:
+        return _cvt(num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=fc_output_dim, img_size=224)
+    elif layers == 7:
+        return _cvt(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=fc_output_dim, img_size=224)
+    elif layers == 8:
+        return _cvt(num_layers=8, num_heads=4, mlp_ratio=2, embedding_dim=fc_output_dim, img_size=224)
+    else:
+        raise ValueError(f"Wrong numbers of layers")
 
 def _cvt(num_layers, num_heads, mlp_ratio, embedding_dim, img_size, kernel_size=4):
 
@@ -32,7 +44,6 @@ class CVT(nn.Module):
                  num_layers=14,
                  num_heads=6,
                  mlp_ratio=4.0,
-                 num_classes=5965,
                  positional_embedding='learnable'                       # dipende molto dal positional_embedding come Vit-Lite
                  ):
         super(CVT, self).__init__()
@@ -60,7 +71,6 @@ class CVT(nn.Module):
             num_layers=num_layers,
             num_heads=num_heads,
             mlp_ratio=mlp_ratio,
-            num_classes=num_classes,
             positional_embedding=positional_embedding
         )
 

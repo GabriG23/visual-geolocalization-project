@@ -3,20 +3,19 @@ from .transformers import TransformerClassifier
 from .tokenizer import Tokenizer
 import logging
 
-def convolutional_compact_transformer(fc_output_dim): # embedding_dim mettere 224?
-    return _cct(num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=fc_output_dim, img_size=224)
 
-
-# num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128
-
-# num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128
-
-# num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256
-
-# num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256
-
-# num_layers=14, num_heads=6, mlp_ratio=3, embedding_dim=384
-
+def convolutional_compact_transformer(fc_output_dim, layers):         # embedding_dim mettere 224
+    if layers==2:
+        return _cct(num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=fc_output_dim, img_size=224)   # layers, attention head, Multi layer perceptron ratio, dimensione descrittori
+    elif layers == 4:
+        return _cct(num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=fc_output_dim, img_size=224) 
+    elif layers == 6:
+        return _cct(num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=fc_output_dim, img_size=224)
+    elif layers == 7:
+        return _cct(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=fc_output_dim, img_size=224)
+    else:
+        raise ValueError(f"Wrong numbers of layers")
+    
 # Compact Convolutional Trasformers: utilizes a convolutional tokenizer, generating richer toknes and preserving local information.
 # The The convolutional tokenizer is better at encoding relationships between patches compared to the original ViT
 # Tokenizer: ConvLayer + Pooling + Reshape
