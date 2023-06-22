@@ -8,7 +8,8 @@ from datasets.warping_dataset import get_random_homographic_pair
 
 from PIL import Image
 from torchvision import transforms
-# caratteristiche del tensore
+
+# Caratteristiche del tensore
 transform = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -16,11 +17,9 @@ transform = transforms.Compose([
 
 
 def open_image_and_apply_transform(image_path):
-    """Given the path of an image, open the image, and return it as a normalized tensor.
-    """
-    
-    pil_image = Image.open(image_path)        # prende l'immagine
-    tensor_image = transform(pil_image)       # la trasforma in un tensor
+    """Given the path of an image, open the image, and return it as a normalized tensor."""
+    pil_image = Image.open(image_path)        # Prende l'immagine
+    tensor_image = transform(pil_image)       # Trasforma l'immagine in un tensore
     return tensor_image
 
 
@@ -36,20 +35,21 @@ def tensor_to_numpy(tensor, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225
 
 
 def draw_quadrilateral(image, points=None, color=(0, 255, 0), thickness=20):
-    """Draw on image the quadrilateral defined by points."""
+    """Draw a quadrilateral defined by points on the image."""
     if points is None:  # If points is None, draw on the edges of the image.
-        points = torch.tensor([[-1, -1], [1, -1], [1,  1], [-1,  1]])
+        points = torch.tensor([[-1, -1], [1, -1], [1, 1], [-1, 1]])
         points = points.type(torch.float)
     h, w, _ = image.shape
     points = np.array(points)
     points = (points + 1) / 2
     points[:, 0] *= w
     points[:, 1] *= h
+    points = points.astype(np.int32)  # Convert points to integers
     for i in range(3):
         cv2.line(image, (points[i, 0], points[i, 1]), (points[i+1, 0], points[i+1, 1]),
                  color, thickness=thickness)
-    image = cv2.line(image, (points[3, 0], points[3, 1]), (points[0, 0], points[0, 1]),
-                     color, thickness=thickness)
+    cv2.line(image, (points[3, 0], points[3, 1]), (points[0, 0], points[0, 1]),
+             color, thickness=thickness)
     return image
 
 
