@@ -87,8 +87,7 @@ logging.info(f"The {len(groups)} groups have respectively the following number o
 # per capire gli output su, bisogna capire come sono state implementate le classi dei dataset
 
 val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold) 
-test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
-                    positive_dist_threshold=args.positive_dist_threshold)
+test_ds = TestDataset(args.test_set_folder, queries_folder="queries",positive_dist_threshold=args.positive_dist_threshold)
 logging.info(f"Validation set: {val_ds}")
 logging.info(f"Test set: {test_ds}")
 
@@ -116,7 +115,7 @@ if args.augmentation_device == "cuda":           # data augmentation. Da cpu a g
                                                     contrast=args.contrast,
                                                     saturation=args.saturation,
                                                     hue=args.hue),
-            augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
+            augmentations.DeviceAgnosticRandomResizedCrop([224, 224],
                                                         scale=[1-args.random_resized_crop, 1]),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
