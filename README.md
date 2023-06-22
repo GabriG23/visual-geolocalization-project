@@ -65,18 +65,18 @@ We worked on 4 different branches
 - `backbone`: for cvt-cct training implementation
 
 After cloning the repository import it by:
-'''
+```
 import sys
 sys.path.append("/content/AG/")
 import AG
 from AG import *
-'''
+```
 
 ## Loss functions
-'''
+```
 !git clone "https://github.com/GabriG23/AG"
 !cd AG && git checkout main # add here the name of the branch 
-'''
+```
 After downloading the dataset, we can run
 `!python3 AG/train.py --dataset_folder sf_xs --groups_num 1 --epochs_num 3 --loss_function loss_function_name`
 With loss_functionname as cosface, arcface, sphereface.
@@ -91,10 +91,10 @@ We can test a trained model as such:
 - We tested the model with resnet18 as backbone and output dimension of 512
 
 ## Geowarp
-'''
+```
 !git clone "https://github.com/GabriG23/AG"
 !cd AG && git checkout geowarp
-'''
+```
 Training the feature extractor
 `!python3 AG/train_fe.py --dataset_folder sf_xs --groups_num 1 --epochs_num 3 --num_workers 2`
 
@@ -110,14 +110,14 @@ Training the homography module
 
 ## CVT-CCT
 
-'''
+```
 !git clone "https://github.com/GabriG23/AG"
 !cd AG && git checkout backbone
 import sys
 sys.path.append("/content/AG/")
 import AG
 from AG import *
-'''
+```
 `!python3 AG/train_backbone.py --dataset_folder sf_xs --groups_num 1 --epochs_num 3 --num_workers 2 --batch_size 32 --backbone cvt --fc_output_dim 224`
 
 #### Test
