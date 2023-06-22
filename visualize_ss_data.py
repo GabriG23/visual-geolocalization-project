@@ -34,7 +34,7 @@ def tensor_to_numpy(tensor, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225
     return image
 
 
-def draw_quadrilateral(image, points=None, color=(0, 255, 0), thickness=10):
+def draw_quadrilateral(image, points=None, color=(0, 255, 0), thickness=5):
     """Draw a quadrilateral defined by points on the image."""
     if points is None:  # If points is None, draw on the edges of the image.
         points = torch.tensor([[-1, -1], [1, -1], [1, 1], [-1, 1]])
@@ -46,10 +46,8 @@ def draw_quadrilateral(image, points=None, color=(0, 255, 0), thickness=10):
     points[:, 1] *= h
     points = points.astype(np.int32)  # Convert points to integers
     for i in range(3):
-        cv2.line(image, (points[i, 0], points[i, 1]), (points[i+1, 0], points[i+1, 1]),
-                 color, thickness=thickness)
-    cv2.line(image, (points[3, 0], points[3, 1]), (points[0, 0], points[0, 1]),
-             color, thickness=thickness)
+        cv2.line(image, (points[i, 0], points[i, 1]), (points[i+1, 0], points[i+1, 1]), color, thickness=thickness)
+    cv2.line(image, (points[3, 0], points[3, 1]), (points[0, 0], points[0, 1]), color, thickness=thickness)
     return image
 
 
@@ -58,6 +56,8 @@ parser.add_argument("--image_path", type=str, default="data/example.jpg",
                     help="path of image")
 parser.add_argument("--k", type=float, default=0.8,
                     help="parameter k, defining the difficulty of ss training data")
+# parser.add_argument("--thickness", type=int, default=10,
+#                     help="Thickess of the square")
 args = parser.parse_args()
 
 img_source_img = open_image_and_apply_transform(args.image_path)
