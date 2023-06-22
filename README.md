@@ -7,7 +7,7 @@ In this branch of the repository we have all the code needed to run this impleme
 This could be done by executing the run_DELG.ipynb notebook.
 
 
-## Train
+### Train
 
 After downloading the sf-xs dataset, simply run 
 
@@ -20,12 +20,12 @@ The training is performed with a ResNet-50 with global descriptors ofdimensional
 Run `$ python3 train.py -h` to have a look at all the hyperparameters and options you can change.
 
 
-## Train ony the local features
+### Train ony the local features
 By this command, you can train only the local features for the number of ecpochs you wish
 
 `$ python3 AG/train_only_local.py --dataset_folder sf_xs --backbone resnet50 --groups_num 1 --epochs_num 3 --fm_reduction_dim 128 --reduction --resume_model /content/drive/MyDrive/best_model.pth`
 
-## Test
+### Test
 You can test a trained model as such
 
 `python3 AG/eval.py --dataset_folder sf_xs --backbone resnet50 --fc_output_dim 512 --fm_reduction_dim 128 --reduction --resume_model /content/drive/MyDrive/res50_bs32_red128_3+9.pth`
@@ -59,7 +59,7 @@ Here we have the model that provides best performance
 
 By this notebook, several actions could be done. Once downloaded the model above, you can run the blocks of the notebook in order to: 
 - Downloading the dataset.
-- Extract specific query and image from the dataset by the index
+- Extract specific query and image from the dataset by the index.
 - Use the model to make inference on these images.
 - Visualize the attention map as an heat map computed for a specific image by the model (you can also remove the comment to see and select the coordinates of the K highest keypoints from the attention map)
 
@@ -67,7 +67,7 @@ By this notebook, several actions could be done. Once downloaded the model above
 
 - Make the reranking on a specific query, visualizing also the change of position of each positive image with respect to the original order and obtaining a raw values of both recalls as a reference.
 - Eventually download the output of the model for the whole validation set in order to execute the tuning of the parameters offline.
-- Finetuning the parameters on the validation set online by chosind different value of K, the descriptor matching threshold and the ransac residual threshold. 
+- Finetuning the parameters on the validation set online by choosing different value of K, the descriptor matching threshold and the ransac residual threshold. 
 
 
 
