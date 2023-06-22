@@ -77,4 +77,4 @@ By this notebook, several actions could be done. Once downloaded the model above
 ### Matching example
 ![eatures_match](./images/features_match4.png)
 ## Author
-Davide Aiello
+Davide Aiello s303296
