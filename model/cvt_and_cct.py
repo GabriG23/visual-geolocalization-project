@@ -128,7 +128,7 @@ class Attention(nn.Module):                             # implements the self-at
         k = rearrange(k, 'b n (h d) -> b h n d', h=h)
         v = rearrange(v, 'b n (h d) -> b h n d', h=h)
         
-        dots = torch.einsum('b h i d, b h j d -> b h i j', q, k)# * self.scale
+        dots = torch.einsum('b h i d, b h j d -> b h i j', q, k) * self.scale
 
         attn = torch.softmax(dots, dim=-1)
 
