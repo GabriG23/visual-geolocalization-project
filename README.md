@@ -105,9 +105,10 @@ Training the homography module
 - in `--resume_fe` we have to put the feature extractor path
 
 #### Test
-
+This is the comand to test the geowarp:
 `!python3 AG/eval_geowarp.py --dataset_folder /content/sf_xs/ --num_reranked_predictions 20 --backbone resnet18 --fc_output_dim 512 --resume_fe /content/AG/trained_model/feature_extractor_resnet18.pth --resume_hr /content/AG/trained_model/homography_epoch3_batch32_ssw1.pth --num_workers 2`
-
+- Modyfing `--dataset_folder` we can test on a different dataset
+- we have to resume the feature extractor with `--resumer_fe` and the homography module with `--resume_hr`
 ## CVT-CCT
 
 ```
@@ -118,7 +119,9 @@ sys.path.append("/content/AG/")
 import AG
 from AG import *
 ```
+This is the command to train the module:
 `!python3 AG/train_backbone.py --dataset_folder sf_xs --groups_num 1 --epochs_num 3 --num_workers 2 --batch_size 32 --backbone cvt --fc_output_dim 224`
 
 #### Test
+This is the comand to test the cvt:
 `!python3 AG/eval.py --dataset_folder /content/sf_xs/ --backbone cvt --fc_output_dim 224 --resume_model /content/AG/trained_model/cvt_5epoch.pth`
