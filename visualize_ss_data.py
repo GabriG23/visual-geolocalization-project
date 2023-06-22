@@ -56,7 +56,7 @@ def draw_quadrilateral(image, points=None, color=(0, 255, 0), thickness=20):
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("--image_path", type=str, default="data/example.jpg",
                     help="path of image")
-parser.add_argument("--k", type=int, default=0.8,
+parser.add_argument("--k", type=float, default=0.8,
                     help="parameter k, defining the difficulty of ss training data")
 args = parser.parse_args()
 
