@@ -34,7 +34,7 @@ def tensor_to_numpy(tensor, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225
     return image
 
 
-def draw_quadrilateral(image, points=None, color=(0, 255, 0), thickness=5):
+def draw_quadrilateral(image, points=None, color=(0, 255, 0), thickness=2):
     """Draw a quadrilateral defined by points on the image."""
     if points is None:  # If points is None, draw on the edges of the image.
         points = torch.tensor([[-1, -1], [1, -1], [1, 1], [-1, 1]])
