@@ -125,3 +125,7 @@ This is the command to train the module:
 #### Test
 This is the comand to test the cvt:
 `!python3 AG/eval.py --dataset_folder /content/sf_xs/ --backbone cvt --fc_output_dim 224 --resume_model /content/AG/trained_model/cvt_5epoch.pth`
+
+## DELG
+
+For the Delg implementation go to see 'Delg' branch.
