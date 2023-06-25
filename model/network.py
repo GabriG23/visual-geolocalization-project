@@ -88,8 +88,8 @@ class FeatureExtractor(nn.Module):                        # questa è la rete pr
     def forward(self, x, f_type = "global"):
         x = self.backbone(x)                # backbone per entrambi i descrittori
         if f_type == "local":
-            x = self.avgpool(x)             # per descrittori locali
-            x = self.l2norm(x)
+            x = self.avgpool(x)             # per descrittori locali, fa il resize a 15, 15
+            x = self.l2norm(x)              # normalizzazione
             return x
         elif f_type == "global":
             x = self.aggregation(x)         # per descrittori global # e dopo entra nel container sequenziale
@@ -97,8 +97,8 @@ class FeatureExtractor(nn.Module):                        # questa è la rete pr
         else:
             raise ValueError(f"Invalid features type: {f_type}")
 
-##### MODULE GEOWARP
-class HomographyRegression(nn.Module):
+##### MODULE GEOWARP, prende un tensore di input, applica dei layer convoluzionali, un linear ed ottiene una matrice di 8 punti
+class HomographyRegression(nn.Module): # PER MODULO W
     def __init__(self, output_dim=16, kernel_sizes=[7, 5], channels=[225, 128, 64], padding=0):
         super().__init__()
         assert len(kernel_sizes) == len(channels) - 1, \
@@ -120,11 +120,11 @@ class HomographyRegression(nn.Module):
         self.linear.weight.data = torch.zeros_like((self.linear.weight.data))
 
     def forward(self, x):
-        B = x.shape[0]
-        x = self.conv(x)
-        x = x.contiguous().view(x.size(0), -1)
-        x = self.linear(x)
-        x = x.reshape(B, 8, 2)
+        B = x.shape[0]              # prende dimensione del batch
+        x = self.conv(x)            # passa il tensore in conv: Con2D, BatchNorm2d, ReLU
+        x = x.contiguous().view(x.size(0), -1)  # avviene il reshape con view per avere un forma 2D
+        x = self.linear(x)              # si applica un linear per avere un regression output
+        x = x.reshape(B, 8, 2)          # ogni elemento del batch rappresenta una matrice omografica di 8 punti
         return x
 
 ##### MODULE GEOWARP
