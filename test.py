@@ -185,11 +185,11 @@ def compute_features(args: Namespace, test_ds: Dataset, model: torch.nn.Module):
 
     faiss_index = faiss.IndexFlatL2( args.fc_output_dim) # Faiss is a library for efficient similarity search and clustering of dense vectors
     faiss_index.add(database_descriptors) # aggiunge le features del database
-    del database_descriptors, all_descriptors                # elimina roba non piiù utile
+    del database_descriptors, all_descriptors                # elimina roba non più utile
     
     max_recall_value = max(RECALL_VALUES)  # Usually it's 20, valore massimo di recall, di solito è 20
     distances, predictions = faiss_index.search(queries_descriptors, max_recall_value) # cerca in faiss le distanze e le predictions
-    ground_truths = test_ds.get_positives()  
+    ground_truths = test_ds.get_positives()  # prende le ground truth
     
     recalls = np.zeros(len(RECALL_VALUES))              # calcolo recalls e recalls_str
     for query_index, pred in enumerate(predictions):
@@ -200,7 +200,7 @@ def compute_features(args: Namespace, test_ds: Dataset, model: torch.nn.Module):
     recalls = recalls / test_ds.queries_num * 100
     recalls_str = ", ".join([f"R@{val}: {rec:.1f}" for val, rec in zip(RECALL_VALUES, recalls)])
 
-    correct_bool_mat = np.zeros((test_ds.queries_num, max_recall_value), dtype=np.int)
+    correct_bool_mat = np.zeros((test_ds.queries_num, max_recall_value), dtype=np.int)      # inizializzata con degli zero
     for query_index in range(test_ds.queries_num):
         positives = set(ground_truths[query_index].tolist())
         for pred_index in range(max_recall_value):
